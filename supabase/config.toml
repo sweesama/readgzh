@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.image-proxy]
 verify_jwt = false
+
+[functions.read]
+verify_jwt = false

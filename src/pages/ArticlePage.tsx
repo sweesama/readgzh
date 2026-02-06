@@ -131,13 +131,14 @@ const ArticlePage = () => {
   };
 
   const handleCopyLink = async () => {
-    // Generate the canonical slug-based URL for sharing
-    const baseUrl = window.location.origin;
-    const articlePath = article?.slug ? `/${article.slug}` : `/a/${article?.id}`;
-    const shareUrl = `${baseUrl}${articlePath}`;
+    // Generate an edge function URL that serves plain HTML - AI can read this without JS
+    const slugId = article?.slug?.replace(/^s\//, "") || "";
+    const shareUrl = slugId
+      ? `${SUPABASE_URL}/functions/v1/read?s=${slugId}`
+      : `${SUPABASE_URL}/functions/v1/read?id=${article?.id}`;
     await navigator.clipboard.writeText(shareUrl);
     setLinkCopied(true);
-    toast({ title: "链接已复制", description: "发送给 ChatGPT、Claude 等 AI 即可阅读此文章" });
+    toast({ title: "链接已复制", description: "发送给 ChatGPT、Claude 等 AI 即可直接阅读此文章" });
     setTimeout(() => setLinkCopied(false), 2000);
   };
 
