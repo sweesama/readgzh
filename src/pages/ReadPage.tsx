@@ -45,7 +45,11 @@ const ReadPage = () => {
         }
 
         if (!data.success) {
-          throw new Error(data.error || "获取文章失败");
+          // Include hint if available
+          const errorMsg = data.hint 
+            ? `${data.error}\n\n💡 ${data.hint}` 
+            : data.error || "获取文章失败";
+          throw new Error(errorMsg);
         }
 
         setArticle(data.data);
