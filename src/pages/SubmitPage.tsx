@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckCircle, ArrowRight, AlertCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+// Article submission is handled via edge function (server-side validation)
 
 /**
  * SubmitPage 处理来自 Bookmarklet 的 POST 请求
@@ -60,27 +60,46 @@ const SubmitPage = () => {
       return;
     }
 
-    // 保存文章到数据库
+    // 保存文章到数据库（通过 edge function，带服务端验证）
     const saveArticle = async () => {
       try {
-        const { data, error } = await supabase
-          .from("articles")
-          .insert({
-            title: articleData!.title.trim(),
-            author: articleData!.author.trim() || "未知作者",
-            content: articleData!.content.trim(),
-            source_url: articleData!.sourceUrl.trim() || null,
-            publish_time: articleData!.publishTime.trim() || null,
-          })
-          .select("id")
-          .single();
+        const title = articleData!.title.trim().substring(0, 500);
+        const content = articleData!.content.trim().substring(0, 500000);
+        const author = articleData!.author.trim().substring(0, 100) || "未知作者";
+        const sourceUrl = articleData!.sourceUrl.trim().substring(0, 2000) || "";
+        const publishTime = articleData!.publishTime.trim().substring(0, 100) || "";
 
-        if (error) throw error;
+        if (!title || !content || content.length < 10) {
+          throw new Error("文章标题或内容无效");
+        }
 
-        setArticleId(data.id);
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wechat-reader`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: JSON.stringify({
+              action: "submit",
+              title,
+              author,
+              content,
+              sourceUrl,
+              publishTime,
+            }),
+          }
+        );
+
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.error || "保存文章失败");
+        }
+
+        setArticleId(result.articleId);
         setStatus("success");
       } catch (err) {
-        console.error("Error saving article:", err);
         setStatus("error");
         setErrorMessage(err instanceof Error ? err.message : "保存文章失败，请重试");
       }
