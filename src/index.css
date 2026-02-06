@@ -101,43 +101,103 @@ All colors MUST be HSL.
   }
 }
 
-/* Article content styling */
-.article-content {
+/* Article HTML content styling - for rendered WeChat articles */
+.article-html-content {
   @apply text-foreground leading-relaxed;
+  font-size: 16px;
+  line-height: 1.8;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
-.article-content p {
+.article-html-content p {
   @apply mb-4;
 }
 
-.article-content h1,
-.article-content h2,
-.article-content h3,
-.article-content h4 {
-  @apply font-bold mt-6 mb-3;
+.article-html-content h1,
+.article-html-content h2,
+.article-html-content h3,
+.article-html-content h4,
+.article-html-content h5,
+.article-html-content h6 {
+  @apply font-bold mt-6 mb-3 text-foreground;
 }
 
-.article-content h1 {
-  @apply text-2xl;
+.article-html-content h1 { @apply text-2xl; }
+.article-html-content h2 { @apply text-xl; }
+.article-html-content h3 { @apply text-lg; }
+.article-html-content h4 { @apply text-base font-semibold; }
+
+.article-html-content img {
+  @apply max-w-full h-auto rounded-lg my-4 mx-auto block;
 }
 
-.article-content h2 {
-  @apply text-xl;
+.article-html-content figure {
+  @apply my-6 text-center;
 }
 
-.article-content h3 {
-  @apply text-lg;
+.article-html-content figcaption {
+  @apply text-sm text-muted-foreground mt-2;
 }
 
-.article-content ul,
-.article-content ol {
+.article-html-content ul,
+.article-html-content ol {
   @apply mb-4 pl-6;
 }
 
-.article-content li {
+.article-html-content ul { list-style-type: disc; }
+.article-html-content ol { list-style-type: decimal; }
+
+.article-html-content li {
   @apply mb-2;
 }
 
-.article-content blockquote {
-  @apply border-l-4 border-primary pl-4 italic my-4 text-muted-foreground;
+.article-html-content blockquote {
+  @apply border-l-4 border-primary pl-4 italic my-4 text-muted-foreground bg-muted/50 py-3 pr-4 rounded-r-lg;
+}
+
+.article-html-content a {
+  @apply text-primary underline underline-offset-2 hover:text-primary/80;
+}
+
+.article-html-content table {
+  @apply w-full border-collapse my-4;
+}
+
+.article-html-content th,
+.article-html-content td {
+  @apply border border-border px-3 py-2 text-sm;
+}
+
+.article-html-content th {
+  @apply bg-muted font-semibold;
+}
+
+.article-html-content strong,
+.article-html-content b {
+  @apply font-bold;
+}
+
+.article-html-content em,
+.article-html-content i {
+  @apply italic;
+}
+
+.article-html-content hr {
+  @apply my-8 border-border;
+}
+
+.article-html-content section {
+  @apply mb-2;
+}
+
+/* Fallback plain text content styling */
+.article-text-content {
+  @apply text-foreground leading-relaxed;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.article-text-content p {
+  @apply mb-4;
 }
