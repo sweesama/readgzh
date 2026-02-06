@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Copy, ExternalLink, CheckCircle, Share2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -12,15 +11,41 @@ interface Article {
   title: string;
   author: string | null;
   content: string;
+  raw_html: string | null;
   source_url: string | null;
   publish_time: string | null;
   created_at: string;
   view_count: number;
 }
 
+// Sanitize HTML - remove dangerous elements but keep formatting
+function sanitizeHtml(html: string): string {
+  // Remove script/style tags
+  let clean = html.replace(/<script[\s\S]*?<\/script>/gi, "");
+  clean = clean.replace(/<style[\s\S]*?<\/style>/gi, "");
+  clean = clean.replace(/<noscript[\s\S]*?<\/noscript>/gi, "");
+  clean = clean.replace(/<iframe[\s\S]*?<\/iframe>/gi, "");
+
+  // Remove event handlers
+  clean = clean.replace(/\s+on\w+="[^"]*"/g, "");
+  clean = clean.replace(/\s+on\w+='[^']*'/g, "");
+
+  // Remove javascript: URLs
+  clean = clean.replace(/javascript:/gi, "");
+
+  // Fix visibility hidden that WeChat adds
+  clean = clean.replace(/visibility:\s*hidden[^;]*;?/g, "");
+  clean = clean.replace(/opacity:\s*0[^;]*;?/g, "");
+
+  // Convert data-src to src for images
+  clean = clean.replace(/data-src="([^"]+)"/g, 'src="$1"');
+
+  return clean;
+}
+
 const ArticlePage = () => {
   const { id } = useParams<{ id: string }>();
-  
+
   const [article, setArticle] = useState<Article | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +64,6 @@ const ArticlePage = () => {
         setIsLoading(true);
         setError(null);
 
-        // 获取文章
         const { data, error: fetchError } = await supabase
           .from("articles")
           .select("*")
@@ -55,7 +79,6 @@ const ArticlePage = () => {
 
         setArticle(data);
 
-        // 异步更新访问计数（不阻塞页面加载）
         supabase.rpc("increment_view_count", { article_id: id }).then(({ error }) => {
           if (error) console.error("Failed to increment view count:", error);
         });
@@ -70,6 +93,11 @@ const ArticlePage = () => {
     fetchArticle();
   }, [id]);
 
+  const sanitizedHtml = useMemo(() => {
+    if (!article?.raw_html) return null;
+    return sanitizeHtml(article.raw_html);
+  }, [article?.raw_html]);
+
   const handleCopyContent = async () => {
     if (!article) return;
 
@@ -77,22 +105,14 @@ const ArticlePage = () => {
 
     await navigator.clipboard.writeText(textToCopy);
     setCopied(true);
-    toast({
-      title: "已复制",
-      description: "文章内容已复制到剪贴板",
-    });
-
+    toast({ title: "已复制", description: "文章内容已复制到剪贴板" });
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleCopyLink = async () => {
     await navigator.clipboard.writeText(window.location.href);
     setLinkCopied(true);
-    toast({
-      title: "链接已复制",
-      description: "可以将此链接分享给 AI 工具使用",
-    });
-
+    toast({ title: "链接已复制", description: "可以将此链接分享给 AI 工具使用" });
     setTimeout(() => setLinkCopied(false), 2000);
   };
 
@@ -101,15 +121,13 @@ const ArticlePage = () => {
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8 max-w-3xl">
           <Skeleton className="h-8 w-32 mb-8" />
-          <Card>
-            <CardContent className="pt-6 space-y-4">
-              <Skeleton className="h-10 w-3/4 mb-4" />
-              <Skeleton className="h-4 w-48" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-3/4" />
-            </CardContent>
-          </Card>
+          <div className="bg-card rounded-2xl border p-6 md:p-10 space-y-4">
+            <Skeleton className="h-10 w-3/4" />
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
         </div>
       </div>
     );
@@ -118,27 +136,23 @@ const ArticlePage = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="container mx-auto px-4 max-w-lg">
-          <Card className="border-destructive">
-            <CardContent className="pt-6 text-center">
-              <div className="text-destructive text-lg font-medium mb-2">获取失败</div>
-              <p className="text-muted-foreground mb-6">{error}</p>
-              <Link to="/">
-                <Button>
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  返回首页
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+        <div className="container mx-auto px-4 max-w-lg text-center">
+          <div className="bg-card rounded-2xl border border-destructive p-8">
+            <div className="text-destructive text-lg font-medium mb-2">获取失败</div>
+            <p className="text-muted-foreground mb-6">{error}</p>
+            <Link to="/">
+              <Button>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                返回首页
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (!article) {
-    return null;
-  }
+  if (!article) return null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -154,38 +168,26 @@ const ArticlePage = () => {
           <div className="flex items-center gap-2">
             <Button onClick={handleCopyLink} size="sm" variant="outline">
               {linkCopied ? (
-                <>
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  已复制
-                </>
+                <><CheckCircle className="mr-2 h-4 w-4" />已复制</>
               ) : (
-                <>
-                  <Share2 className="mr-2 h-4 w-4" />
-                  分享链接
-                </>
+                <><Share2 className="mr-2 h-4 w-4" />分享链接</>
               )}
             </Button>
             <Button onClick={handleCopyContent} size="sm">
               {copied ? (
-                <>
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  已复制
-                </>
+                <><CheckCircle className="mr-2 h-4 w-4" />已复制</>
               ) : (
-                <>
-                  <Copy className="mr-2 h-4 w-4" />
-                  复制内容
-                </>
+                <><Copy className="mr-2 h-4 w-4" />复制内容</>
               )}
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Article Content */}
+      {/* Article */}
       <div className="container mx-auto px-4 py-8 max-w-3xl">
         <article className="bg-card rounded-2xl shadow-sm border p-6 md:p-10">
-          {/* Article Header */}
+          {/* Header */}
           <header className="mb-8 pb-6 border-b">
             <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
               {article.title}
@@ -194,25 +196,30 @@ const ArticlePage = () => {
               <span className="font-medium text-foreground">
                 {article.author || "未知作者"}
               </span>
-              {article.publish_time && (
-                <span>{article.publish_time}</span>
-              )}
+              {article.publish_time && <span>{article.publish_time}</span>}
               <span>阅读 {article.view_count} 次</span>
             </div>
           </header>
 
-          {/* Article Body */}
-          <div className="article-content prose prose-slate max-w-none">
-            {article.content.split("\n").map((paragraph, index) => (
-              paragraph.trim() && (
-                <p key={index} className="mb-4 text-foreground leading-relaxed">
-                  {paragraph}
-                </p>
-              )
-            ))}
-          </div>
+          {/* Content */}
+          {sanitizedHtml ? (
+            <div
+              className="article-html-content"
+              dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
+            />
+          ) : (
+            <div className="article-text-content">
+              {article.content.split("\n").map((paragraph, index) =>
+                paragraph.trim() ? (
+                  <p key={index} className="mb-4 text-foreground leading-relaxed">
+                    {paragraph}
+                  </p>
+                ) : null
+              )}
+            </div>
+          )}
 
-          {/* Article Footer */}
+          {/* Footer */}
           <footer className="mt-10 pt-6 border-t">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               {article.source_url ? (
@@ -226,26 +233,17 @@ const ArticlePage = () => {
                   查看原文
                 </a>
               ) : (
-                <span className="text-sm text-muted-foreground">
-                  无原文链接
-                </span>
+                <span className="text-sm text-muted-foreground">无原文链接</span>
               )}
               <Button onClick={handleCopyContent} variant="outline">
                 {copied ? (
-                  <>
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    已复制到剪贴板
-                  </>
+                  <><CheckCircle className="mr-2 h-4 w-4" />已复制到剪贴板</>
                 ) : (
-                  <>
-                    <Copy className="mr-2 h-4 w-4" />
-                    复制全文给 AI
-                  </>
+                  <><Copy className="mr-2 h-4 w-4" />复制全文给 AI</>
                 )}
               </Button>
             </div>
-            
-            {/* AI 工具提示 */}
+
             <div className="mt-6 p-4 bg-muted rounded-lg">
               <p className="text-sm text-muted-foreground">
                 💡 <strong>分享给 AI：</strong>复制当前页面链接，发送给 ChatGPT、Claude 或其他 AI 工具即可让它阅读此文章。

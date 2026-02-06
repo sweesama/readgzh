@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
+import { DOMParser, Element } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,156 +7,147 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Clean article text content
-function cleanText(text: string): string {
-  return text
-    .replace(/\s+/g, " ")
-    .replace(/\n\s*\n/g, "\n\n")
-    .trim();
+// Check if content indicates a verification/captcha page
+function isVerificationPage(html: string): boolean {
+  const patterns = [
+    "环境异常",
+    "完成验证",
+    "去验证",
+    "验证码",
+    "请完成安全验证",
+    "访问过于频繁",
+  ];
+  const lowerHtml = html.toLowerCase();
+  return patterns.some((p) => lowerHtml.includes(p.toLowerCase()));
 }
 
-// Extract text from HTML element recursively, preserving paragraph structure
-function extractText(html: string): string {
+// Allowed tags for sanitization
+const ALLOWED_TAGS = new Set([
+  "p", "br", "h1", "h2", "h3", "h4", "h5", "h6",
+  "strong", "b", "em", "i", "u", "s",
+  "blockquote", "ul", "ol", "li",
+  "img", "figure", "figcaption",
+  "section", "div", "span",
+  "table", "thead", "tbody", "tr", "th", "td",
+  "a", "sup", "sub", "hr",
+]);
+
+// Clean and extract formatted HTML from WeChat content
+function extractFormattedContent(html: string): { contentHtml: string; textContent: string } {
   const doc = new DOMParser().parseFromString(html, "text/html");
-  if (!doc) return "";
+  if (!doc) return { contentHtml: "", textContent: "" };
 
   const contentEl = doc.querySelector("#js_content");
-  if (!contentEl) return "";
+  if (!contentEl) return { contentHtml: "", textContent: "" };
 
-  // Get all paragraph-like elements
-  const paragraphs: string[] = [];
-  const elements = contentEl.querySelectorAll("p, section, h1, h2, h3, h4, h5, h6, blockquote, li");
+  // Get inner HTML
+  let contentHtml = (contentEl as Element).innerHTML || "";
 
-  if (elements.length > 0) {
-    for (const el of elements) {
-      const text = (el as any).textContent?.trim();
-      if (text && text.length > 0) {
-        paragraphs.push(text);
-      }
-    }
-  }
+  // Convert data-src to src for images (WeChat lazy loading)
+  contentHtml = contentHtml.replace(/data-src="([^"]+)"/g, 'src="$1"');
+  
+  // Remove data-* attributes except src
+  contentHtml = contentHtml.replace(/\s+data-\w+(?:-\w+)*="[^"]*"/g, "");
 
-  // Fallback: get all text content
-  if (paragraphs.length === 0) {
-    const allText = (contentEl as any).textContent?.trim();
-    if (allText) {
-      return allText;
-    }
-  }
+  // Remove script and style tags and their content
+  contentHtml = contentHtml.replace(/<script[\s\S]*?<\/script>/gi, "");
+  contentHtml = contentHtml.replace(/<style[\s\S]*?<\/style>/gi, "");
+  contentHtml = contentHtml.replace(/<noscript[\s\S]*?<\/noscript>/gi, "");
 
-  return paragraphs.join("\n\n");
+  // Remove onclick and other event handlers
+  contentHtml = contentHtml.replace(/\s+on\w+="[^"]*"/g, "");
+
+  // Remove WeChat-specific noise
+  contentHtml = contentHtml.replace(/visibility:\s*hidden[^;]*;?/g, "");
+  contentHtml = contentHtml.replace(/opacity:\s*0[^;]*;?/g, "");
+
+  // Remove empty spans with only nbsp
+  contentHtml = contentHtml.replace(/<span[^>]*>\s*(&nbsp;|\s)*\s*<\/span>/gi, "");
+
+  // Remove excessive inline styles but keep basic ones
+  // Keep: text-align, font-weight, font-style, color, font-size, line-height, margin, padding
+  // This is a simplified cleanup - keep style attribute but strip dangerous values
+  contentHtml = contentHtml.replace(/javascript:/gi, "");
+
+  // Get plain text for AI consumption
+  const textContent = (contentEl as Element).textContent?.trim() || "";
+
+  return { contentHtml: contentHtml.trim(), textContent };
 }
 
-// Try to extract article data from WeChat HTML
-function parseWeChatHTML(html: string, sourceUrl: string) {
+// Extract metadata from WeChat HTML
+function extractMetadata(html: string) {
   const doc = new DOMParser().parseFromString(html, "text/html");
-  if (!doc) return null;
+  if (!doc) return { title: "无标题", author: "公众号文章", publishTime: null };
 
-  // Check for verification page
-  const bodyText = (doc.body as any)?.textContent || "";
-  if (
-    bodyText.includes("环境异常") ||
-    bodyText.includes("完成验证") ||
-    bodyText.includes("去验证")
-  ) {
-    return null; // Verification page
-  }
-
-  // Extract title
+  // Title
   let title = "";
   const titleEl = doc.querySelector("#activity-name");
-  if (titleEl) {
-    title = (titleEl as any).textContent?.trim() || "";
-  }
+  if (titleEl) title = (titleEl as Element).textContent?.trim() || "";
   if (!title) {
     const ogTitle = doc.querySelector('meta[property="og:title"]');
-    if (ogTitle) {
-      title = (ogTitle as any).getAttribute("content") || "";
-    }
+    if (ogTitle) title = (ogTitle as Element).getAttribute("content") || "";
   }
   if (!title) {
     const titleTag = doc.querySelector("title");
     if (titleTag) {
-      title = (titleTag as any).textContent?.trim() || "";
-      // Remove common suffixes
+      title = (titleTag as Element).textContent?.trim() || "";
       title = title.replace(/\s*[-|_]\s*微信公众平台.*$/, "").trim();
     }
   }
 
-  // Extract author
+  // Author
   let author = "";
   const authorEl = doc.querySelector("#js_name");
-  if (authorEl) {
-    author = (authorEl as any).textContent?.trim() || "";
-  }
+  if (authorEl) author = (authorEl as Element).textContent?.trim() || "";
   if (!author) {
     const ogAuthor = doc.querySelector('meta[property="og:article:author"]');
-    if (ogAuthor) {
-      author = (ogAuthor as any).getAttribute("content") || "";
-    }
+    if (ogAuthor) author = (ogAuthor as Element).getAttribute("content") || "";
   }
 
-  // Extract content
-  const content = extractText(html);
-
-  // Extract description as fallback
-  let description = "";
-  const ogDesc = doc.querySelector('meta[property="og:description"]');
-  if (ogDesc) {
-    description = (ogDesc as any).getAttribute("content") || "";
-  }
-
-  // Extract publish time
-  let publishTime = "";
+  // Publish time
+  let publishTime = null;
   const pubTimeEl = doc.querySelector("#publish_time");
-  if (pubTimeEl) {
-    publishTime = (pubTimeEl as any).textContent?.trim() || "";
-  }
+  if (pubTimeEl) publishTime = (pubTimeEl as Element).textContent?.trim() || null;
 
   return {
     title: title || "无标题",
     author: author || "公众号文章",
-    content: content || description || "",
-    publishTime: publishTime || null,
+    publishTime,
   };
 }
 
-// Attempt 1: Direct fetch with browser-like headers
+// Direct fetch with browser-like headers
 async function tryDirectFetch(url: string): Promise<string | null> {
-  console.log("Attempt 1: Direct fetch with browser headers");
-
-  const headers: Record<string, string> = {
-    "User-Agent":
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-    Accept:
-      "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Cache-Control": "no-cache",
-    Pragma: "no-cache",
-    "Sec-Ch-Ua": '"Chromium";v="131", "Not_A Brand";v="24"',
-    "Sec-Ch-Ua-Mobile": "?0",
-    "Sec-Ch-Ua-Platform": '"Windows"',
-    "Sec-Fetch-Dest": "document",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": "none",
-    "Sec-Fetch-User": "?1",
-    "Upgrade-Insecure-Requests": "1",
-  };
-
+  console.log("Attempting direct fetch with browser headers");
   try {
     const response = await fetch(url, {
-      headers,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+        "Cache-Control": "no-cache",
+        "Sec-Ch-Ua": '"Chromium";v="131", "Not_A Brand";v="24"',
+        "Sec-Ch-Ua-Mobile": "?0",
+        "Sec-Ch-Ua-Platform": '"Windows"',
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        "Upgrade-Insecure-Requests": "1",
+      },
       redirect: "follow",
     });
 
     if (!response.ok) {
-      console.log("Direct fetch failed with status:", response.status);
+      console.log("Direct fetch failed:", response.status);
       return null;
     }
 
     const html = await response.text();
-    console.log("Direct fetch got HTML, length:", html.length);
+    console.log("Direct fetch HTML length:", html.length);
     return html;
   } catch (error) {
     console.error("Direct fetch error:", error);
@@ -164,13 +155,9 @@ async function tryDirectFetch(url: string): Promise<string | null> {
   }
 }
 
-// Attempt 2: Use Firecrawl as fallback
-async function tryFirecrawl(
-  url: string,
-  apiKey: string
-): Promise<string | null> {
-  console.log("Attempt 2: Firecrawl scraping");
-
+// Firecrawl fallback
+async function tryFirecrawl(url: string, apiKey: string): Promise<string | null> {
+  console.log("Attempting Firecrawl fallback");
   try {
     const response = await fetch("https://api.firecrawl.dev/v1/scrape", {
       method: "POST",
@@ -179,14 +166,11 @@ async function tryFirecrawl(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        url: url,
+        url,
         formats: ["html"],
         onlyMainContent: false,
         waitFor: 8000,
-        location: {
-          country: "CN",
-          languages: ["zh-CN", "zh"],
-        },
+        location: { country: "CN", languages: ["zh-CN", "zh"] },
       }),
     });
 
@@ -197,7 +181,7 @@ async function tryFirecrawl(
     }
 
     const html = data.data?.html || data.html || "";
-    console.log("Firecrawl got HTML, length:", html.length);
+    console.log("Firecrawl HTML length:", html.length);
     return html || null;
   } catch (error) {
     console.error("Firecrawl error:", error);
@@ -211,76 +195,52 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Get URL from request
     let url: string | null = null;
 
     if (req.method === "POST") {
       const body = await req.json();
       url = body.url;
     } else if (req.method === "GET") {
-      const urlParams = new URL(req.url).searchParams;
-      url = urlParams.get("url");
+      url = new URL(req.url).searchParams.get("url");
     }
 
     if (!url) {
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: "请提供微信文章链接",
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        JSON.stringify({ success: false, error: "请提供微信文章链接" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Validate WeChat URL
     if (!url.includes("mp.weixin.qq.com") && !url.includes("weixin.qq.com")) {
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: "请提供有效的微信公众号文章链接",
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        JSON.stringify({ success: false, error: "请提供有效的微信公众号文章链接" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Check cache first
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Check cache
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
 
-    const { data: existingArticle } = await supabase
+    const { data: existing } = await supabase
       .from("articles")
       .select("id")
       .eq("source_url", url)
       .maybeSingle();
 
-    if (existingArticle) {
-      console.log("Article already cached:", existingArticle.id);
+    if (existing) {
+      console.log("Cache hit:", existing.id);
       return new Response(
-        JSON.stringify({
-          success: true,
-          cached: true,
-          articleId: existingArticle.id,
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        JSON.stringify({ success: true, cached: true, articleId: existing.id }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Try multiple scraping methods
-    let html: string | null = null;
+    // Try scraping methods
+    let html = await tryDirectFetch(url);
 
-    // Method 1: Direct fetch
-    html = await tryDirectFetch(url);
-
-    // Method 2: Firecrawl fallback
     if (!html || html.length < 500) {
       const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
       if (firecrawlKey) {
@@ -290,103 +250,63 @@ Deno.serve(async (req) => {
 
     if (!html || html.length < 500) {
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: "无法获取文章内容，请稍后重试",
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        JSON.stringify({ success: false, error: "无法获取文章内容，请稍后重试" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Parse the HTML
-    const article = parseWeChatHTML(html, url);
-
-    if (!article) {
+    // Check for verification page
+    if (isVerificationPage(html)) {
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: "微信需要验证，暂时无法自动抓取此文章。请稍后重试。",
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        JSON.stringify({ success: false, error: "微信需要验证，暂时无法自动抓取此文章。请稍后重试。" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    if (!article.content || article.content.length < 20) {
+    // Extract metadata and content
+    const metadata = extractMetadata(html);
+    const { contentHtml, textContent } = extractFormattedContent(html);
+
+    if (!textContent || textContent.length < 20) {
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: "无法提取文章内容，文章可能已被删除或设置了访问限制。",
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        JSON.stringify({ success: false, error: "无法提取文章内容，文章可能已被删除或设置了访问限制。" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Save to database
-    const { data: savedArticle, error: dbError } = await supabase
+    // Save to database - content stores plain text for AI, raw_html stores formatted HTML for display
+    const { data: saved, error: dbError } = await supabase
       .from("articles")
       .insert({
-        title: article.title.substring(0, 500),
-        author: article.author,
-        content: article.content,
-        raw_html: html.substring(0, 500000), // Limit raw HTML size
+        title: metadata.title.substring(0, 500),
+        author: metadata.author,
+        content: textContent,
+        raw_html: contentHtml.substring(0, 500000),
         source_url: url,
-        publish_time: article.publishTime,
+        publish_time: metadata.publishTime,
       })
       .select("id")
       .single();
 
     if (dbError) {
-      console.error("Database save error:", dbError);
+      console.error("DB error:", dbError);
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: "保存文章失败，请稍后重试",
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        JSON.stringify({ success: false, error: "保存文章失败，请稍后重试" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(
-      "Article saved:",
-      savedArticle.id,
-      article.title,
-      "Content length:",
-      article.content.length
-    );
+    console.log("Saved:", saved.id, metadata.title, "Text:", textContent.length, "HTML:", contentHtml.length);
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        cached: false,
-        articleId: savedArticle.id,
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ success: true, cached: false, articleId: saved.id }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("Error:", error);
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: `处理请求失败: ${error instanceof Error ? error.message : "未知错误"}`,
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ success: false, error: `处理请求失败: ${error instanceof Error ? error.message : "未知错误"}` }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
