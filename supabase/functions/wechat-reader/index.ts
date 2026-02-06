@@ -1,16 +1,10 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
-
-interface ArticleData {
-  title: string;
-  author: string;
-  content: string;
-  publishTime?: string;
-  sourceUrl: string;
-}
 
 // Check if content indicates a verification/captcha page
 function isVerificationPage(content: string, title: string): boolean {
@@ -25,81 +19,86 @@ function isVerificationPage(content: string, title: string): boolean {
     "请完成安全验证",
     "访问过于频繁",
   ];
-  
+
   const combinedText = `${title} ${content}`.toLowerCase();
-  return verificationPatterns.some(pattern => 
+  return verificationPatterns.some((pattern) =>
     combinedText.includes(pattern.toLowerCase())
   );
 }
 
 // Extract author from WeChat page content
-function extractAuthor(markdown: string, metadata: Record<string, unknown>): string {
-  // Try metadata first
+function extractAuthor(
+  markdown: string,
+  metadata: Record<string, unknown>
+): string {
   if (metadata.author && typeof metadata.author === "string") {
     return metadata.author;
   }
-  
-  // Look for common WeChat author patterns in content
+
   const authorPatterns = [
     /作者[：:]\s*([^\n]+)/,
     /来源[：:]\s*([^\n]+)/,
     /原创[：:]\s*([^\n]+)/,
     /文[：:]\s*([^\n]+)/,
   ];
-  
+
   for (const pattern of authorPatterns) {
     const match = markdown.match(pattern);
     if (match && match[1]) {
       return match[1].trim();
     }
   }
-  
+
   return "公众号文章";
 }
 
 // Clean article title
 function cleanTitle(title: string): string {
   if (!title) return "无标题";
-  
-  // Remove common suffixes
+
   const suffixes = [
     "| 微信公众平台",
-    "- 微信公众平台", 
+    "- 微信公众平台",
     "_微信公众平台",
     "| Weixin Official Accounts Platform",
     "- Weixin Official Accounts Platform",
   ];
-  
+
   let cleanedTitle = title;
   for (const suffix of suffixes) {
     if (cleanedTitle.includes(suffix)) {
       cleanedTitle = cleanedTitle.split(suffix)[0].trim();
     }
   }
-  
-  // Also try splitting on common delimiters
+
   if (cleanedTitle.includes("|")) {
     cleanedTitle = cleanedTitle.split("|")[0].trim();
   }
   if (cleanedTitle.includes(" - ") && cleanedTitle.length > 50) {
     cleanedTitle = cleanedTitle.split(" - ")[0].trim();
   }
-  
+
   return cleanedTitle || "无标题";
 }
 
 // Clean markdown content
 function cleanContent(markdown: string, title: string): string {
   let content = markdown;
-  
+
   // Remove image references
   content = content.replace(/!\[.*?\]\(.*?\)/g, "");
-  
+
   // Remove the title if it appears at the start
   if (title) {
-    content = content.replace(new RegExp(`^#\\s*${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\n*`, 'i'), "");
+    content = content.replace(
+      new RegExp(
+        `^#\\s*${title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\n*`,
+        "i"
+      ),
+      ""
+    );
   }
-  
+
   // Remove WeChat specific elements
   const removePatterns = [
     /轻点两下取消赞/g,
@@ -112,29 +111,26 @@ function cleanContent(markdown: string, title: string): string {
     /微信扫一扫/g,
     /关注该公众号/g,
   ];
-  
+
   for (const pattern of removePatterns) {
     content = content.replace(pattern, "");
   }
-  
+
   // Clean up excessive newlines
   content = content.replace(/\n{3,}/g, "\n\n");
-  
-  // Remove leading/trailing whitespace
   content = content.trim();
-  
+
   return content;
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const apiKey = Deno.env.get("FIRECRAWL_API_KEY");
-    if (!apiKey) {
+    const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
+    if (!firecrawlKey) {
       console.error("FIRECRAWL_API_KEY not configured");
       return new Response(
         JSON.stringify({
@@ -142,7 +138,7 @@ Deno.serve(async (req) => {
           error: "服务配置错误，请联系管理员",
         }),
         {
-          status: 500,
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
@@ -167,7 +163,6 @@ Deno.serve(async (req) => {
           error: "请提供微信文章链接",
         }),
         {
-          // NOTE: supabase-js 会把非 2xx 状态当成异常并丢失 body，所以这里统一返回 200
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
@@ -189,20 +184,45 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Check if this URL is already cached in the database
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data: existingArticle } = await supabase
+      .from("articles")
+      .select("id")
+      .eq("source_url", url)
+      .maybeSingle();
+
+    if (existingArticle) {
+      console.log("Article already cached:", existingArticle.id);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          cached: true,
+          articleId: existingArticle.id,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     console.log("Scraping WeChat article:", url);
 
-    // Use Firecrawl to scrape the article with optimized settings
+    // Use Firecrawl to scrape the article
     const scrapeResponse = await fetch("https://api.firecrawl.dev/v1/scrape", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${firecrawlKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         url: url,
         formats: ["markdown", "html"],
         onlyMainContent: true,
-        waitFor: 5000, // Increased wait time for JS rendering
+        waitFor: 8000,
         location: {
           country: "CN",
           languages: ["zh-CN", "zh"],
@@ -218,7 +238,6 @@ Deno.serve(async (req) => {
         JSON.stringify({
           success: false,
           code: "SCRAPE_FAILED",
-          upstreamStatus: scrapeResponse.status,
           error: scrapeData.error || "抓取文章失败，请稍后重试",
         }),
         {
@@ -230,20 +249,20 @@ Deno.serve(async (req) => {
 
     console.log("Firecrawl response received");
 
-    // Extract article data from Firecrawl response
     const markdown = scrapeData.data?.markdown || scrapeData.markdown || "";
+    const html = scrapeData.data?.html || scrapeData.html || "";
     const metadata = scrapeData.data?.metadata || scrapeData.metadata || {};
     const rawTitle = metadata.title || "";
 
-    // Check if we got a verification page instead of actual content
+    // Check if we got a verification page
     if (isVerificationPage(markdown, rawTitle)) {
-      console.log("Detected verification page, returning error");
+      console.log("Detected verification page");
       return new Response(
         JSON.stringify({
           success: false,
           code: "WECHAT_VERIFICATION_REQUIRED",
-          error: "微信需要验证，无法直接抓取此文章。请尝试其他文章链接，或稍后重试。",
-          hint: "某些热门文章或新发布的文章可能有更严格的访问限制。",
+          error:
+            "微信需要验证，暂时无法自动抓取此文章。请稍后重试。",
         }),
         {
           status: 200,
@@ -252,12 +271,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Clean and process the data
     const title = cleanTitle(rawTitle);
     const author = extractAuthor(markdown, metadata);
     const content = cleanContent(markdown, title);
-    
-    // Check if we got meaningful content
+
     if (!content || content.length < 50) {
       console.log("Content too short or empty:", content.length);
       return new Response(
@@ -273,23 +290,50 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Try to extract publish time
-    const publishTime = metadata.publishedTime || metadata.date || undefined;
+    const publishTime = metadata.publishedTime || metadata.date || null;
 
-    const articleData: ArticleData = {
+    // Save to database
+    const { data: savedArticle, error: dbError } = await supabase
+      .from("articles")
+      .insert({
+        title: title.substring(0, 500),
+        author,
+        content,
+        raw_html: html || null,
+        source_url: url,
+        publish_time: publishTime,
+      })
+      .select("id")
+      .single();
+
+    if (dbError) {
+      console.error("Database save error:", dbError);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          code: "DB_ERROR",
+          error: "保存文章失败，请稍后重试",
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    console.log(
+      "Article saved successfully:",
+      savedArticle.id,
       title,
-      author,
-      content,
-      publishTime,
-      sourceUrl: url,
-    };
-
-    console.log("Article extracted successfully:", articleData.title, "- Content length:", content.length);
+      "- Content length:",
+      content.length
+    );
 
     return new Response(
       JSON.stringify({
         success: true,
-        data: articleData,
+        cached: false,
+        articleId: savedArticle.id,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -304,7 +348,7 @@ Deno.serve(async (req) => {
         error: `处理请求失败: ${errorMessage}`,
       }),
       {
-        status: 500,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
