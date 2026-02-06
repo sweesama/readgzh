@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,121 +7,202 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Check if content indicates a verification/captcha page
-function isVerificationPage(content: string, title: string): boolean {
-  const verificationPatterns = [
-    "环境异常",
-    "完成验证",
-    "去验证",
-    "验证码",
-    "滑块",
-    "拼图",
-    "Weixin Official Accounts Platform",
-    "请完成安全验证",
-    "访问过于频繁",
-  ];
-
-  const combinedText = `${title} ${content}`.toLowerCase();
-  return verificationPatterns.some((pattern) =>
-    combinedText.includes(pattern.toLowerCase())
-  );
+// Clean article text content
+function cleanText(text: string): string {
+  return text
+    .replace(/\s+/g, " ")
+    .replace(/\n\s*\n/g, "\n\n")
+    .trim();
 }
 
-// Extract author from WeChat page content
-function extractAuthor(
-  markdown: string,
-  metadata: Record<string, unknown>
-): string {
-  if (metadata.author && typeof metadata.author === "string") {
-    return metadata.author;
-  }
+// Extract text from HTML element recursively, preserving paragraph structure
+function extractText(html: string): string {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  if (!doc) return "";
 
-  const authorPatterns = [
-    /作者[：:]\s*([^\n]+)/,
-    /来源[：:]\s*([^\n]+)/,
-    /原创[：:]\s*([^\n]+)/,
-    /文[：:]\s*([^\n]+)/,
-  ];
+  const contentEl = doc.querySelector("#js_content");
+  if (!contentEl) return "";
 
-  for (const pattern of authorPatterns) {
-    const match = markdown.match(pattern);
-    if (match && match[1]) {
-      return match[1].trim();
+  // Get all paragraph-like elements
+  const paragraphs: string[] = [];
+  const elements = contentEl.querySelectorAll("p, section, h1, h2, h3, h4, h5, h6, blockquote, li");
+
+  if (elements.length > 0) {
+    for (const el of elements) {
+      const text = (el as any).textContent?.trim();
+      if (text && text.length > 0) {
+        paragraphs.push(text);
+      }
     }
   }
 
-  return "公众号文章";
-}
-
-// Clean article title
-function cleanTitle(title: string): string {
-  if (!title) return "无标题";
-
-  const suffixes = [
-    "| 微信公众平台",
-    "- 微信公众平台",
-    "_微信公众平台",
-    "| Weixin Official Accounts Platform",
-    "- Weixin Official Accounts Platform",
-  ];
-
-  let cleanedTitle = title;
-  for (const suffix of suffixes) {
-    if (cleanedTitle.includes(suffix)) {
-      cleanedTitle = cleanedTitle.split(suffix)[0].trim();
+  // Fallback: get all text content
+  if (paragraphs.length === 0) {
+    const allText = (contentEl as any).textContent?.trim();
+    if (allText) {
+      return allText;
     }
   }
 
-  if (cleanedTitle.includes("|")) {
-    cleanedTitle = cleanedTitle.split("|")[0].trim();
-  }
-  if (cleanedTitle.includes(" - ") && cleanedTitle.length > 50) {
-    cleanedTitle = cleanedTitle.split(" - ")[0].trim();
-  }
-
-  return cleanedTitle || "无标题";
+  return paragraphs.join("\n\n");
 }
 
-// Clean markdown content
-function cleanContent(markdown: string, title: string): string {
-  let content = markdown;
+// Try to extract article data from WeChat HTML
+function parseWeChatHTML(html: string, sourceUrl: string) {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  if (!doc) return null;
 
-  // Remove image references
-  content = content.replace(/!\[.*?\]\(.*?\)/g, "");
-
-  // Remove the title if it appears at the start
-  if (title) {
-    content = content.replace(
-      new RegExp(
-        `^#\\s*${title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\n*`,
-        "i"
-      ),
-      ""
-    );
+  // Check for verification page
+  const bodyText = (doc.body as any)?.textContent || "";
+  if (
+    bodyText.includes("环境异常") ||
+    bodyText.includes("完成验证") ||
+    bodyText.includes("去验证")
+  ) {
+    return null; // Verification page
   }
 
-  // Remove WeChat specific elements
-  const removePatterns = [
-    /轻点两下取消赞/g,
-    /轻点两下取消在看/g,
-    /\.VideoMini Program/g,
-    /Like.*?Wow/g,
-    /阅读原文/g,
-    /\[.*?\]\(javascript:.*?\)/g,
-    /预览时标签不可点/g,
-    /微信扫一扫/g,
-    /关注该公众号/g,
-  ];
-
-  for (const pattern of removePatterns) {
-    content = content.replace(pattern, "");
+  // Extract title
+  let title = "";
+  const titleEl = doc.querySelector("#activity-name");
+  if (titleEl) {
+    title = (titleEl as any).textContent?.trim() || "";
+  }
+  if (!title) {
+    const ogTitle = doc.querySelector('meta[property="og:title"]');
+    if (ogTitle) {
+      title = (ogTitle as any).getAttribute("content") || "";
+    }
+  }
+  if (!title) {
+    const titleTag = doc.querySelector("title");
+    if (titleTag) {
+      title = (titleTag as any).textContent?.trim() || "";
+      // Remove common suffixes
+      title = title.replace(/\s*[-|_]\s*微信公众平台.*$/, "").trim();
+    }
   }
 
-  // Clean up excessive newlines
-  content = content.replace(/\n{3,}/g, "\n\n");
-  content = content.trim();
+  // Extract author
+  let author = "";
+  const authorEl = doc.querySelector("#js_name");
+  if (authorEl) {
+    author = (authorEl as any).textContent?.trim() || "";
+  }
+  if (!author) {
+    const ogAuthor = doc.querySelector('meta[property="og:article:author"]');
+    if (ogAuthor) {
+      author = (ogAuthor as any).getAttribute("content") || "";
+    }
+  }
 
-  return content;
+  // Extract content
+  const content = extractText(html);
+
+  // Extract description as fallback
+  let description = "";
+  const ogDesc = doc.querySelector('meta[property="og:description"]');
+  if (ogDesc) {
+    description = (ogDesc as any).getAttribute("content") || "";
+  }
+
+  // Extract publish time
+  let publishTime = "";
+  const pubTimeEl = doc.querySelector("#publish_time");
+  if (pubTimeEl) {
+    publishTime = (pubTimeEl as any).textContent?.trim() || "";
+  }
+
+  return {
+    title: title || "无标题",
+    author: author || "公众号文章",
+    content: content || description || "",
+    publishTime: publishTime || null,
+  };
+}
+
+// Attempt 1: Direct fetch with browser-like headers
+async function tryDirectFetch(url: string): Promise<string | null> {
+  console.log("Attempt 1: Direct fetch with browser headers");
+
+  const headers: Record<string, string> = {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    Accept:
+      "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Cache-Control": "no-cache",
+    Pragma: "no-cache",
+    "Sec-Ch-Ua": '"Chromium";v="131", "Not_A Brand";v="24"',
+    "Sec-Ch-Ua-Mobile": "?0",
+    "Sec-Ch-Ua-Platform": '"Windows"',
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Upgrade-Insecure-Requests": "1",
+  };
+
+  try {
+    const response = await fetch(url, {
+      headers,
+      redirect: "follow",
+    });
+
+    if (!response.ok) {
+      console.log("Direct fetch failed with status:", response.status);
+      return null;
+    }
+
+    const html = await response.text();
+    console.log("Direct fetch got HTML, length:", html.length);
+    return html;
+  } catch (error) {
+    console.error("Direct fetch error:", error);
+    return null;
+  }
+}
+
+// Attempt 2: Use Firecrawl as fallback
+async function tryFirecrawl(
+  url: string,
+  apiKey: string
+): Promise<string | null> {
+  console.log("Attempt 2: Firecrawl scraping");
+
+  try {
+    const response = await fetch("https://api.firecrawl.dev/v1/scrape", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        url: url,
+        formats: ["html"],
+        onlyMainContent: false,
+        waitFor: 8000,
+        location: {
+          country: "CN",
+          languages: ["zh-CN", "zh"],
+        },
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      console.error("Firecrawl error:", data);
+      return null;
+    }
+
+    const html = data.data?.html || data.html || "";
+    console.log("Firecrawl got HTML, length:", html.length);
+    return html || null;
+  } catch (error) {
+    console.error("Firecrawl error:", error);
+    return null;
+  }
 }
 
 Deno.serve(async (req) => {
@@ -129,22 +211,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
-    if (!firecrawlKey) {
-      console.error("FIRECRAWL_API_KEY not configured");
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "服务配置错误，请联系管理员",
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Get URL from request body or query params
+    // Get URL from request
     let url: string | null = null;
 
     if (req.method === "POST") {
@@ -159,7 +226,6 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: false,
-          code: "INVALID_REQUEST",
           error: "请提供微信文章链接",
         }),
         {
@@ -174,7 +240,6 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: false,
-          code: "INVALID_WECHAT_URL",
           error: "请提供有效的微信公众号文章链接",
         }),
         {
@@ -184,7 +249,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if this URL is already cached in the database
+    // Check cache first
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -209,36 +274,25 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log("Scraping WeChat article:", url);
+    // Try multiple scraping methods
+    let html: string | null = null;
 
-    // Use Firecrawl to scrape the article
-    const scrapeResponse = await fetch("https://api.firecrawl.dev/v1/scrape", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${firecrawlKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        url: url,
-        formats: ["markdown", "html"],
-        onlyMainContent: true,
-        waitFor: 8000,
-        location: {
-          country: "CN",
-          languages: ["zh-CN", "zh"],
-        },
-      }),
-    });
+    // Method 1: Direct fetch
+    html = await tryDirectFetch(url);
 
-    const scrapeData = await scrapeResponse.json();
+    // Method 2: Firecrawl fallback
+    if (!html || html.length < 500) {
+      const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
+      if (firecrawlKey) {
+        html = await tryFirecrawl(url, firecrawlKey);
+      }
+    }
 
-    if (!scrapeResponse.ok) {
-      console.error("Firecrawl API error:", scrapeData);
+    if (!html || html.length < 500) {
       return new Response(
         JSON.stringify({
           success: false,
-          code: "SCRAPE_FAILED",
-          error: scrapeData.error || "抓取文章失败，请稍后重试",
+          error: "无法获取文章内容，请稍后重试",
         }),
         {
           status: 200,
@@ -247,22 +301,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log("Firecrawl response received");
+    // Parse the HTML
+    const article = parseWeChatHTML(html, url);
 
-    const markdown = scrapeData.data?.markdown || scrapeData.markdown || "";
-    const html = scrapeData.data?.html || scrapeData.html || "";
-    const metadata = scrapeData.data?.metadata || scrapeData.metadata || {};
-    const rawTitle = metadata.title || "";
-
-    // Check if we got a verification page
-    if (isVerificationPage(markdown, rawTitle)) {
-      console.log("Detected verification page");
+    if (!article) {
       return new Response(
         JSON.stringify({
           success: false,
-          code: "WECHAT_VERIFICATION_REQUIRED",
-          error:
-            "微信需要验证，暂时无法自动抓取此文章。请稍后重试。",
+          error: "微信需要验证，暂时无法自动抓取此文章。请稍后重试。",
         }),
         {
           status: 200,
@@ -271,16 +317,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    const title = cleanTitle(rawTitle);
-    const author = extractAuthor(markdown, metadata);
-    const content = cleanContent(markdown, title);
-
-    if (!content || content.length < 50) {
-      console.log("Content too short or empty:", content.length);
+    if (!article.content || article.content.length < 20) {
       return new Response(
         JSON.stringify({
           success: false,
-          code: "CONTENT_NOT_FOUND",
           error: "无法提取文章内容，文章可能已被删除或设置了访问限制。",
         }),
         {
@@ -290,18 +330,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    const publishTime = metadata.publishedTime || metadata.date || null;
-
     // Save to database
     const { data: savedArticle, error: dbError } = await supabase
       .from("articles")
       .insert({
-        title: title.substring(0, 500),
-        author,
-        content,
-        raw_html: html || null,
+        title: article.title.substring(0, 500),
+        author: article.author,
+        content: article.content,
+        raw_html: html.substring(0, 500000), // Limit raw HTML size
         source_url: url,
-        publish_time: publishTime,
+        publish_time: article.publishTime,
       })
       .select("id")
       .single();
@@ -311,7 +349,6 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: false,
-          code: "DB_ERROR",
           error: "保存文章失败，请稍后重试",
         }),
         {
@@ -322,11 +359,11 @@ Deno.serve(async (req) => {
     }
 
     console.log(
-      "Article saved successfully:",
+      "Article saved:",
       savedArticle.id,
-      title,
-      "- Content length:",
-      content.length
+      article.title,
+      "Content length:",
+      article.content.length
     );
 
     return new Response(
@@ -340,12 +377,11 @@ Deno.serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error("Error processing request:", error);
-    const errorMessage = error instanceof Error ? error.message : "未知错误";
+    console.error("Error:", error);
     return new Response(
       JSON.stringify({
         success: false,
-        error: `处理请求失败: ${errorMessage}`,
+        error: `处理请求失败: ${error instanceof Error ? error.message : "未知错误"}`,
       }),
       {
         status: 200,
