@@ -324,9 +324,16 @@ Deno.serve(async (req) => {
       return await handleScrape(url);
     }
 
-    // POST request: scrape a WeChat article
+    // POST request: scrape or submit article
     if (req.method === "POST") {
       const body = await req.json();
+
+      // Handle direct article submission (from bookmarklet)
+      if (body.action === "submit") {
+        return await handleDirectSubmit(body);
+      }
+
+      // Handle URL scraping
       const url = body.url;
       if (!url) {
         return new Response(
@@ -346,6 +353,94 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+// ===== Handle direct article submission (from bookmarklet) =====
+async function handleDirectSubmit(body: Record<string, unknown>): Promise<Response> {
+  const title = typeof body.title === "string" ? body.title.trim().substring(0, 500) : "";
+  const content = typeof body.content === "string" ? body.content.trim().substring(0, 500000) : "";
+  const author = typeof body.author === "string" ? body.author.trim().substring(0, 100) : "未知作者";
+  const sourceUrl = typeof body.sourceUrl === "string" ? body.sourceUrl.trim().substring(0, 2000) : null;
+  const publishTime = typeof body.publishTime === "string" ? body.publishTime.trim().substring(0, 100) : null;
+
+  // Validate required fields
+  if (!title || title.length < 1) {
+    return new Response(
+      JSON.stringify({ success: false, error: "文章标题不能为空" }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+  if (!content || content.length < 10) {
+    return new Response(
+      JSON.stringify({ success: false, error: "文章内容过短或为空" }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  // Validate sourceUrl format if provided
+  if (sourceUrl && !sourceUrl.startsWith("http")) {
+    return new Response(
+      JSON.stringify({ success: false, error: "无效的来源链接" }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  // Extract slug from source URL
+  let slug: string | null = null;
+  if (sourceUrl) {
+    const slugMatch = sourceUrl.match(/\/(s\/[^?#]+)/);
+    if (slugMatch) slug = slugMatch[1];
+  }
+
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+
+  // Check for duplicate by source URL or slug
+  if (sourceUrl || slug) {
+    let existing = null;
+    if (slug) {
+      const { data } = await supabase.from("articles").select("id").eq("slug", slug).maybeSingle();
+      existing = data;
+    }
+    if (!existing && sourceUrl) {
+      const { data } = await supabase.from("articles").select("id").eq("source_url", sourceUrl).maybeSingle();
+      existing = data;
+    }
+    if (existing) {
+      return new Response(
+        JSON.stringify({ success: true, cached: true, articleId: existing.id }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+  }
+
+  const { data: saved, error: dbError } = await supabase
+    .from("articles")
+    .insert({
+      title,
+      author: author || "未知作者",
+      content,
+      source_url: sourceUrl,
+      publish_time: publishTime,
+      slug,
+    })
+    .select("id")
+    .single();
+
+  if (dbError) {
+    console.error("DB error:", dbError);
+    return new Response(
+      JSON.stringify({ success: false, error: "保存文章失败，请稍后重试" }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  return new Response(
+    JSON.stringify({ success: true, cached: false, articleId: saved.id }),
+    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
 
 async function handleScrape(url: string): Promise<Response> {
     if (!url.includes("mp.weixin.qq.com") && !url.includes("weixin.qq.com")) {
