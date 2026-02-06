@@ -41,6 +41,20 @@ const ReadPage = () => {
         });
 
         if (fnError) {
+          // supabase-js 在函数返回非 2xx 时会把响应当成错误；尝试从 context 里读出我们返回的 JSON
+          const ctx = (fnError as unknown as { context?: Response })?.context;
+          if (ctx) {
+            try {
+              const body = await ctx.json();
+              if (body?.error) {
+                const msg = body.hint ? `${body.error}\n\n💡 ${body.hint}` : body.error;
+                throw new Error(msg);
+              }
+            } catch {
+              // ignore parse errors and fall back to fnError.message
+            }
+          }
+
           throw new Error(fnError.message || "获取文章失败");
         }
 
