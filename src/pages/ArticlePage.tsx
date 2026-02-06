@@ -21,13 +21,23 @@ interface Article {
   slug: string | null;
 }
 
+// Decode common HTML entities in URLs
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'");
+}
+
 // Proxy WeChat image URLs through our edge function to bypass hotlink protection
 function proxyWechatImages(html: string): string {
   const proxyBase = `${SUPABASE_URL}/functions/v1/image-proxy?url=`;
   // Match src="https://mmbiz.qpic.cn/..." or src="http://mmbiz.qpic.cn/..."
   return html.replace(
     /src="(https?:\/\/mmbiz\.qpic\.cn[^"]*)"/g,
-    (_, url) => `src="${proxyBase}${encodeURIComponent(url)}"`
+    (_, url) => `src="${proxyBase}${encodeURIComponent(decodeHtmlEntities(url))}"`
   );
 }
 
