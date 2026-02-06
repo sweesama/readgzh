@@ -18,6 +18,7 @@ interface Article {
   publish_time: string | null;
   created_at: string;
   view_count: number;
+  slug: string | null;
 }
 
 // Proxy WeChat image URLs through our edge function to bypass hotlink protection
@@ -59,7 +60,7 @@ function sanitizeHtml(html: string): string {
 }
 
 const ArticlePage = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id, slug } = useParams<{ id?: string; slug?: string }>();
 
   const [article, setArticle] = useState<Article | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -68,7 +69,7 @@ const ArticlePage = () => {
   const [linkCopied, setLinkCopied] = useState(false);
 
   useEffect(() => {
-    if (!id) {
+    if (!id && !slug) {
       setError("未找到文章");
       setIsLoading(false);
       return;
@@ -79,11 +80,16 @@ const ArticlePage = () => {
         setIsLoading(true);
         setError(null);
 
-        const { data, error: fetchError } = await supabase
-          .from("articles")
-          .select("*")
-          .eq("id", id)
-          .single();
+        let query = supabase.from("articles").select("*");
+        
+        if (slug) {
+          // Query by slug (e.g., "s/L3Tbd4KMmPnahnStnunTVA")
+          query = query.eq("slug", `s/${slug}`);
+        } else if (id) {
+          query = query.eq("id", id);
+        }
+
+        const { data, error: fetchError } = await query.single();
 
         if (fetchError) {
           if (fetchError.code === "PGRST116") {
@@ -94,7 +100,7 @@ const ArticlePage = () => {
 
         setArticle(data);
 
-        supabase.rpc("increment_view_count", { article_id: id }).then(({ error }) => {
+        supabase.rpc("increment_view_count", { article_id: data.id }).then(({ error }) => {
           if (error) console.error("Failed to increment view count:", error);
         });
       } catch (err) {
@@ -106,7 +112,7 @@ const ArticlePage = () => {
     };
 
     fetchArticle();
-  }, [id]);
+  }, [id, slug]);
 
   const sanitizedHtml = useMemo(() => {
     if (!article?.raw_html) return null;
@@ -125,9 +131,13 @@ const ArticlePage = () => {
   };
 
   const handleCopyLink = async () => {
-    await navigator.clipboard.writeText(window.location.href);
+    // Generate the canonical slug-based URL for sharing
+    const baseUrl = window.location.origin;
+    const articlePath = article?.slug ? `/${article.slug}` : `/a/${article?.id}`;
+    const shareUrl = `${baseUrl}${articlePath}`;
+    await navigator.clipboard.writeText(shareUrl);
     setLinkCopied(true);
-    toast({ title: "链接已复制", description: "可以将此链接分享给 AI 工具使用" });
+    toast({ title: "链接已复制", description: "发送给 ChatGPT、Claude 等 AI 即可阅读此文章" });
     setTimeout(() => setLinkCopied(false), 2000);
   };
 
@@ -181,18 +191,18 @@ const ArticlePage = () => {
             </Button>
           </Link>
           <div className="flex items-center gap-2">
-            <Button onClick={handleCopyLink} size="sm" variant="outline">
-              {linkCopied ? (
-                <><CheckCircle className="mr-2 h-4 w-4" />已复制</>
-              ) : (
-                <><Share2 className="mr-2 h-4 w-4" />分享链接</>
-              )}
-            </Button>
-            <Button onClick={handleCopyContent} size="sm">
+            <Button onClick={handleCopyContent} size="sm" variant="ghost">
               {copied ? (
                 <><CheckCircle className="mr-2 h-4 w-4" />已复制</>
               ) : (
                 <><Copy className="mr-2 h-4 w-4" />复制内容</>
+              )}
+            </Button>
+            <Button onClick={handleCopyLink} size="sm">
+              {linkCopied ? (
+                <><CheckCircle className="mr-2 h-4 w-4" />已复制</>
+              ) : (
+                <><Share2 className="mr-2 h-4 w-4" />复制链接</>
               )}
             </Button>
           </div>
@@ -250,18 +260,27 @@ const ArticlePage = () => {
               ) : (
                 <span className="text-sm text-muted-foreground">无原文链接</span>
               )}
-              <Button onClick={handleCopyContent} variant="outline">
-                {copied ? (
-                  <><CheckCircle className="mr-2 h-4 w-4" />已复制到剪贴板</>
-                ) : (
-                  <><Copy className="mr-2 h-4 w-4" />复制全文给 AI</>
-                )}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button onClick={handleCopyContent} variant="ghost" size="sm">
+                  {copied ? (
+                    <><CheckCircle className="mr-2 h-4 w-4" />已复制</>
+                  ) : (
+                    <><Copy className="mr-2 h-4 w-4" />复制全文</>
+                  )}
+                </Button>
+                <Button onClick={handleCopyLink}>
+                  {linkCopied ? (
+                    <><CheckCircle className="mr-2 h-4 w-4" />链接已复制</>
+                  ) : (
+                    <><Share2 className="mr-2 h-4 w-4" />复制链接给 AI</>
+                  )}
+                </Button>
+              </div>
             </div>
 
             <div className="mt-6 p-4 bg-muted rounded-lg">
               <p className="text-sm text-muted-foreground">
-                💡 <strong>分享给 AI：</strong>复制当前页面链接，发送给 ChatGPT、Claude 或其他 AI 工具即可让它阅读此文章。
+                💡 <strong>使用方法：</strong>点击"复制链接给 AI"，然后粘贴到 ChatGPT、Claude 或其他 AI 对话中，AI 即可直接阅读此文章。
               </p>
             </div>
           </footer>

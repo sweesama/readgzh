@@ -18,6 +18,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/s/:slug" element={<ArticlePage />} />
           <Route path="/a/:id" element={<ArticlePage />} />
           <Route path="/submit" element={<SubmitPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

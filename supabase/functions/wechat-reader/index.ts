@@ -218,22 +218,41 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check cache
+    // Extract slug from URL (e.g., "s/L3Tbd4KMmPnahnStnunTVA" from WeChat URL)
+    let slug: string | null = null;
+    const slugMatch = url.match(/\/(s\/[^?#]+)/);
+    if (slugMatch) {
+      slug = slugMatch[1];
+    }
+
+    // Check cache by slug first, then by URL
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { data: existing } = await supabase
-      .from("articles")
-      .select("id")
-      .eq("source_url", url)
-      .maybeSingle();
+    let existing = null;
+    if (slug) {
+      const { data } = await supabase
+        .from("articles")
+        .select("id, slug")
+        .eq("slug", slug)
+        .maybeSingle();
+      existing = data;
+    }
+    if (!existing) {
+      const { data } = await supabase
+        .from("articles")
+        .select("id, slug")
+        .eq("source_url", url)
+        .maybeSingle();
+      existing = data;
+    }
 
     if (existing) {
       console.log("Cache hit:", existing.id);
       return new Response(
-        JSON.stringify({ success: true, cached: true, articleId: existing.id }),
+        JSON.stringify({ success: true, cached: true, articleId: existing.id, slug: existing.slug }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -284,8 +303,9 @@ Deno.serve(async (req) => {
         raw_html: contentHtml.substring(0, 500000),
         source_url: url,
         publish_time: metadata.publishTime,
+        slug,
       })
-      .select("id")
+      .select("id, slug")
       .single();
 
     if (dbError) {
@@ -296,10 +316,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log("Saved:", saved.id, metadata.title, "Text:", textContent.length, "HTML:", contentHtml.length);
+    console.log("Saved:", saved.id, saved.slug, metadata.title, "Text:", textContent.length, "HTML:", contentHtml.length);
 
     return new Response(
-      JSON.stringify({ success: true, cached: false, articleId: saved.id }),
+      JSON.stringify({ success: true, cached: false, articleId: saved.id, slug: saved.slug }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

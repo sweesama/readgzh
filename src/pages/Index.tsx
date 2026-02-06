@@ -53,7 +53,12 @@ const Index = () => {
           : "AI 可访问的链接已生成",
       });
 
-      navigate(`/a/${data.articleId}`);
+      // Use slug-based URL if available, fallback to UUID
+      if (data.slug) {
+        navigate(`/${data.slug}`);
+      } else {
+        navigate(`/a/${data.articleId}`);
+      }
     } catch (err) {
       console.error("Error:", err);
       toast({
