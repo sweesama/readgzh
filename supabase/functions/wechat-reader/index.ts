@@ -189,28 +189,164 @@ async function tryFirecrawl(url: string, apiKey: string): Promise<string | null>
   }
 }
 
+// ===== Article Read Mode: Return static HTML for AI bots =====
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function formatContentToHtml(text: string): string {
+  return text
+    .split("\n")
+    .filter((line) => line.trim())
+    .map((line) => `<p>${escapeHtml(line)}</p>`)
+    .join("\n");
+}
+
+async function handleReadMode(slug: string | null, articleId: string | null): Promise<Response> {
+  if (!slug && !articleId) {
+    return new Response("Missing article identifier. Use ?s=slug or ?id=uuid", {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "text/plain; charset=utf-8" },
+    });
+  }
+
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+
+  let query = supabase.from("articles").select("*");
+  if (slug) {
+    query = query.eq("slug", `s/${slug}`);
+  } else if (articleId) {
+    query = query.eq("id", articleId);
+  }
+
+  const { data: article, error } = await query.single();
+
+  if (error || !article) {
+    console.error("Article not found:", error);
+    return new Response("Article not found.", {
+      status: 404,
+      headers: { ...corsHeaders, "Content-Type": "text/plain; charset=utf-8" },
+    });
+  }
+
+  // Increment view count (fire and forget)
+  supabase.rpc("increment_view_count", { article_id: article.id }).then(() => {});
+
+  const publishInfo = article.publish_time ? `<p><strong>发布时间：</strong>${escapeHtml(article.publish_time)}</p>` : "";
+  const sourceLink = article.source_url ? `<p><strong>原文链接：</strong><a href="${escapeHtml(article.source_url)}">${escapeHtml(article.source_url)}</a></p>` : "";
+
+  const html = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(article.title)}</title>
+  <meta name="description" content="${escapeHtml(article.content.substring(0, 160))}">
+  <meta name="author" content="${escapeHtml(article.author || '公众号文章')}">
+  <meta property="og:title" content="${escapeHtml(article.title)}">
+  <meta property="og:description" content="${escapeHtml(article.content.substring(0, 200))}">
+  <meta property="og:type" content="article">
+  <style>
+    body { max-width: 800px; margin: 0 auto; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.8; color: #333; }
+    h1 { font-size: 1.8em; margin-bottom: 0.5em; }
+    .meta { color: #666; margin-bottom: 2em; border-bottom: 1px solid #eee; padding-bottom: 1em; }
+    .meta p { margin: 0.3em 0; }
+    .content { font-size: 1.05em; }
+    .content img { max-width: 100%; height: auto; }
+    .footer { margin-top: 3em; padding-top: 1em; border-top: 1px solid #eee; color: #999; font-size: 0.9em; }
+    a { color: #1a73e8; }
+  </style>
+</head>
+<body>
+  <article>
+    <h1>${escapeHtml(article.title)}</h1>
+    <div class="meta">
+      <p><strong>作者：</strong>${escapeHtml(article.author || '未知作者')}</p>
+      ${publishInfo}
+    </div>
+    <div class="content">
+      ${formatContentToHtml(article.content)}
+    </div>
+    <div class="footer">
+      ${sourceLink}
+      <p>由微信公众号 AI 阅读器提供</p>
+    </div>
+  </article>
+</body>
+</html>`;
+
+  return new Response(html, {
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "public, max-age=3600",
+    },
+  });
+}
+
+// ===== Main Handler =====
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    let url: string | null = null;
+    // GET request: check if this is a "read mode" request (?s= or ?id=)
+    if (req.method === "GET") {
+      const params = new URL(req.url).searchParams;
+      const slug = params.get("s");
+      const articleId = params.get("id");
 
+      // If s= or id= param present, serve static HTML for AI bots
+      if (slug || articleId) {
+        console.log("Read mode: slug=", slug, "id=", articleId);
+        return await handleReadMode(slug, articleId);
+      }
+
+      // Otherwise, treat as a scrape request with ?url= param
+      const url = params.get("url");
+      if (!url) {
+        return new Response(
+          JSON.stringify({ success: false, error: "请提供微信文章链接" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      // Fall through to scrape logic below with this url
+      return await handleScrape(url);
+    }
+
+    // POST request: scrape a WeChat article
     if (req.method === "POST") {
       const body = await req.json();
-      url = body.url;
-    } else if (req.method === "GET") {
-      url = new URL(req.url).searchParams.get("url");
+      const url = body.url;
+      if (!url) {
+        return new Response(
+          JSON.stringify({ success: false, error: "请提供微信文章链接" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      return await handleScrape(url);
     }
 
-    if (!url) {
-      return new Response(
-        JSON.stringify({ success: false, error: "请提供微信文章链接" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    return new Response("Method not allowed", { status: 405, headers: corsHeaders });
+  } catch (error) {
+    console.error("Error:", error);
+    return new Response(
+      JSON.stringify({ success: false, error: `处理请求失败: ${error instanceof Error ? error.message : "未知错误"}` }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
 
+async function handleScrape(url: string): Promise<Response> {
     if (!url.includes("mp.weixin.qq.com") && !url.includes("weixin.qq.com")) {
       return new Response(
         JSON.stringify({ success: false, error: "请提供有效的微信公众号文章链接" }),
@@ -322,11 +458,4 @@ Deno.serve(async (req) => {
       JSON.stringify({ success: true, cached: false, articleId: saved.id, slug: saved.slug }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error) {
-    console.error("Error:", error);
-    return new Response(
-      JSON.stringify({ success: false, error: `处理请求失败: ${error instanceof Error ? error.message : "未知错误"}` }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
-});
+}
