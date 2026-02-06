@@ -11,11 +11,14 @@ Deno.serve(async (req) => {
 
   try {
     const { searchParams } = new URL(req.url);
-    const imageUrl = searchParams.get("url");
+    let imageUrl = searchParams.get("url");
 
     if (!imageUrl) {
       return new Response("Missing url parameter", { status: 400, headers: corsHeaders });
     }
+
+    // Decode any HTML entities that may have leaked through
+    imageUrl = imageUrl.replace(/&amp;/g, "&");
 
     // Only allow WeChat image domains
     const allowed = ["mmbiz.qpic.cn", "mmbiz.qlogo.cn", "wx.qlogo.cn"];
