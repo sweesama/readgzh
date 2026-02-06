@@ -14,13 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      articles: {
+        Row: {
+          author: string | null
+          content: string
+          created_at: string
+          id: string
+          publish_time: string | null
+          raw_html: string | null
+          source_url: string | null
+          title: string
+          view_count: number
+        }
+        Insert: {
+          author?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          publish_time?: string | null
+          raw_html?: string | null
+          source_url?: string | null
+          title: string
+          view_count?: number
+        }
+        Update: {
+          author?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          publish_time?: string | null
+          raw_html?: string | null
+          source_url?: string | null
+          title?: string
+          view_count?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_view_count: { Args: { article_id: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
