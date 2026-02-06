@@ -1,1 +1,4 @@
 project_id = "jhnnmmwgdrquwjytvvwu"
+
+[functions.wechat-reader]
+verify_jwt = false
