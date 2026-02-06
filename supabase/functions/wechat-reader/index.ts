@@ -293,6 +293,7 @@ async function handleReadMode(slug: string | null, articleId: string | null): Pr
 }
 
 // ===== Main Handler =====
+console.log("wechat-reader function loaded");
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
