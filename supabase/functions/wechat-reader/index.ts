@@ -163,10 +163,12 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: false,
+          code: "INVALID_REQUEST",
           error: "请提供微信文章链接",
         }),
         {
-          status: 400,
+          // NOTE: supabase-js 会把非 2xx 状态当成异常并丢失 body，所以这里统一返回 200
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
@@ -177,10 +179,11 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: false,
+          code: "INVALID_WECHAT_URL",
           error: "请提供有效的微信公众号文章链接",
         }),
         {
-          status: 400,
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
@@ -214,10 +217,12 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: false,
+          code: "SCRAPE_FAILED",
+          upstreamStatus: scrapeResponse.status,
           error: scrapeData.error || "抓取文章失败，请稍后重试",
         }),
         {
-          status: scrapeResponse.status,
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
@@ -236,11 +241,12 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: false,
+          code: "WECHAT_VERIFICATION_REQUIRED",
           error: "微信需要验证，无法直接抓取此文章。请尝试其他文章链接，或稍后重试。",
           hint: "某些热门文章或新发布的文章可能有更严格的访问限制。",
         }),
         {
-          status: 403,
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
@@ -257,10 +263,11 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: false,
+          code: "CONTENT_NOT_FOUND",
           error: "无法提取文章内容，文章可能已被删除或设置了访问限制。",
         }),
         {
-          status: 404,
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
