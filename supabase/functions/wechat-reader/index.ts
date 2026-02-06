@@ -12,6 +12,120 @@ interface ArticleData {
   sourceUrl: string;
 }
 
+// Check if content indicates a verification/captcha page
+function isVerificationPage(content: string, title: string): boolean {
+  const verificationPatterns = [
+    "环境异常",
+    "完成验证",
+    "去验证",
+    "验证码",
+    "滑块",
+    "拼图",
+    "Weixin Official Accounts Platform",
+    "请完成安全验证",
+    "访问过于频繁",
+  ];
+  
+  const combinedText = `${title} ${content}`.toLowerCase();
+  return verificationPatterns.some(pattern => 
+    combinedText.includes(pattern.toLowerCase())
+  );
+}
+
+// Extract author from WeChat page content
+function extractAuthor(markdown: string, metadata: Record<string, unknown>): string {
+  // Try metadata first
+  if (metadata.author && typeof metadata.author === "string") {
+    return metadata.author;
+  }
+  
+  // Look for common WeChat author patterns in content
+  const authorPatterns = [
+    /作者[：:]\s*([^\n]+)/,
+    /来源[：:]\s*([^\n]+)/,
+    /原创[：:]\s*([^\n]+)/,
+    /文[：:]\s*([^\n]+)/,
+  ];
+  
+  for (const pattern of authorPatterns) {
+    const match = markdown.match(pattern);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+  }
+  
+  return "公众号文章";
+}
+
+// Clean article title
+function cleanTitle(title: string): string {
+  if (!title) return "无标题";
+  
+  // Remove common suffixes
+  const suffixes = [
+    "| 微信公众平台",
+    "- 微信公众平台", 
+    "_微信公众平台",
+    "| Weixin Official Accounts Platform",
+    "- Weixin Official Accounts Platform",
+  ];
+  
+  let cleanedTitle = title;
+  for (const suffix of suffixes) {
+    if (cleanedTitle.includes(suffix)) {
+      cleanedTitle = cleanedTitle.split(suffix)[0].trim();
+    }
+  }
+  
+  // Also try splitting on common delimiters
+  if (cleanedTitle.includes("|")) {
+    cleanedTitle = cleanedTitle.split("|")[0].trim();
+  }
+  if (cleanedTitle.includes(" - ") && cleanedTitle.length > 50) {
+    cleanedTitle = cleanedTitle.split(" - ")[0].trim();
+  }
+  
+  return cleanedTitle || "无标题";
+}
+
+// Clean markdown content
+function cleanContent(markdown: string, title: string): string {
+  let content = markdown;
+  
+  // Remove image references
+  content = content.replace(/!\[.*?\]\(.*?\)/g, "");
+  
+  // Remove the title if it appears at the start
+  if (title) {
+    content = content.replace(new RegExp(`^#\\s*${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\n*`, 'i'), "");
+  }
+  
+  // Remove WeChat specific elements
+  const removePatterns = [
+    /轻点两下取消赞/g,
+    /轻点两下取消在看/g,
+    /\.VideoMini Program/g,
+    /Like.*?Wow/g,
+    /阅读原文/g,
+    /\[.*?\]\(javascript:.*?\)/g,
+    /预览时标签不可点/g,
+    /微信扫一扫/g,
+    /关注该公众号/g,
+  ];
+  
+  for (const pattern of removePatterns) {
+    content = content.replace(pattern, "");
+  }
+  
+  // Clean up excessive newlines
+  content = content.replace(/\n{3,}/g, "\n\n");
+  
+  // Remove leading/trailing whitespace
+  content = content.trim();
+  
+  return content;
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -74,7 +188,7 @@ Deno.serve(async (req) => {
 
     console.log("Scraping WeChat article:", url);
 
-    // Use Firecrawl to scrape the article
+    // Use Firecrawl to scrape the article with optimized settings
     const scrapeResponse = await fetch("https://api.firecrawl.dev/v1/scrape", {
       method: "POST",
       headers: {
@@ -83,9 +197,13 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         url: url,
-        formats: ["markdown"],
+        formats: ["markdown", "html"],
         onlyMainContent: true,
-        waitFor: 2000, // Wait for dynamic content
+        waitFor: 5000, // Increased wait time for JS rendering
+        location: {
+          country: "CN",
+          languages: ["zh-CN", "zh"],
+        },
       }),
     });
 
@@ -110,44 +228,56 @@ Deno.serve(async (req) => {
     // Extract article data from Firecrawl response
     const markdown = scrapeData.data?.markdown || scrapeData.markdown || "";
     const metadata = scrapeData.data?.metadata || scrapeData.metadata || {};
+    const rawTitle = metadata.title || "";
 
-    // Parse title from metadata or markdown
-    let title = metadata.title || "";
-    // Clean up title - remove site suffix
-    if (title.includes("|")) {
-      title = title.split("|")[0].trim();
-    }
-    if (title.includes("-")) {
-      title = title.split("-")[0].trim();
+    // Check if we got a verification page instead of actual content
+    if (isVerificationPage(markdown, rawTitle)) {
+      console.log("Detected verification page, returning error");
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "微信需要验证，无法直接抓取此文章。请尝试其他文章链接，或稍后重试。",
+          hint: "某些热门文章或新发布的文章可能有更严格的访问限制。",
+        }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
-    // Extract author - try metadata first, then look in content
-    let author = metadata.author || "未知作者";
+    // Clean and process the data
+    const title = cleanTitle(rawTitle);
+    const author = extractAuthor(markdown, metadata);
+    const content = cleanContent(markdown, title);
     
-    // Try to extract publish time from metadata
+    // Check if we got meaningful content
+    if (!content || content.length < 50) {
+      console.log("Content too short or empty:", content.length);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "无法提取文章内容，文章可能已被删除或设置了访问限制。",
+        }),
+        {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Try to extract publish time
     const publishTime = metadata.publishedTime || metadata.date || undefined;
 
-    // Clean up markdown content
-    let content = markdown;
-    
-    // Remove image references since we're not storing images
-    content = content.replace(/!\[.*?\]\(.*?\)/g, "");
-    // Remove empty lines created by removed images
-    content = content.replace(/\n{3,}/g, "\n\n");
-    // Remove any remaining markdown headers that might be the title
-    if (title && content.startsWith(`# ${title}`)) {
-      content = content.replace(`# ${title}`, "").trim();
-    }
-
     const articleData: ArticleData = {
-      title: title || "无标题",
+      title,
       author,
-      content: content.trim(),
+      content,
       publishTime,
       sourceUrl: url,
     };
 
-    console.log("Article extracted successfully:", articleData.title);
+    console.log("Article extracted successfully:", articleData.title, "- Content length:", content.length);
 
     return new Response(
       JSON.stringify({
@@ -160,8 +290,7 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error("Error processing request:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "未知错误";
+    const errorMessage = error instanceof Error ? error.message : "未知错误";
     return new Response(
       JSON.stringify({
         success: false,
