@@ -6,6 +6,8 @@ import { ArrowLeft, Copy, ExternalLink, CheckCircle, Share2 } from "lucide-react
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+
 interface Article {
   id: string;
   title: string;
@@ -16,6 +18,16 @@ interface Article {
   publish_time: string | null;
   created_at: string;
   view_count: number;
+}
+
+// Proxy WeChat image URLs through our edge function to bypass hotlink protection
+function proxyWechatImages(html: string): string {
+  const proxyBase = `${SUPABASE_URL}/functions/v1/image-proxy?url=`;
+  // Match src="https://mmbiz.qpic.cn/..." or src="http://mmbiz.qpic.cn/..."
+  return html.replace(
+    /src="(https?:\/\/mmbiz\.qpic\.cn[^"]*)"/g,
+    (_, url) => `src="${proxyBase}${encodeURIComponent(url)}"`
+  );
 }
 
 // Sanitize HTML - remove dangerous elements but keep formatting
@@ -39,6 +51,9 @@ function sanitizeHtml(html: string): string {
 
   // Convert data-src to src for images
   clean = clean.replace(/data-src="([^"]+)"/g, 'src="$1"');
+
+  // Proxy WeChat images to bypass hotlink protection
+  clean = proxyWechatImages(clean);
 
   return clean;
 }

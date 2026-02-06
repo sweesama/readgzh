@@ -2,3 +2,6 @@ project_id = "jhnnmmwgdrquwjytvvwu"
 
 [functions.wechat-reader]
 verify_jwt = false
+
+[functions.image-proxy]
+verify_jwt = false
