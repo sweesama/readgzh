@@ -22,6 +22,7 @@ export type Database = {
           id: string
           publish_time: string | null
           raw_html: string | null
+          slug: string | null
           source_url: string | null
           title: string
           view_count: number
@@ -33,6 +34,7 @@ export type Database = {
           id?: string
           publish_time?: string | null
           raw_html?: string | null
+          slug?: string | null
           source_url?: string | null
           title: string
           view_count?: number
@@ -44,6 +46,7 @@ export type Database = {
           id?: string
           publish_time?: string | null
           raw_html?: string | null
+          slug?: string | null
           source_url?: string | null
           title?: string
           view_count?: number
