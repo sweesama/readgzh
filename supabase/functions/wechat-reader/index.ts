@@ -207,6 +207,18 @@ function formatContentToHtml(text: string): string {
     .join("\n");
 }
 
+// Proxy WeChat image URLs for SSR output
+function proxyImagesForSsr(html: string): string {
+  const proxyBase = `${Deno.env.get("SUPABASE_URL")}/functions/v1/image-proxy?url=`;
+  return html.replace(
+    /src="(https?:\/\/mmbiz\.qpic\.cn[^"]*)"/g,
+    (_, url: string) => {
+      const decoded = url.replace(/&amp;/g, "&");
+      return `src="${proxyBase}${encodeURIComponent(decoded)}"`;
+    }
+  );
+}
+
 async function handleReadMode(slug: string | null, articleId: string | null): Promise<Response> {
   if (!slug && !articleId) {
     return new Response("Missing article identifier. Use ?s=slug or ?id=uuid", {
@@ -243,6 +255,22 @@ async function handleReadMode(slug: string | null, articleId: string | null): Pr
   const publishInfo = article.publish_time ? `<p><strong>发布时间：</strong>${escapeHtml(article.publish_time)}</p>` : "";
   const sourceLink = article.source_url ? `<p><strong>原文链接：</strong><a href="${escapeHtml(article.source_url)}">${escapeHtml(article.source_url)}</a></p>` : "";
 
+  // Use raw_html (with images) if available, otherwise fall back to plain text
+  let contentBody: string;
+  if (article.raw_html) {
+    let sanitized = article.raw_html;
+    sanitized = sanitized.replace(/data-src="([^"]+)"/g, 'src="$1"');
+    sanitized = sanitized.replace(/<script[\s\S]*?<\/script>/gi, "");
+    sanitized = sanitized.replace(/<style[\s\S]*?<\/style>/gi, "");
+    sanitized = sanitized.replace(/\s+on\w+="[^"]*"/g, "");
+    sanitized = sanitized.replace(/visibility:\s*hidden[^;]*;?/g, "");
+    sanitized = sanitized.replace(/opacity:\s*0[^;]*;?/g, "");
+    sanitized = proxyImagesForSsr(sanitized);
+    contentBody = sanitized;
+  } else {
+    contentBody = formatContentToHtml(article.content);
+  }
+
   const html = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -273,7 +301,7 @@ async function handleReadMode(slug: string | null, articleId: string | null): Pr
       ${publishInfo}
     </div>
     <div class="content">
-      ${formatContentToHtml(article.content)}
+      ${contentBody}
     </div>
     <div class="footer">
       ${sourceLink}
