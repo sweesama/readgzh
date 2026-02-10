@@ -219,16 +219,18 @@ function replaceVideoIframesForSsr(html: string, sourceUrl?: string | null): str
       const proxiedCover = coverUrl ? `${proxyBase}${encodeURIComponent(coverUrl)}` : null;
       const linkUrl = sourceUrl || "#";
 
-      const coverHtml = proxiedCover
-        ? `<div style="position:relative;background:#000;text-align:center;"><img src="${proxiedCover}" style="max-width:100%;opacity:0.85;" alt="视频封面"/><span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:3em;">▶️</span></div>`
-        : `<div style="background:#000;padding:40px;text-align:center;"><span style="font-size:3em;">▶️</span></div>`;
-
-      return `<div style="border:1px solid #ddd;border-radius:8px;overflow:hidden;margin:16px 0;">` +
-        `<a href="${linkUrl}" target="_blank" rel="noopener" style="display:block;text-decoration:none;color:inherit;">` +
-        coverHtml +
-        `<div style="padding:12px 16px;background:#f9f9f9;">` +
-        `<b>📹 点击查看原文播放视频</b>` +
-        `</div></a></div>`;
+      if (proxiedCover) {
+        return `<div style="border:1px solid #ddd;border-radius:8px;overflow:hidden;margin:16px 0;">` +
+          `<a href="${linkUrl}" target="_blank" rel="noopener" style="display:block;text-decoration:none;color:inherit;">` +
+          `<div style="position:relative;background:#000;text-align:center;"><img src="${proxiedCover}" style="max-width:100%;opacity:0.85;" alt="视频封面"/><span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:3em;">▶️</span></div>` +
+          `<div style="padding:10px 16px;background:#f9f9f9;font-size:0.9em;">📹 点击查看原文播放视频</div>` +
+          `</a></div>`;
+      }
+      // No cover: compact inline link
+      return `<div style="margin:12px 0;padding:10px 16px;border:1px solid #ddd;border-radius:8px;background:#f9f9f9;display:flex;align-items:center;gap:8px;">` +
+        `<span>📹</span>` +
+        `<a href="${linkUrl}" target="_blank" rel="noopener"><b>点击查看原文播放视频 →</b></a>` +
+        `</div>`;
     }
   );
   result = result.replace(/<\/iframe>/gi, "");

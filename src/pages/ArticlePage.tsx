@@ -55,23 +55,23 @@ function replaceVideoIframes(html: string, sourceUrl?: string | null): string {
       // Link to original article where video can be played natively
       const linkUrl = sourceUrl || "#";
 
-      const coverHtml = proxiedCover
-        ? `<div style="position:relative;background:#000;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;">` +
+      if (proxiedCover) {
+        return `<div style="border:1px solid hsl(var(--border));border-radius:12px;overflow:hidden;margin:16px 0;">` +
+          `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer" style="display:block;text-decoration:none;color:inherit;">` +
+          `<div style="position:relative;background:#000;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;">` +
           `<img src="${proxiedCover}" style="width:100%;height:100%;object-fit:cover;opacity:0.85;" alt="视频封面"/>` +
           `<span style="position:absolute;font-size:3em;text-shadow:0 2px 8px rgba(0,0,0,0.5);">▶️</span>` +
-          `</div>`
-        : `<div style="background:#000;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;">` +
-          `<span style="font-size:3em;">▶️</span>` +
-          `</div>`;
-
-      return `<div style="border:1px solid hsl(var(--border));border-radius:12px;overflow:hidden;margin:16px 0;">` +
-        `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer" style="display:block;text-decoration:none;color:inherit;">` +
-        coverHtml +
-        `<div style="padding:12px 16px;background:hsl(var(--muted));">` +
-        `<span style="font-weight:600;color:hsl(var(--foreground));">点击查看原文播放视频</span>` +
-        `<span style="display:block;font-size:0.85em;color:hsl(var(--muted-foreground));margin-top:2px;">将在微信公众号页面打开</span>` +
-        `</div>` +
-        `</a></div>`;
+          `</div>` +
+          `<div style="padding:10px 16px;background:hsl(var(--muted));">` +
+          `<span style="font-size:0.85em;color:hsl(var(--muted-foreground));">点击查看原文播放视频</span>` +
+          `</div>` +
+          `</a></div>`;
+      }
+      // No cover: compact inline link instead of big black box
+      return `<div style="margin:12px 0;padding:10px 16px;border:1px solid hsl(var(--border));border-radius:8px;background:hsl(var(--muted));display:flex;align-items:center;gap:8px;">` +
+        `<span style="font-size:1.2em;">📹</span>` +
+        `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer" style="color:hsl(var(--primary));text-decoration:none;font-size:0.9em;">点击查看原文播放视频 →</a>` +
+        `</div>`;
     }
   );
   // Remove leftover </iframe> tags and remaining iframes
