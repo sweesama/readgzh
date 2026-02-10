@@ -1,12 +1,12 @@
-import { Sparkles } from "lucide-react";
+import { Sparkles, Eraser, TrendingDown, ShieldOff, Image, FileText, Cloud } from "lucide-react";
 
 const advantages = [
-  { icon: "🧹", title: "去除所有样式噪音", desc: "自动剥离 inline style、class、data 属性等视觉标记，只保留纯净语义内容" },
-  { icon: "📉", title: "Token 消耗减少 50%+", desc: "清理空标签、嵌套容器、<br> 转真换行、&nbsp; 转空格，大幅压缩无效字符" },
-  { icon: "🚫", title: "过滤微信私有标签", desc: "移除 <mp-common-profile> 等微信自定义组件，避免 AI 解析困惑" },
-  { icon: "🖼️", title: "图片代理防盗链", desc: "微信图片通过服务端代理，AI 和用户都能正常查看，无需担心防盗链" },
-  { icon: "📄", title: "纯 HTML 直出", desc: "无需 JavaScript 渲染，AI 爬虫直接获取完整内容，兼容所有 AI 平台" },
-  { icon: "☁️", title: "云端零安装", desc: "无需本地部署、无需 API Key、无需浏览器插件，手机电脑随时可用" },
+  { icon: Eraser, title: "去除所有样式噪音", desc: "自动剥离 inline style、class、data 属性等视觉标记，只保留纯净语义内容" },
+  { icon: TrendingDown, title: "Token 消耗减少 50%+", desc: "清理空标签、嵌套容器、<br> 转真换行、&nbsp; 转空格，大幅压缩无效字符" },
+  { icon: ShieldOff, title: "过滤微信私有标签", desc: "移除 <mp-common-profile> 等微信自定义组件，避免 AI 解析困惑" },
+  { icon: Image, title: "图片代理防盗链", desc: "微信图片通过服务端代理，AI 和用户都能正常查看，无需担心防盗链" },
+  { icon: FileText, title: "纯 HTML 直出", desc: "无需 JavaScript 渲染，AI 爬虫直接获取完整内容，兼容所有 AI 平台" },
+  { icon: Cloud, title: "云端零安装", desc: "无需本地部署、无需 API Key、无需浏览器插件，手机电脑随时可用" },
 ];
 
 const AdvantagesSection = () => (
@@ -22,7 +22,9 @@ const AdvantagesSection = () => (
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {advantages.map((item, i) => (
           <div key={i} className="flex gap-4 p-5 rounded-xl border bg-card hover:shadow-md transition-shadow">
-            <span className="text-2xl shrink-0">{item.icon}</span>
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <item.icon className="h-5 w-5 text-primary" />
+            </div>
             <div>
               <h3 className="font-semibold text-foreground mb-1">{item.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
