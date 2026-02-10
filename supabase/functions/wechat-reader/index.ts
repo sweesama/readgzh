@@ -207,6 +207,21 @@ function formatContentToHtml(text: string): string {
     .join("\n");
 }
 
+// Replace video iframes with accessible links for SSR output
+function replaceVideoIframesForSsr(html: string): string {
+  // Match video iframes and extract the src URL
+  return html.replace(
+    /<iframe[^>]*class="video_iframe[^"]*"[^>]*src="([^"]*)"[^>]*>(?:<\/iframe>)?/gi,
+    (_, src: string) => {
+      const decodedSrc = src.replace(/&amp;/g, "&");
+      return `<div style="border:1px solid #ddd;padding:16px;margin:16px 0;border-radius:8px;background:#f9f9f9;">` +
+        `<p style="margin:0 0 8px;font-weight:bold;">📹 此处包含视频内容</p>` +
+        `<p style="margin:0;"><a href="${decodedSrc}" target="_blank" rel="noopener">${decodedSrc}</a></p>` +
+        `</div>`;
+    }
+  );
+}
+
 // Proxy WeChat image URLs for SSR output
 function proxyImagesForSsr(html: string): string {
   const proxyBase = `${Deno.env.get("SUPABASE_URL")}/functions/v1/image-proxy?url=`;
@@ -266,6 +281,7 @@ async function handleReadMode(slug: string | null, articleId: string | null): Pr
     sanitized = sanitized.replace(/visibility:\s*hidden[^;]*;?/g, "");
     sanitized = sanitized.replace(/opacity:\s*0[^;]*;?/g, "");
     sanitized = proxyImagesForSsr(sanitized);
+    sanitized = replaceVideoIframesForSsr(sanitized);
     contentBody = sanitized;
   } else {
     contentBody = formatContentToHtml(article.content);
