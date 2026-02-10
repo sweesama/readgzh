@@ -373,6 +373,8 @@ Deno.serve(async (req) => {
       }
 
       // Otherwise, treat as a scrape request with ?url= param
+      // GET ?url= returns readable HTML (scrape + redirect to SSR page)
+      // This enables: AI visits ?url=WECHAT_LINK → gets readable article directly
       const url = params.get("url");
       if (!url) {
         return new Response(
@@ -380,8 +382,7 @@ Deno.serve(async (req) => {
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      // Fall through to scrape logic below with this url
-      return await handleScrape(url);
+      return await handleScrapeAndRedirect(url);
     }
 
     // POST request: scrape or submit article
@@ -500,6 +501,62 @@ async function handleDirectSubmit(body: Record<string, unknown>): Promise<Respon
     JSON.stringify({ success: true, cached: false, articleId: saved.id }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
+}
+
+// GET ?url= handler: scrape, store, then redirect to SSR HTML page
+async function handleScrapeAndRedirect(url: string): Promise<Response> {
+  const baseUrl = Deno.env.get("SUPABASE_URL")!;
+  const fnUrl = `${baseUrl}/functions/v1/wechat-reader`;
+
+  if (!url.includes("mp.weixin.qq.com") && !url.includes("weixin.qq.com")) {
+    return new Response(
+      `<!DOCTYPE html><html><body><h1>错误</h1><p>请提供有效的微信公众号文章链接</p></body></html>`,
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } }
+    );
+  }
+
+  // First try cache
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+
+  let slug: string | null = null;
+  const slugMatch = url.match(/\/(s\/[^?#]+)/);
+  if (slugMatch) slug = slugMatch[1];
+
+  let existing = null;
+  if (slug) {
+    const { data } = await supabase.from("articles").select("id, slug").eq("slug", slug).maybeSingle();
+    existing = data;
+  }
+  if (!existing) {
+    const { data } = await supabase.from("articles").select("id, slug").eq("source_url", url).maybeSingle();
+    existing = data;
+  }
+
+  if (existing) {
+    // Already cached – redirect to SSR page
+    const slugId = existing.slug?.replace(/^s\//, "") || "";
+    const redirectUrl = slugId ? `${fnUrl}?s=${slugId}` : `${fnUrl}?id=${existing.id}`;
+    return Response.redirect(redirectUrl, 302);
+  }
+
+  // Not cached – scrape via handleScrape (which stores it), then redirect
+  const scrapeResult = await handleScrape(url);
+  const resultData = await scrapeResult.json();
+
+  if (!resultData.success) {
+    return new Response(
+      `<!DOCTYPE html><html><body><h1>抓取失败</h1><p>${resultData.error || "未知错误"}</p><p>请稍后重试</p></body></html>`,
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } }
+    );
+  }
+
+  // Redirect to SSR page
+  const savedSlug = resultData.slug?.replace(/^s\//, "") || "";
+  const redirectUrl = savedSlug ? `${fnUrl}?s=${savedSlug}` : `${fnUrl}?id=${resultData.articleId}`;
+  return Response.redirect(redirectUrl, 302);
 }
 
 async function handleScrape(url: string): Promise<Response> {
