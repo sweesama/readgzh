@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import HeroSection from "@/components/home/HeroSection";
 import FeaturesSection from "@/components/home/FeaturesSection";
 import AdvantagesSection from "@/components/home/AdvantagesSection";
@@ -58,39 +58,67 @@ const Index = () => {
 
 /** Vertical falling Matrix rain effect */
 const MatrixRain = () => {
-  const columns = 30;
-  const chars = "01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン";
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    const chars = "01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン<>/{}=;";
+    const fontSize = 14;
+    const columns = Math.floor(canvas.width / fontSize);
+    const drops: number[] = Array.from({ length: columns }, () => Math.random() * -100);
+
+    const draw = () => {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < drops.length; i++) {
+        const char = chars[Math.floor(Math.random() * chars.length)];
+        const x = i * fontSize;
+        const y = drops[i] * fontSize;
+
+        // Bright head
+        ctx.fillStyle = `rgba(0, 255, 70, ${0.9 + Math.random() * 0.1})`;
+        ctx.font = `${fontSize}px monospace`;
+        ctx.fillText(char, x, y);
+
+        // Dimmer trail
+        if (drops[i] > 1) {
+          const trailChar = chars[Math.floor(Math.random() * chars.length)];
+          ctx.fillStyle = "rgba(0, 180, 50, 0.3)";
+          ctx.fillText(trailChar, x, y - fontSize);
+        }
+
+        if (y > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i] += 0.5 + Math.random() * 0.5;
+      }
+    };
+
+    const interval = setInterval(draw, 45);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("resize", resize);
+    };
+  }, []);
 
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {Array.from({ length: columns }).map((_, i) => {
-        const duration = 4 + Math.random() * 8;
-        const delay = Math.random() * -12;
-        const left = (i / columns) * 100;
-        const opacity = 0.05 + Math.random() * 0.15;
-        const text = Array.from({ length: 40 }, () => chars[Math.floor(Math.random() * chars.length)]).join("\n");
-
-        return (
-          <div
-            key={i}
-            className="absolute top-0 text-green-500 font-mono text-xs whitespace-pre leading-tight select-none"
-            style={{
-              left: `${left}%`,
-              opacity,
-              animation: `matrixFall ${duration}s linear ${delay}s infinite`,
-            }}
-          >
-            {text}
-          </div>
-        );
-      })}
-      <style>{`
-        @keyframes matrixFall {
-          0% { transform: translateY(-100%); }
-          100% { transform: translateY(100vh); }
-        }
-      `}</style>
-    </div>
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 pointer-events-none"
+      style={{ opacity: 0.4 }}
+    />
   );
 };
 
