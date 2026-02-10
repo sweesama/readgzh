@@ -208,18 +208,32 @@ function formatContentToHtml(text: string): string {
 }
 
 // Replace video iframes with accessible links for SSR output
-function replaceVideoIframesForSsr(html: string): string {
-  // Match video iframes and extract the src URL
-  return html.replace(
-    /<iframe[^>]*class="video_iframe[^"]*"[^>]*src="([^"]*)"[^>]*>(?:<\/iframe>)?/gi,
-    (_, src: string) => {
-      const decodedSrc = src.replace(/&amp;/g, "&");
-      return `<div style="border:1px solid #ddd;padding:16px;margin:16px 0;border-radius:8px;background:#f9f9f9;">` +
-        `<p style="margin:0 0 8px;font-weight:bold;">📹 此处包含视频内容</p>` +
-        `<p style="margin:0;"><a href="${decodedSrc}" target="_blank" rel="noopener">${decodedSrc}</a></p>` +
-        `</div>`;
+function replaceVideoIframesForSsr(html: string, sourceUrl?: string | null): string {
+  const proxyBase = `${Deno.env.get("SUPABASE_URL")}/functions/v1/image-proxy?url=`;
+  let result = html.replace(
+    /<iframe[^>]*class="video_iframe[^"]*"[^>]*>/gi,
+    (match) => {
+      // Extract cover image
+      const coverMatch = match.match(/data-cover="([^"]*)"/);
+      const coverUrl = coverMatch ? coverMatch[1].replace(/&amp;/g, "&") : null;
+      const proxiedCover = coverUrl ? `${proxyBase}${encodeURIComponent(coverUrl)}` : null;
+      const linkUrl = sourceUrl || "#";
+
+      const coverHtml = proxiedCover
+        ? `<div style="position:relative;background:#000;text-align:center;"><img src="${proxiedCover}" style="max-width:100%;opacity:0.85;" alt="视频封面"/><span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:3em;">▶️</span></div>`
+        : `<div style="background:#000;padding:40px;text-align:center;"><span style="font-size:3em;">▶️</span></div>`;
+
+      return `<div style="border:1px solid #ddd;border-radius:8px;overflow:hidden;margin:16px 0;">` +
+        `<a href="${linkUrl}" target="_blank" rel="noopener" style="display:block;text-decoration:none;color:inherit;">` +
+        coverHtml +
+        `<div style="padding:12px 16px;background:#f9f9f9;">` +
+        `<b>📹 点击查看原文播放视频</b>` +
+        `</div></a></div>`;
     }
   );
+  result = result.replace(/<\/iframe>/gi, "");
+  result = result.replace(/<iframe[\s\S]*?<\/iframe>/gi, "");
+  return result;
 }
 
 // Proxy WeChat image URLs for SSR output
@@ -281,7 +295,7 @@ async function handleReadMode(slug: string | null, articleId: string | null): Pr
     sanitized = sanitized.replace(/visibility:\s*hidden[^;]*;?/g, "");
     sanitized = sanitized.replace(/opacity:\s*0[^;]*;?/g, "");
     sanitized = proxyImagesForSsr(sanitized);
-    sanitized = replaceVideoIframesForSsr(sanitized);
+    sanitized = replaceVideoIframesForSsr(sanitized, article.source_url);
     contentBody = sanitized;
   } else {
     contentBody = formatContentToHtml(article.content);
