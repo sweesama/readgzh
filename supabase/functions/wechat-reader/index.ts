@@ -296,14 +296,28 @@ async function handleReadMode(slug: string | null, articleId: string | null): Pr
     sanitized = sanitized.replace(/\s+on\w+="[^"]*"/g, "");
     sanitized = sanitized.replace(/visibility:\s*hidden[^;]*;?/g, "");
     sanitized = sanitized.replace(/opacity:\s*0[^;]*;?/g, "");
-    // Strip ALL inline style attributes – AI doesn't need styling, saves ~50%+ characters
+    // Strip ALL inline style attributes – AI doesn't need styling
     sanitized = sanitized.replace(/\s*style="[^"]*"/gi, "");
     sanitized = sanitized.replace(/\s*style='[^']*'/gi, "");
-    // Remove class attributes too – no CSS in SSR output makes them pointless
+    // Remove class attributes
     sanitized = sanitized.replace(/\s*class="[^"]*"/gi, "");
     sanitized = sanitized.replace(/\s*class='[^']*'/gi, "");
-    // Remove empty divs/spans left after stripping
-    sanitized = sanitized.replace(/<(div|span|section)>\s*<\/\1>/gi, "");
+    // Remove all data-* and id attributes (zero value for AI)
+    sanitized = sanitized.replace(/\s*data-[\w-]+="[^"]*"/gi, "");
+    sanitized = sanitized.replace(/\s*id="[^"]*"/gi, "");
+    // Remove WeChat custom tags (mp-common-profile, mp-style-type, etc.)
+    sanitized = sanitized.replace(/<mp-[\w-]+[^>]*>[\s\S]*?<\/mp-[\w-]+>/gi, "");
+    sanitized = sanitized.replace(/<mp-[\w-]+[^>]*\/>/gi, "");
+    // Replace <br> with real newlines – saves tokens, easier for AI to parse
+    sanitized = sanitized.replace(/<br\s*\/?>/gi, "\n");
+    // Collapse &nbsp; to regular spaces
+    sanitized = sanitized.replace(/&nbsp;/gi, " ");
+    // Remove empty tags and deeply nested empty wrappers (run multiple passes)
+    for (let i = 0; i < 3; i++) {
+      sanitized = sanitized.replace(/<(div|span|section|p)>\s*<\/\1>/gi, "");
+    }
+    // Collapse excessive whitespace/newlines
+    sanitized = sanitized.replace(/\n{3,}/g, "\n\n");
     sanitized = proxyImagesForSsr(sanitized);
     sanitized = replaceVideoIframesForSsr(sanitized, article.source_url);
     contentBody = sanitized;
