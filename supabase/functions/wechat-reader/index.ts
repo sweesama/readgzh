@@ -296,6 +296,14 @@ async function handleReadMode(slug: string | null, articleId: string | null): Pr
     sanitized = sanitized.replace(/\s+on\w+="[^"]*"/g, "");
     sanitized = sanitized.replace(/visibility:\s*hidden[^;]*;?/g, "");
     sanitized = sanitized.replace(/opacity:\s*0[^;]*;?/g, "");
+    // Strip ALL inline style attributes – AI doesn't need styling, saves ~50%+ characters
+    sanitized = sanitized.replace(/\s*style="[^"]*"/gi, "");
+    sanitized = sanitized.replace(/\s*style='[^']*'/gi, "");
+    // Remove class attributes too – no CSS in SSR output makes them pointless
+    sanitized = sanitized.replace(/\s*class="[^"]*"/gi, "");
+    sanitized = sanitized.replace(/\s*class='[^']*'/gi, "");
+    // Remove empty divs/spans left after stripping
+    sanitized = sanitized.replace(/<(div|span|section)>\s*<\/\1>/gi, "");
     sanitized = proxyImagesForSsr(sanitized);
     sanitized = replaceVideoIframesForSsr(sanitized, article.source_url);
     contentBody = sanitized;
