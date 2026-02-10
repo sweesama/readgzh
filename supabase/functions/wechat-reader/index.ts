@@ -503,11 +503,8 @@ async function handleDirectSubmit(body: Record<string, unknown>): Promise<Respon
   );
 }
 
-// GET ?url= handler: scrape, store, then redirect to SSR HTML page
+// GET ?url= handler: scrape, store, then return SSR HTML directly (no redirect)
 async function handleScrapeAndRedirect(url: string): Promise<Response> {
-  const baseUrl = Deno.env.get("SUPABASE_URL")!;
-  const fnUrl = `${baseUrl}/functions/v1/wechat-reader`;
-
   if (!url.includes("mp.weixin.qq.com") && !url.includes("weixin.qq.com")) {
     return new Response(
       `<!DOCTYPE html><html><body><h1>错误</h1><p>请提供有效的微信公众号文章链接</p></body></html>`,
@@ -536,13 +533,12 @@ async function handleScrapeAndRedirect(url: string): Promise<Response> {
   }
 
   if (existing) {
-    // Already cached – redirect to SSR page
+    // Already cached – return SSR HTML directly
     const slugId = existing.slug?.replace(/^s\//, "") || "";
-    const redirectUrl = slugId ? `${fnUrl}?s=${slugId}` : `${fnUrl}?id=${existing.id}`;
-    return Response.redirect(redirectUrl, 302);
+    return await handleReadMode(slugId || null, slugId ? null : existing.id);
   }
 
-  // Not cached – scrape via handleScrape (which stores it), then redirect
+  // Not cached – scrape via handleScrape (which stores it), then return HTML
   const scrapeResult = await handleScrape(url);
   const resultData = await scrapeResult.json();
 
@@ -553,10 +549,9 @@ async function handleScrapeAndRedirect(url: string): Promise<Response> {
     );
   }
 
-  // Redirect to SSR page
+  // Return SSR HTML directly (no redirect)
   const savedSlug = resultData.slug?.replace(/^s\//, "") || "";
-  const redirectUrl = savedSlug ? `${fnUrl}?s=${savedSlug}` : `${fnUrl}?id=${resultData.articleId}`;
-  return Response.redirect(redirectUrl, 302);
+  return await handleReadMode(savedSlug || null, savedSlug ? null : resultData.articleId);
 }
 
 async function handleScrape(url: string): Promise<Response> {
