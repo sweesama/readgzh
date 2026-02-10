@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,21 @@ const Index = () => {
   const navigate = useNavigate();
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Auto-submit if ?url= param is present (enables: AI visits site?url=WECHAT_LINK)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const autoUrl = params.get("url");
+    if (autoUrl && autoUrl.includes("weixin.qq.com")) {
+      setUrl(autoUrl);
+      // Clear the param from URL to avoid re-trigger
+      window.history.replaceState({}, "", "/");
+      // Auto-submit after a tick
+      setTimeout(() => {
+        document.getElementById("auto-submit-trigger")?.click();
+      }, 100);
+    }
+  }, []);
 
   const handleSubmit = async () => {
     const trimmedUrl = url.trim();
@@ -114,6 +129,7 @@ const Index = () => {
                     className="h-12 text-base"
                   />
                   <Button
+                    id="auto-submit-trigger"
                     onClick={handleSubmit}
                     disabled={isLoading || !url.trim()}
                     className="h-12 px-6 shrink-0"
