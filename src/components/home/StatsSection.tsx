@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { FileText, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-const StatsSection = () => {
+const StatsWidget = () => {
   const [totalArticles, setTotalArticles] = useState<number | null>(null);
   const [totalViews, setTotalViews] = useState<number | null>(null);
 
@@ -19,27 +19,26 @@ const StatsSection = () => {
   }, []);
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="max-w-2xl mx-auto">
-        <div className="grid grid-cols-2 gap-6">
-          <div className="flex flex-col items-center gap-2 p-6 rounded-2xl border bg-card">
-            <FileText className="h-6 w-6 text-primary mb-1" />
-            <span className="text-3xl font-bold text-foreground">
-              {totalArticles !== null ? totalArticles.toLocaleString() : "–"}
-            </span>
-            <span className="text-sm text-muted-foreground">已转换文章</span>
-          </div>
-          <div className="flex flex-col items-center gap-2 p-6 rounded-2xl border bg-card">
-            <Eye className="h-6 w-6 text-primary mb-1" />
-            <span className="text-3xl font-bold text-foreground">
-              {totalViews !== null ? totalViews.toLocaleString() : "–"}
-            </span>
-            <span className="text-sm text-muted-foreground">累计阅读</span>
-          </div>
+    <div className="fixed top-4 right-4 z-50">
+      <div className="flex items-center gap-3 bg-card/80 backdrop-blur-md border rounded-full px-4 py-2 shadow-sm text-xs">
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <FileText className="h-3.5 w-3.5 text-primary" />
+          <span className="font-semibold text-foreground">
+            {totalArticles !== null ? totalArticles.toLocaleString() : "–"}
+          </span>
+          <span>篇</span>
+        </div>
+        <div className="w-px h-3.5 bg-border" />
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <Eye className="h-3.5 w-3.5 text-primary" />
+          <span className="font-semibold text-foreground">
+            {totalViews !== null ? totalViews.toLocaleString() : "–"}
+          </span>
+          <span>次阅读</span>
         </div>
       </div>
     </div>
   );
 };
 
-export default StatsSection;
+export default StatsWidget;
