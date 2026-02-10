@@ -56,6 +56,44 @@ const Index = () => {
   );
 };
 
+/** Vertical falling Matrix rain effect */
+const MatrixRain = () => {
+  const columns = 30;
+  const chars = "01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン";
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {Array.from({ length: columns }).map((_, i) => {
+        const duration = 4 + Math.random() * 8;
+        const delay = Math.random() * -12;
+        const left = (i / columns) * 100;
+        const opacity = 0.05 + Math.random() * 0.15;
+        const text = Array.from({ length: 40 }, () => chars[Math.floor(Math.random() * chars.length)]).join("\n");
+
+        return (
+          <div
+            key={i}
+            className="absolute top-0 text-green-500 font-mono text-xs whitespace-pre leading-tight select-none"
+            style={{
+              left: `${left}%`,
+              opacity,
+              animation: `matrixFall ${duration}s linear ${delay}s infinite`,
+            }}
+          >
+            {text}
+          </div>
+        );
+      })}
+      <style>{`
+        @keyframes matrixFall {
+          0% { transform: translateY(-100%); }
+          100% { transform: translateY(100vh); }
+        }
+      `}</style>
+    </div>
+  );
+};
+
 /** Matrix-style AI perspective of the homepage */
 const MatrixView = ({ onExit }: { onExit: () => void }) => {
   const [lines, setLines] = useState<string[]>([]);
@@ -116,10 +154,8 @@ const MatrixView = ({ onExit }: { onExit: () => void }) => {
 
   return (
     <div className="min-h-screen bg-black text-green-400 font-mono relative overflow-hidden">
-      {/* Matrix rain background */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none select-none overflow-hidden leading-none text-[10px] text-green-500 break-all whitespace-pre-wrap">
-        {"01".repeat(5000)}
-      </div>
+      {/* Matrix rain columns */}
+      <MatrixRain />
 
       {/* Exit button */}
       <div className="fixed top-4 left-4 z-50">
