@@ -103,13 +103,15 @@ const MatrixView = ({ onExit }: { onExit: () => void }) => {
     let i = 0;
     const interval = setInterval(() => {
       if (i < contentLines.length) {
-        setLines((prev) => [...prev, contentLines[i]]);
+        const line = contentLines[i];
+        setLines((prev) => [...prev, line]);
         i++;
       } else {
         clearInterval(interval);
       }
     }, 60);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -146,7 +148,7 @@ const MatrixView = ({ onExit }: { onExit: () => void }) => {
           {/* Lines */}
           <div className="space-y-0.5 text-sm leading-relaxed">
             {lines.map((line, i) => (
-              <div key={i} className={`${line.startsWith(">") ? "text-green-300" : line.startsWith("  ✓") ? "text-emerald-400" : "text-green-500/80"}`}>
+              <div key={i} className={`${line?.startsWith(">") ? "text-green-300" : line?.startsWith("  ✓") ? "text-emerald-400" : "text-green-500/80"}`}>
                 {line || "\u00A0"}
               </div>
             ))}
