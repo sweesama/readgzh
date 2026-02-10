@@ -41,13 +41,37 @@ function proxyWechatImages(html: string): string {
   );
 }
 
+// Replace video iframes with clickable cards, remove other iframes
+function replaceVideoIframes(html: string): string {
+  // First, replace video iframes with playable link cards
+  let result = html.replace(
+    /<iframe[^>]*class="video_iframe[^"]*"[^>]*src="([^"]*)"[^>]*>(?:<\/iframe>)?/gi,
+    (_, src: string) => {
+      const decodedSrc = decodeHtmlEntities(src);
+      return `<div style="border:1px solid hsl(var(--border));border-radius:12px;overflow:hidden;margin:16px 0;">` +
+        `<a href="${decodedSrc}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:12px;padding:16px;text-decoration:none;color:inherit;background:hsl(var(--muted));">` +
+        `<span style="font-size:2em;">▶️</span>` +
+        `<span style="flex:1;">` +
+        `<span style="display:block;font-weight:600;color:hsl(var(--foreground));">点击播放视频</span>` +
+        `<span style="display:block;font-size:0.85em;color:hsl(var(--muted-foreground));margin-top:2px;">将在微信视频播放页打开</span>` +
+        `</span>` +
+        `</a></div>`;
+    }
+  );
+  // Remove remaining iframes
+  result = result.replace(/<iframe[\s\S]*?<\/iframe>/gi, "");
+  return result;
+}
+
 // Sanitize HTML - remove dangerous elements but keep formatting
 function sanitizeHtml(html: string): string {
   // Remove script/style tags
   let clean = html.replace(/<script[\s\S]*?<\/script>/gi, "");
   clean = clean.replace(/<style[\s\S]*?<\/style>/gi, "");
   clean = clean.replace(/<noscript[\s\S]*?<\/noscript>/gi, "");
-  clean = clean.replace(/<iframe[\s\S]*?<\/iframe>/gi, "");
+
+  // Replace video iframes with cards, remove others
+  clean = replaceVideoIframes(clean);
 
   // Remove event handlers
   clean = clean.replace(/\s+on\w+="[^"]*"/g, "");
