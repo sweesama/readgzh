@@ -5,7 +5,7 @@ import FeaturesSection from "@/components/home/FeaturesSection";
 import AdvantagesSection from "@/components/home/AdvantagesSection";
 import AIGuideSection from "@/components/home/AIGuideSection";
 import StatsWidget from "@/components/home/StatsSection";
-import { Bot, Eye } from "lucide-react";
+import { Bot, Eye, BookOpen, Code } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
@@ -44,6 +44,22 @@ const Index = () => {
       </div>
 
       <HeroSection />
+      {/* Navigation bar */}
+      <div className="container mx-auto px-4 py-4 flex justify-center gap-3">
+        <Link to="/articles">
+          <Button variant="outline" className="gap-2">
+            <BookOpen className="h-4 w-4" />
+            文章库
+          </Button>
+        </Link>
+        <Link to="/docs">
+          <Button variant="outline" className="gap-2">
+            <Code className="h-4 w-4" />
+            开发者文档
+          </Button>
+        </Link>
+      </div>
+
       <FeaturesSection />
       <AdvantagesSection />
       <AIGuideSection />
@@ -52,7 +68,8 @@ const Index = () => {
           <p>微信文章 AI 阅读器 - 让 AI 能够读取微信公众号内容</p>
           <p className="mt-2">
             本服务仅用于个人学习和研究目的 ·{" "}
-            <Link to="/docs" className="text-primary hover:underline">开发者文档</Link>
+            <Link to="/docs" className="text-primary hover:underline">开发者文档</Link> ·{" "}
+            <Link to="/articles" className="text-primary hover:underline">文章库</Link>
           </p>
         </div>
       </footer>
