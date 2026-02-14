@@ -374,6 +374,63 @@ async function handleReadMode(slug: string | null, articleId: string | null): Pr
   });
 }
 
+// ===== Rate Limiting =====
+function getClientIp(req: Request): string {
+  // Check common proxy headers
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0].trim();
+  const realIp = req.headers.get("x-real-ip");
+  if (realIp) return realIp.trim();
+  return "unknown";
+}
+
+const DAILY_LIMIT = 100;
+
+async function checkRateLimit(req: Request): Promise<{ allowed: boolean; current: number; remaining: number } | null> {
+  const ip = getClientIp(req);
+  if (ip === "unknown") return { allowed: true, current: 0, remaining: DAILY_LIMIT };
+
+  try {
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+    const { data, error } = await supabase.rpc("check_rate_limit", {
+      p_ip: ip,
+      p_daily_limit: DAILY_LIMIT,
+    });
+    if (error) {
+      console.error("Rate limit check error:", error);
+      return { allowed: true, current: 0, remaining: DAILY_LIMIT }; // fail open
+    }
+    return data as { allowed: boolean; current: number; remaining: number };
+  } catch (err) {
+    console.error("Rate limit error:", err);
+    return { allowed: true, current: 0, remaining: DAILY_LIMIT }; // fail open
+  }
+}
+
+function rateLimitResponse(rateInfo: { current: number; remaining: number }): Response {
+  return new Response(
+    JSON.stringify({
+      success: false,
+      error: `请求过于频繁，每天限制 ${DAILY_LIMIT} 次调用`,
+      hint: "如需更多额度，请联系我们获取 API Key",
+      current: rateInfo.current,
+      limit: DAILY_LIMIT,
+    }),
+    {
+      status: 200,
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/json",
+        "X-RateLimit-Limit": String(DAILY_LIMIT),
+        "X-RateLimit-Remaining": String(rateInfo.remaining),
+      },
+    }
+  );
+}
+
 // ===== Main Handler =====
 console.log("wechat-reader function loaded");
 Deno.serve(async (req) => {
@@ -388,15 +445,13 @@ Deno.serve(async (req) => {
       const slug = params.get("s");
       const articleId = params.get("id");
 
-      // If s= or id= param present, serve static HTML for AI bots
+      // Read mode (serving cached articles) - no rate limit needed
       if (slug || articleId) {
         console.log("Read mode: slug=", slug, "id=", articleId);
         return await handleReadMode(slug, articleId);
       }
 
-      // Otherwise, treat as a scrape request with ?url= param
-      // GET ?url= returns readable HTML (scrape + redirect to SSR page)
-      // This enables: AI visits ?url=WECHAT_LINK → gets readable article directly
+      // Scrape request with ?url= - rate limit applies
       const url = params.get("url");
       if (!url) {
         return new Response(
@@ -404,6 +459,13 @@ Deno.serve(async (req) => {
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
+      // Check rate limit for scrape requests
+      const rateInfo = await checkRateLimit(req);
+      if (rateInfo && !rateInfo.allowed) {
+        return rateLimitResponse(rateInfo);
+      }
+
       return await handleScrapeAndRedirect(url);
     }
 
@@ -411,12 +473,16 @@ Deno.serve(async (req) => {
     if (req.method === "POST") {
       const body = await req.json();
 
-      // Handle direct article submission (from bookmarklet)
+      // Handle direct article submission (from bookmarklet) - rate limit applies
       if (body.action === "submit") {
+        const rateInfo = await checkRateLimit(req);
+        if (rateInfo && !rateInfo.allowed) {
+          return rateLimitResponse(rateInfo);
+        }
         return await handleDirectSubmit(body);
       }
 
-      // Handle URL scraping
+      // Handle URL scraping - rate limit applies
       const url = body.url;
       if (!url) {
         return new Response(
@@ -424,6 +490,13 @@ Deno.serve(async (req) => {
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
+      // Check rate limit
+      const rateInfo = await checkRateLimit(req);
+      if (rateInfo && !rateInfo.allowed) {
+        return rateLimitResponse(rateInfo);
+      }
+
       return await handleScrape(url);
     }
 
