@@ -782,6 +782,9 @@ async function handleScrape(url: string): Promise<Response> {
       );
     }
 
+    // Minimum content length to consider extraction successful
+    const MIN_CONTENT_LENGTH = 100;
+
     // Try scraping methods
     let html = await tryDirectFetch(url);
 
@@ -801,39 +804,71 @@ async function handleScrape(url: string): Promise<Response> {
 
     // Check for verification page
     if (isVerificationPage(html)) {
-      return new Response(
-        JSON.stringify({ success: false, error: "微信需要验证，暂时无法自动抓取此文章。请稍后重试。" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Extract metadata and content
-    const metadata = extractMetadata(html);
-    let contentHtml: string;
-    let textContent: string;
-
-    // Try picture template first (小绿书 format)
-    const pictureData = extractPictureTemplate(html);
-    if (pictureData) {
-      console.log("Detected picture template (小绿书), images:", pictureData.images.length);
-      contentHtml = pictureData.contentHtml;
-      textContent = pictureData.textContent;
-      // Use og:title for picture posts if metadata extraction failed
-      if (metadata.title === "无标题") {
-        const doc = new DOMParser().parseFromString(html, "text/html");
-        const ogTitle = doc?.querySelector('meta[property="og:title"]');
-        if (ogTitle) metadata.title = (ogTitle as Element).getAttribute("content") || "无标题";
+      // Try Firecrawl as fallback for verification pages
+      const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
+      if (firecrawlKey) {
+        console.log("Verification page detected, trying Firecrawl fallback");
+        const firecrawlHtml = await tryFirecrawl(url, firecrawlKey);
+        if (firecrawlHtml && firecrawlHtml.length > 500 && !isVerificationPage(firecrawlHtml)) {
+          html = firecrawlHtml;
+        } else {
+          return new Response(
+            JSON.stringify({ success: false, error: "微信需要验证，暂时无法自动抓取此文章。请稍后重试。" }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      } else {
+        return new Response(
+          JSON.stringify({ success: false, error: "微信需要验证，暂时无法自动抓取此文章。请稍后重试。" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
-    } else {
-      // Standard article extraction
-      const extracted = extractFormattedContent(html);
-      contentHtml = extracted.contentHtml;
-      textContent = extracted.textContent;
     }
 
-    if (!textContent || textContent.length < 10) {
+    // Helper: attempt content extraction from a given HTML string
+    function tryExtractContent(srcHtml: string): { metadata: ReturnType<typeof extractMetadata>; contentHtml: string; textContent: string } {
+      const meta = extractMetadata(srcHtml);
+      // Try picture template first (小绿书 format)
+      const pictureData = extractPictureTemplate(srcHtml);
+      if (pictureData) {
+        console.log("Detected picture template (小绿书), images:", pictureData.images.length);
+        if (meta.title === "无标题") {
+          const doc = new DOMParser().parseFromString(srcHtml, "text/html");
+          const ogTitle = doc?.querySelector('meta[property="og:title"]');
+          if (ogTitle) meta.title = (ogTitle as Element).getAttribute("content") || "无标题";
+        }
+        return { metadata: meta, contentHtml: pictureData.contentHtml, textContent: pictureData.textContent };
+      }
+      // Standard article extraction
+      const extracted = extractFormattedContent(srcHtml);
+      return { metadata: meta, contentHtml: extracted.contentHtml, textContent: extracted.textContent };
+    }
+
+    // First extraction attempt
+    let result = tryExtractContent(html);
+
+    // If content is too short, try Firecrawl (which renders JS) as fallback
+    if (!result.textContent || result.textContent.length < MIN_CONTENT_LENGTH) {
+      console.log(`Content too short (${result.textContent?.length || 0} chars), trying Firecrawl fallback`);
+      const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
+      if (firecrawlKey) {
+        const firecrawlHtml = await tryFirecrawl(url, firecrawlKey);
+        if (firecrawlHtml && firecrawlHtml.length > 500) {
+          const firecrawlResult = tryExtractContent(firecrawlHtml);
+          if (firecrawlResult.textContent && firecrawlResult.textContent.length > (result.textContent?.length || 0)) {
+            console.log(`Firecrawl got better content: ${firecrawlResult.textContent.length} chars`);
+            result = firecrawlResult;
+            html = firecrawlHtml;
+          }
+        }
+      }
+    }
+
+    const { metadata, contentHtml, textContent } = result;
+
+    if (!textContent || textContent.length < MIN_CONTENT_LENGTH) {
       return new Response(
-        JSON.stringify({ success: false, error: "无法提取文章内容，文章可能已被删除或设置了访问限制。" }),
+        JSON.stringify({ success: false, error: "无法提取文章内容，文章可能已被删除或需要在微信中打开。", hint: "部分文章内容通过 JavaScript 动态加载，服务端无法直接获取。" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
