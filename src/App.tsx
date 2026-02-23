@@ -3,7 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import WebMCPProvider from "./components/WebMCPProvider";
+import { lazy, Suspense } from "react";
+const WebMCPProvider = lazy(() => import("./components/WebMCPProvider"));
 import Index from "./pages/Index";
 import ArticlePage from "./pages/ArticlePage";
 import ArticlesPage from "./pages/ArticlesPage";
@@ -16,7 +17,7 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <WebMCPProvider />
+      <Suspense fallback={null}><WebMCPProvider /></Suspense>
       <Toaster />
       <Sonner />
       <BrowserRouter>
