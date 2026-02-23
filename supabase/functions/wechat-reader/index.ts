@@ -32,6 +32,92 @@ const ALLOWED_TAGS = new Set([
   "a", "sup", "sub", "hr",
 ]);
 
+// ===== Picture Template (小绿书) Support =====
+// Detect and extract content from WeChat picture/album posts
+// These posts have no #js_content; data lives in window.picture_page_info_list and og:description
+
+function isPictureTemplate(html: string): boolean {
+  return html.includes("picture_page_info_list") && !html.includes('id="js_content"');
+}
+
+interface PicturePageInfo {
+  cdn_url: string;
+  width: number;
+  height: number;
+}
+
+function extractPictureTemplate(html: string): { contentHtml: string; textContent: string; images: PicturePageInfo[] } | null {
+  if (!isPictureTemplate(html)) return null;
+
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  if (!doc) return null;
+
+  // Extract text from og:description (contains the full text with \x0a linebreaks)
+  const ogDesc = doc.querySelector('meta[property="og:description"]');
+  let textContent = "";
+  if (ogDesc) {
+    textContent = (ogDesc as Element).getAttribute("content") || "";
+    // Decode \x0a to newlines, \x26amp; to &
+    textContent = textContent
+      .replace(/\\x0a/g, "\n")
+      .replace(/\\x26amp;/g, "&")
+      .replace(/\\x26/g, "&")
+      .replace(/&nbsp;/g, " ")
+      .trim();
+  }
+
+  // Extract picture list from window.picture_page_info_list
+  // Only grab top-level entries (not watermark_info or share_cover sub-objects)
+  const images: PicturePageInfo[] = [];
+  const listMatch = html.match(/window\.picture_page_info_list\s*=\s*\[([\s\S]*?)\];\s*\n/);
+  if (listMatch) {
+    // Split by top-level object boundaries: each main image starts with "{\n      width:"
+    const entries = listMatch[1].split(/\},\s*\n\s*\{/);
+    for (const entry of entries) {
+      // Only grab the FIRST cdn_url and width/height in each entry (the main image)
+      const cdnMatch = entry.match(/^\s*(?:\{)?\s*\n?\s*width:\s*'(\d+)'[\s\S]*?height:\s*'(\d+)'[\s\S]*?cdn_url:\s*'([^']+)'/);
+      if (!cdnMatch) {
+        // Try alternate order: cdn_url before width/height
+        const altMatch = entry.match(/^\s*(?:\{)?\s*\n?\s*cdn_url:\s*'([^']+)'[\s\S]*?width:\s*'(\d+)'[\s\S]*?height:\s*'(\d+)'/);
+        if (altMatch) {
+          images.push({
+            cdn_url: altMatch[1].replace(/\\x26amp;/g, "&").replace(/\\x26/g, "&"),
+            width: parseInt(altMatch[2]),
+            height: parseInt(altMatch[3]),
+          });
+        }
+      } else {
+        images.push({
+          cdn_url: cdnMatch[3].replace(/\\x26amp;/g, "&").replace(/\\x26/g, "&"),
+          width: parseInt(cdnMatch[1]),
+          height: parseInt(cdnMatch[2]),
+        });
+      }
+    }
+  }
+
+  if (!textContent && images.length === 0) return null;
+
+  // Build HTML content with images and text
+  const proxyBase = `${Deno.env.get("SUPABASE_URL")}/functions/v1/image-proxy?url=`;
+  const imgHtml = images
+    .map((img) => {
+      const proxied = `${proxyBase}${encodeURIComponent(img.cdn_url)}`;
+      return `<figure><img src="${proxied}" width="${img.width}" height="${img.height}" alt="图片" style="max-width:100%;height:auto;" /></figure>`;
+    })
+    .join("\n");
+
+  const textHtml = textContent
+    .split("\n")
+    .filter((l) => l.trim())
+    .map((l) => `<p>${l}</p>`)
+    .join("\n");
+
+  const contentHtml = imgHtml + (textHtml ? `\n<div class="picture-text">${textHtml}</div>` : "");
+
+  return { contentHtml, textContent, images };
+}
+
 // Clean and extract formatted HTML from WeChat content
 function extractFormattedContent(html: string): { contentHtml: string; textContent: string } {
   const doc = new DOMParser().parseFromString(html, "text/html");
@@ -723,9 +809,29 @@ async function handleScrape(url: string): Promise<Response> {
 
     // Extract metadata and content
     const metadata = extractMetadata(html);
-    const { contentHtml, textContent } = extractFormattedContent(html);
+    let contentHtml: string;
+    let textContent: string;
 
-    if (!textContent || textContent.length < 20) {
+    // Try picture template first (小绿书 format)
+    const pictureData = extractPictureTemplate(html);
+    if (pictureData) {
+      console.log("Detected picture template (小绿书), images:", pictureData.images.length);
+      contentHtml = pictureData.contentHtml;
+      textContent = pictureData.textContent;
+      // Use og:title for picture posts if metadata extraction failed
+      if (metadata.title === "无标题") {
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        const ogTitle = doc?.querySelector('meta[property="og:title"]');
+        if (ogTitle) metadata.title = (ogTitle as Element).getAttribute("content") || "无标题";
+      }
+    } else {
+      // Standard article extraction
+      const extracted = extractFormattedContent(html);
+      contentHtml = extracted.contentHtml;
+      textContent = extracted.textContent;
+    }
+
+    if (!textContent || textContent.length < 10) {
       return new Response(
         JSON.stringify({ success: false, error: "无法提取文章内容，文章可能已被删除或设置了访问限制。" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
