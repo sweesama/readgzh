@@ -3,8 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { lazy, Suspense } from "react";
-const WebMCPProvider = lazy(() => import("./components/WebMCPProvider"));
+import { lazy, Suspense, Component, type ReactNode, type ErrorInfo } from "react";
 import Index from "./pages/Index";
 import ArticlePage from "./pages/ArticlePage";
 import ArticlesPage from "./pages/ArticlesPage";
@@ -12,12 +11,30 @@ import SubmitPage from "./pages/SubmitPage";
 import DocsPage from "./pages/DocsPage";
 import NotFound from "./pages/NotFound";
 
+// Error boundary to prevent WebMCP from crashing the app
+class WebMCPErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.warn("WebMCP failed to load:", error.message);
+  }
+  render() { return this.state.hasError ? null : this.props.children; }
+}
+
+const WebMCPProvider = lazy(() =>
+  import("./components/WebMCPProvider").catch(() => ({
+    default: () => null as any,
+  }))
+);
+
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Suspense fallback={null}><WebMCPProvider /></Suspense>
+      <WebMCPErrorBoundary>
+        <Suspense fallback={null}><WebMCPProvider /></Suspense>
+      </WebMCPErrorBoundary>
       <Toaster />
       <Sonner />
       <BrowserRouter>
