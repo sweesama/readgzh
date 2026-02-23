@@ -249,9 +249,10 @@ GET ${API_URL}/wechat-reader?id=abc123-...`}
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
             <ul className="list-disc pl-5 space-y-2">
-              <li>仅支持微信公众号文章链接（mp.weixin.qq.com）</li>
+              <li>支持微信公众号普通图文文章和图片消息（小绿书）两种格式</li>
+              <li>仅支持微信公众号链接（mp.weixin.qq.com）</li>
               <li>文章内容会自动缓存，重复请求不会重新抓取</li>
-              <li>不存储原文图片，仅保留文本和基本排版</li>
+              <li>图片消息会提取所有图片和文字描述</li>
               <li>免费使用，每天每 IP 限制 100 次调用</li>
               <li>请遵守相关法律法规，仅用于个人学习和研究</li>
             </ul>
