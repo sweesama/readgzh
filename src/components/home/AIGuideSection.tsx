@@ -4,10 +4,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Copy, Check, MessageSquare } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
-const AI_GUIDE_TEMPLATE = `请帮我阅读这篇微信公众号文章，你可以通过访问以下链接获取内容：
-https://read-open-share.lovable.app/?url=（把微信链接粘贴在这里）
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
-例如：https://read-open-share.lovable.app/?url=https://mp.weixin.qq.com/s/xxxxx`;
+const AI_GUIDE_TEMPLATE = `请帮我阅读这篇微信公众号文章，你可以通过访问以下链接获取内容：
+${SUPABASE_URL}/functions/v1/wechat-reader?url=（把微信链接粘贴在这里）
+
+例如：${SUPABASE_URL}/functions/v1/wechat-reader?url=https://mp.weixin.qq.com/s/xxxxx`;
 
 const AIGuideSection = () => {
   const [copied, setCopied] = useState(false);
