@@ -21,6 +21,25 @@ function isVerificationPage(html: string): boolean {
   return patterns.some((p) => lowerHtml.includes(p.toLowerCase()));
 }
 
+// Check if WeChat returned an error page (deleted/invalid article)
+function isWeChatErrorPage(html: string): string | null {
+  const errorPatterns: [string, string][] = [
+    ["Parameter error", "链接参数错误，文章可能已被删除或链接无效。"],
+    ["该内容已被发布者删除", "该文章已被发布者删除。"],
+    ["此内容因违规无法查看", "该文章因违规已被微信删除。"],
+    ["此内容被投诉且经审核涉嫌侵权", "该文章因侵权投诉已被删除。"],
+    ["该公众号已被封禁", "该公众号已被封禁，文章不可访问。"],
+    ["此帐号已被屏蔽", "该帐号已被屏蔽，文章不可访问。"],
+    ["page_rumor", "该文章已被标记为不实信息。"],
+    ["global_error_msg", "微信返回了错误页面，文章可能不存在。"],
+    ["weui-icon-warn", "微信提示错误，文章可能已被删除或链接无效。"],
+  ];
+  for (const [pattern, message] of errorPatterns) {
+    if (html.includes(pattern)) return message;
+  }
+  return null;
+}
+
 // Allowed tags for sanitization
 const ALLOWED_TAGS = new Set([
   "p", "br", "h1", "h2", "h3", "h4", "h5", "h6",
@@ -241,8 +260,8 @@ async function tryDirectFetch(url: string): Promise<string | null> {
   }
 }
 
-// Firecrawl fallback
-async function tryFirecrawl(url: string, apiKey: string): Promise<string | null> {
+// Firecrawl fallback - returns { html, markdown } for maximum extraction
+async function tryFirecrawl(url: string, apiKey: string): Promise<{ html: string | null; markdown: string | null }> {
   console.log("Attempting Firecrawl fallback");
   try {
     const response = await fetch("https://api.firecrawl.dev/v1/scrape", {
@@ -253,9 +272,9 @@ async function tryFirecrawl(url: string, apiKey: string): Promise<string | null>
       },
       body: JSON.stringify({
         url,
-        formats: ["html"],
-        onlyMainContent: false,
-        waitFor: 8000,
+        formats: ["html", "markdown"],
+        onlyMainContent: true,
+        waitFor: 15000,
         location: { country: "CN", languages: ["zh-CN", "zh"] },
       }),
     });
@@ -263,15 +282,16 @@ async function tryFirecrawl(url: string, apiKey: string): Promise<string | null>
     const data = await response.json();
     if (!response.ok) {
       console.error("Firecrawl error:", data);
-      return null;
+      return { html: null, markdown: null };
     }
 
     const html = data.data?.html || data.html || "";
-    console.log("Firecrawl HTML length:", html.length);
-    return html || null;
+    const markdown = data.data?.markdown || data.markdown || "";
+    console.log("Firecrawl HTML length:", html.length, "Markdown length:", markdown.length);
+    return { html: html || null, markdown: markdown || null };
   } catch (error) {
     console.error("Firecrawl error:", error);
-    return null;
+    return { html: null, markdown: null };
   }
 }
 
@@ -791,7 +811,8 @@ async function handleScrape(url: string): Promise<Response> {
     if (!html || html.length < 500) {
       const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
       if (firecrawlKey) {
-        html = await tryFirecrawl(url, firecrawlKey);
+        const fc = await tryFirecrawl(url, firecrawlKey);
+        html = fc.html;
       }
     }
 
@@ -802,13 +823,24 @@ async function handleScrape(url: string): Promise<Response> {
       );
     }
 
+    // Check if WeChat returned an error page (deleted/invalid article)
+    const wechatError = isWeChatErrorPage(html);
+    if (wechatError) {
+      console.log("WeChat error page detected:", wechatError);
+      return new Response(
+        JSON.stringify({ success: false, error: wechatError }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Check for verification page
     if (isVerificationPage(html)) {
       // Try Firecrawl as fallback for verification pages
       const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
       if (firecrawlKey) {
         console.log("Verification page detected, trying Firecrawl fallback");
-        const firecrawlHtml = await tryFirecrawl(url, firecrawlKey);
+        const fc = await tryFirecrawl(url, firecrawlKey);
+        const firecrawlHtml = fc.html;
         if (firecrawlHtml && firecrawlHtml.length > 500 && !isVerificationPage(firecrawlHtml)) {
           html = firecrawlHtml;
         } else {
@@ -852,14 +884,30 @@ async function handleScrape(url: string): Promise<Response> {
       console.log(`Content too short (${result.textContent?.length || 0} chars), trying Firecrawl fallback`);
       const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
       if (firecrawlKey) {
-        const firecrawlHtml = await tryFirecrawl(url, firecrawlKey);
-        if (firecrawlHtml && firecrawlHtml.length > 500) {
-          const firecrawlResult = tryExtractContent(firecrawlHtml);
+        const fc = await tryFirecrawl(url, firecrawlKey);
+        // Try HTML extraction first
+        if (fc.html && fc.html.length > 500) {
+          const firecrawlResult = tryExtractContent(fc.html);
           if (firecrawlResult.textContent && firecrawlResult.textContent.length > (result.textContent?.length || 0)) {
-            console.log(`Firecrawl got better content: ${firecrawlResult.textContent.length} chars`);
+            console.log(`Firecrawl HTML got better content: ${firecrawlResult.textContent.length} chars`);
             result = firecrawlResult;
-            html = firecrawlHtml;
+            html = fc.html;
           }
+        }
+        // If HTML extraction still failed, use markdown directly as content
+        if ((!result.textContent || result.textContent.length < MIN_CONTENT_LENGTH) && fc.markdown && fc.markdown.length >= MIN_CONTENT_LENGTH) {
+          console.log(`Using Firecrawl markdown as content: ${fc.markdown.length} chars`);
+          const meta = extractMetadata(html);
+          // If markdown has a title line (# Title), extract it
+          const mdTitleMatch = fc.markdown.match(/^#\s+(.+)/m);
+          if (mdTitleMatch && meta.title === "无标题") {
+            meta.title = mdTitleMatch[1].trim();
+          }
+          result = {
+            metadata: meta,
+            contentHtml: fc.markdown.split("\n").filter(l => l.trim()).map(l => `<p>${l}</p>`).join("\n"),
+            textContent: fc.markdown,
+          };
         }
       }
     }
