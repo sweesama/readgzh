@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Copy, CheckCircle, Code, Globe, Bot, Search, BookOpen, Zap } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
-const SITE_URL = "https://read-open-share.lovable.app";
-const API_URL = "https://jhnnmmwgdrquwjytvvwu.supabase.co/functions/v1";
+const SITE_URL = "https://readgzh.site";
+const API_URL = "https://api.readgzh.site";
 
 const CodeBlock = ({ children, label }: { children: string; label?: string }) => {
   const [copied, setCopied] = useState(false);
@@ -78,7 +78,7 @@ const DocsPage = () => {
               最简单的方式：直接在浏览器访问以下 URL，即可获得 AI 可读的文章页面。
             </p>
             <CodeBlock label="浏览器直接访问">
-{`${API_URL}/wechat-reader?url=https://mp.weixin.qq.com/s/你的文章ID`}
+{`${API_URL}/rd?url=https://mp.weixin.qq.com/s/你的文章ID`}
             </CodeBlock>
             <p className="text-sm text-muted-foreground">
               返回一个精简的 HTML 页面，AI 可以直接读取全文内容。
@@ -102,7 +102,7 @@ const DocsPage = () => {
                 提交微信文章链接，系统自动抓取内容并缓存，返回文章 ID 和短链接。
               </p>
               <CodeBlock label="POST 请求">
-{`curl -X POST ${API_URL}/wechat-reader \\
+{`curl -X POST ${API_URL}/rd \\
   -H "Content-Type: application/json" \\
   -d '{"url": "https://mp.weixin.qq.com/s/xxxxx"}'`}
               </CodeBlock>
@@ -131,10 +131,10 @@ const DocsPage = () => {
               </p>
               <CodeBlock label="GET 请求">
 {`# 通过 slug
-GET ${API_URL}/wechat-reader?s=article-title
+GET ${API_URL}/rd?s=article-title
 
 # 通过 ID
-GET ${API_URL}/wechat-reader?id=abc123-...`}
+GET ${API_URL}/rd?id=abc123-...`}
               </CodeBlock>
             </div>
 
@@ -145,7 +145,7 @@ GET ${API_URL}/wechat-reader?id=abc123-...`}
                 GET 请求直接传入微信链接，自动抓取并返回可读 HTML。适合让 AI 直接访问。
               </p>
               <CodeBlock label="GET 请求">
-{`GET ${API_URL}/wechat-reader?url=https://mp.weixin.qq.com/s/xxxxx`}
+{`GET ${API_URL}/rd?url=https://mp.weixin.qq.com/s/xxxxx`}
               </CodeBlock>
               <p className="text-sm text-muted-foreground">
                 返回精简的 HTML 页面，无需额外处理即可被 AI 直接读取。

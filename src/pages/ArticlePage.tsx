@@ -7,6 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const API_BASE = "https://api.readgzh.site";
 
 interface Article {
   id: string;
@@ -188,8 +189,8 @@ const ArticlePage = () => {
   const handleCopyLink = async () => {
     const slugId = article?.slug?.replace(/^s\//, "") || "";
     const shareUrl = slugId
-      ? `${SUPABASE_URL}/functions/v1/wechat-reader?s=${slugId}`
-      : `${SUPABASE_URL}/functions/v1/wechat-reader?id=${article?.id}`;
+      ? `${API_BASE}/rd?s=${slugId}`
+      : `${API_BASE}/rd?id=${article?.id}`;
     await navigator.clipboard.writeText(shareUrl);
     setLinkCopied(true);
     toast({ title: "链接已复制", description: "发送给 ChatGPT、Claude 等 AI 即可直接阅读此文章" });

@@ -115,7 +115,7 @@ const ArticlesPage = () => {
             {articles.map((article) => (
               <Link
                 key={article.id}
-                to={article.slug ? `/s/${article.slug}` : `/a/${article.id}`}
+                to={article.slug ? `/${article.slug}` : `/a/${article.id}`}
               >
                 <Card className="h-full hover:border-primary/50 transition-colors cursor-pointer group">
                   <CardHeader className="pb-3">
