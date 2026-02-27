@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Copy, ExternalLink, CheckCircle, Share2, Eye, Bot } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import DOMPurify from "dompurify";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const API_BASE = "https://api.readgzh.site";
@@ -73,31 +74,38 @@ function replaceVideoIframes(html: string, sourceUrl?: string | null): string {
 }
 
 function sanitizeHtml(html: string, sourceUrl?: string | null): string {
-  let clean = html.replace(/<script[\s\S]*?<\/script>/gi, "");
-  clean = clean.replace(/<style[\s\S]*?<\/style>/gi, "");
-  clean = clean.replace(/<noscript[\s\S]*?<\/noscript>/gi, "");
-  clean = replaceVideoIframes(clean, sourceUrl);
-  clean = clean.replace(/\s+on\w+="[^"]*"/g, "");
-  clean = clean.replace(/\s+on\w+='[^']*'/g, "");
-  clean = clean.replace(/javascript:/gi, "");
-  clean = clean.replace(/visibility:\s*hidden[^;]*;?/g, "");
-  clean = clean.replace(/opacity:\s*0[^;]*;?/g, "");
-  clean = clean.replace(/data-src="([^"]+)"/g, 'src="$1"');
-  clean = proxyWechatImages(clean);
-  return clean;
+  // Pre-process: convert data-src to src, replace video iframes, proxy images
+  let processed = html.replace(/data-src="([^"]+)"/g, 'src="$1"');
+  processed = processed.replace(/visibility:\s*hidden[^;]*;?/g, "");
+  processed = processed.replace(/opacity:\s*0[^;]*;?/g, "");
+  processed = replaceVideoIframes(processed, sourceUrl);
+  processed = proxyWechatImages(processed);
+
+  // Use DOMPurify for robust sanitization
+  return DOMPurify.sanitize(processed, {
+    ADD_TAGS: ['section', 'figure', 'figcaption'],
+    ADD_ATTR: ['target', 'rel'],
+    ALLOW_DATA_ATTR: false,
+    FORBID_TAGS: ['script', 'style', 'noscript', 'iframe', 'object', 'embed', 'form'],
+    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover'],
+  });
 }
 
 /** Strip all styles/classes/data-attrs and empty tags — mimic AI SSR view */
 function stripToAIView(html: string): string {
-  let stripped = html;
-  // Remove script/style/noscript
-  stripped = stripped.replace(/<script[\s\S]*?<\/script>/gi, "");
-  stripped = stripped.replace(/<style[\s\S]*?<\/style>/gi, "");
-  stripped = stripped.replace(/<noscript[\s\S]*?<\/noscript>/gi, "");
-  // Remove all attributes: style, class, data-*, id
+  // Pre-process: convert data-src to src
+  let stripped = html.replace(/data-src="([^"]+)"/g, 'src="$1"');
+  
+  // Use DOMPurify to strip all dangerous content first
+  stripped = DOMPurify.sanitize(stripped, {
+    ADD_TAGS: ['section', 'figure', 'figcaption'],
+    ALLOW_DATA_ATTR: false,
+    FORBID_TAGS: ['script', 'style', 'noscript', 'iframe', 'object', 'embed', 'form'],
+  });
+
+  // Remove all attributes: style, class, id (for clean AI view)
   stripped = stripped.replace(/\s*style="[^"]*"/gi, "");
   stripped = stripped.replace(/\s*class="[^"]*"/gi, "");
-  stripped = stripped.replace(/\s*data-[\w-]+="[^"]*"/gi, "");
   stripped = stripped.replace(/\s*id="[^"]*"/gi, "");
   // Remove WeChat custom tags
   stripped = stripped.replace(/<mp-[\w-]+[^>]*>[\s\S]*?<\/mp-[\w-]+>/gi, "");
@@ -110,8 +118,6 @@ function stripToAIView(html: string): string {
   }
   // Collapse whitespace
   stripped = stripped.replace(/\n{3,}/g, "\n\n");
-  // Convert data-src to src for images
-  stripped = stripped.replace(/data-src="([^"]+)"/g, 'src="$1"');
   // Proxy images
   stripped = proxyWechatImages(stripped);
   return stripped.trim();
