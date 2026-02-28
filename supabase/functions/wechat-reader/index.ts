@@ -545,8 +545,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // GET request: check if this is a "read mode" request (?s= or ?id=)
-    if (req.method === "GET") {
+    // GET and HEAD requests: check if this is a "read mode" request (?s= or ?id=)
+    if (req.method === "GET" || req.method === "HEAD") {
       const params = new URL(req.url).searchParams;
       const slug = params.get("s");
       const articleId = params.get("id");
@@ -554,10 +554,19 @@ Deno.serve(async (req) => {
       // Read mode (serving cached articles) - no rate limit needed
       if (slug || articleId) {
         console.log("Read mode: slug=", slug, "id=", articleId);
-        return await handleReadMode(slug, articleId);
+        const response = await handleReadMode(slug, articleId);
+        // For HEAD requests, return headers only (no body)
+        if (req.method === "HEAD") {
+          return new Response(null, { status: response.status, headers: response.headers });
+        }
+        return response;
       }
 
-      // Scrape request with ?url= - rate limit applies
+      // Scrape request with ?url= - rate limit applies (GET only, not HEAD)
+      if (req.method === "HEAD") {
+        return new Response(null, { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
       const url = params.get("url");
       if (!url) {
         return new Response(
