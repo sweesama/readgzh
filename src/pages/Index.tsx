@@ -43,26 +43,26 @@ const Index = () => {
         </Button>
       </div>
 
-      <HeroSection />
-      {/* Navigation bar */}
-      <div className="container mx-auto px-4 py-4 flex justify-center gap-3">
+      {/* Navigation links - top right */}
+      <div className="fixed top-4 right-4 z-50 flex gap-2">
         <Link to="/articles">
-          <Button variant="outline" className="gap-2">
-            <BookOpen className="h-4 w-4" />
+          <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs">
+            <BookOpen className="h-3.5 w-3.5" />
             文章库
           </Button>
         </Link>
         <Link to="/docs">
-          <Button variant="outline" className="gap-2">
-            <Code className="h-4 w-4" />
-            开发者文档
+          <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs">
+            <Code className="h-3.5 w-3.5" />
+            文档
           </Button>
         </Link>
       </div>
 
+      <HeroSection />
+      <AIGuideSection />
       <FeaturesSection />
       <AdvantagesSection />
-      <AIGuideSection />
       <footer className="border-t py-8">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
           <p>微信文章 AI 阅读器 - 让 AI 能够读取微信公众号内容</p>

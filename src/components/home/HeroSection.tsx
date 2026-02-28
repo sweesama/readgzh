@@ -60,12 +60,11 @@ const HeroSection = ({ initialUrl = "" }: HeroSectionProps) => {
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-background" />
       <div className="relative container mx-auto px-4 py-16 md:py-24">
         <div className="max-w-3xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-2 rounded-full text-sm font-medium mb-6">
-            <BookOpen className="h-4 w-4" />
-            让 AI 读懂微信公众号
+          <div className="flex items-center justify-center mb-6">
+            <img src="/logo.png" alt="ReadGZH" className="h-16 w-16 mr-3" />
+            <span className="text-4xl md:text-5xl font-bold text-foreground">ReadGZH</span>
           </div>
 
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">微信文章 AI 阅读器</h1>
           <p className="text-lg md:text-xl text-muted-foreground mb-2">粘贴微信文章链接，一键生成 AI 可访问的页面</p>
           <p className="text-muted-foreground mb-10">ChatGPT、Claude、Perplexity 等 AI 工具可直接阅读</p>
 
