@@ -5,13 +5,13 @@ import FeaturesSection from "@/components/home/FeaturesSection";
 import AdvantagesSection from "@/components/home/AdvantagesSection";
 import AIGuideSection from "@/components/home/AIGuideSection";
 import StatsWidget from "@/components/home/StatsSection";
+import Footer from "@/components/home/Footer";
 import { Bot, Eye, BookOpen, Code } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const [aiView, setAiView] = useState(false);
 
-  // Auto-submit if ?url= param is present
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const autoUrl = params.get("url");
@@ -29,9 +29,8 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <StatsWidget />
-      {/* AI View toggle */}
-      <div className="fixed top-4 left-4 z-50">
+      {/* Top bar with AI view toggle, nav links, and stats */}
+      <div className="fixed top-0 left-0 right-0 z-50 px-4 py-3 flex items-center justify-between">
         <Button
           size="sm"
           variant="outline"
@@ -41,38 +40,31 @@ const Index = () => {
           <Bot className="h-3.5 w-3.5" />
           AI 视角
         </Button>
-      </div>
 
-      {/* Navigation links - top right */}
-      <div className="fixed top-4 right-4 z-50 flex gap-2">
-        <Link to="/articles">
-          <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs">
-            <BookOpen className="h-3.5 w-3.5" />
-            文章库
-          </Button>
-        </Link>
-        <Link to="/docs">
-          <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs">
-            <Code className="h-3.5 w-3.5" />
-            文档
-          </Button>
-        </Link>
-      </div>
-
-      <HeroSection />
-      <AIGuideSection />
-      <FeaturesSection />
-      <AdvantagesSection />
-      <footer className="border-t py-8">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>微信文章 AI 阅读器 - 让 AI 能够读取微信公众号内容</p>
-          <p className="mt-2">
-            本服务仅用于个人学习和研究目的 ·{" "}
-            <Link to="/docs" className="text-primary hover:underline">开发者文档</Link> ·{" "}
-            <Link to="/articles" className="text-primary hover:underline">文章库</Link>
-          </p>
+        <div className="flex items-center gap-2">
+          <Link to="/articles">
+            <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs">
+              <BookOpen className="h-3.5 w-3.5" />
+              文章库
+            </Button>
+          </Link>
+          <Link to="/docs">
+            <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs">
+              <Code className="h-3.5 w-3.5" />
+              文档
+            </Button>
+          </Link>
+          <StatsWidget />
         </div>
-      </footer>
+      </div>
+
+      <main>
+        <HeroSection />
+        <AIGuideSection />
+        <FeaturesSection />
+        <AdvantagesSection />
+      </main>
+      <Footer />
     </div>
   );
 };
@@ -108,12 +100,10 @@ const MatrixRain = () => {
         const x = i * fontSize;
         const y = drops[i] * fontSize;
 
-        // Bright head
         ctx.fillStyle = `rgba(0, 255, 70, ${0.9 + Math.random() * 0.1})`;
         ctx.font = `${fontSize}px monospace`;
         ctx.fillText(char, x, y);
 
-        // Dimmer trail
         if (drops[i] > 1) {
           const trailChar = chars[Math.floor(Math.random() * chars.length)];
           ctx.fillStyle = "rgba(0, 180, 50, 0.3)";
@@ -203,10 +193,7 @@ const MatrixView = ({ onExit }: { onExit: () => void }) => {
 
   return (
     <div className="min-h-screen bg-black text-green-400 font-mono relative overflow-hidden">
-      {/* Matrix rain columns */}
       <MatrixRain />
-
-      {/* Exit button */}
       <div className="fixed top-4 left-4 z-50">
         <Button
           size="sm"
@@ -218,19 +205,14 @@ const MatrixView = ({ onExit }: { onExit: () => void }) => {
           人类视角
         </Button>
       </div>
-
-      {/* Terminal content */}
       <div className="relative container mx-auto px-4 py-20 max-w-3xl">
         <div className="border border-green-900 rounded-lg bg-black/80 p-6 shadow-[0_0_30px_rgba(0,255,0,0.05)]">
-          {/* Terminal header */}
           <div className="flex items-center gap-2 mb-4 pb-3 border-b border-green-900/50">
             <div className="w-3 h-3 rounded-full bg-red-500/80" />
             <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
             <div className="w-3 h-3 rounded-full bg-green-500/80" />
             <span className="ml-3 text-green-600 text-xs">ai-reader@wechat-proxy ~ $</span>
           </div>
-
-          {/* Lines */}
           <div className="space-y-0.5 text-sm leading-relaxed">
             {lines.map((line, i) => (
               <div key={i} className={`${line?.startsWith(">") ? "text-green-300" : line?.startsWith("  ✓") ? "text-emerald-400" : "text-green-500/80"}`}>

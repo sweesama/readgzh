@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { BookOpen, ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -56,17 +56,17 @@ const HeroSection = ({ initialUrl = "" }: HeroSectionProps) => {
   };
 
   return (
-    <div className="relative overflow-hidden">
+    <section className="relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-background" />
-      <div className="relative container mx-auto px-4 py-16 md:py-24">
+      <div className="relative container mx-auto px-4 pt-20 pb-12 md:pt-28 md:pb-16">
         <div className="max-w-3xl mx-auto text-center">
           <div className="flex items-center justify-center mb-6">
             <img src="/logo.png" alt="ReadGZH" className="h-16 w-16 mr-3" />
-            <span className="text-4xl md:text-5xl font-bold text-foreground">ReadGZH</span>
+            <h1 className="text-4xl md:text-5xl font-bold text-foreground">ReadGZH</h1>
           </div>
 
           <p className="text-lg md:text-xl text-muted-foreground mb-2">粘贴微信文章链接，一键生成 AI 可访问的页面</p>
-          <p className="text-muted-foreground mb-10">ChatGPT、Claude、Perplexity 等 AI 工具可直接阅读</p>
+          <p className="text-muted-foreground mb-8">ChatGPT、Claude、Perplexity 等 AI 工具可直接阅读</p>
 
           <Card className="max-w-2xl mx-auto shadow-lg border-2">
             <CardContent className="pt-6 pb-6">
@@ -97,7 +97,7 @@ const HeroSection = ({ initialUrl = "" }: HeroSectionProps) => {
           </Card>
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 

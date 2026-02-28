@@ -19,23 +19,21 @@ const StatsWidget = () => {
   }, []);
 
   return (
-    <div className="fixed top-4 right-4 z-50">
-      <div className="flex items-center gap-3 bg-card/80 backdrop-blur-md border rounded-full px-4 py-2 shadow-sm text-xs">
-        <div className="flex items-center gap-1.5 text-muted-foreground">
-          <FileText className="h-3.5 w-3.5 text-primary" />
-          <span className="font-semibold text-foreground">
-            {totalArticles !== null ? totalArticles.toLocaleString() : "–"}
-          </span>
-          <span>篇</span>
-        </div>
-        <div className="w-px h-3.5 bg-border" />
-        <div className="flex items-center gap-1.5 text-muted-foreground">
-          <Eye className="h-3.5 w-3.5 text-primary" />
-          <span className="font-semibold text-foreground">
-            {totalViews !== null ? totalViews.toLocaleString() : "–"}
-          </span>
-          <span>次阅读</span>
-        </div>
+    <div className="flex items-center gap-3 bg-card/80 backdrop-blur-md border rounded-full px-4 py-2 shadow-sm text-xs">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
+        <FileText className="h-3.5 w-3.5 text-primary" />
+        <span className="font-semibold text-foreground">
+          {totalArticles !== null ? totalArticles.toLocaleString() : "–"}
+        </span>
+        <span>篇</span>
+      </div>
+      <div className="w-px h-3.5 bg-border" />
+      <div className="flex items-center gap-1.5 text-muted-foreground">
+        <Eye className="h-3.5 w-3.5 text-primary" />
+        <span className="font-semibold text-foreground">
+          {totalViews !== null ? totalViews.toLocaleString() : "–"}
+        </span>
+        <span>次阅读</span>
       </div>
     </div>
   );
