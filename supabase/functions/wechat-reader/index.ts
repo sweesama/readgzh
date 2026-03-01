@@ -23,20 +23,30 @@ function isVerificationPage(html: string): boolean {
 
 // Check if WeChat returned an error page (deleted/invalid article)
 function isWeChatErrorPage(html: string): string | null {
+  // These patterns indicate actual error *content* displayed to the user,
+  // NOT template CSS class names that appear in every WeChat page.
   const errorPatterns: [string, string][] = [
-    ["Parameter error", "链接参数错误，文章可能已被删除或链接无效。"],
     ["该内容已被发布者删除", "该文章已被发布者删除。"],
     ["此内容因违规无法查看", "该文章因违规已被微信删除。"],
     ["此内容被投诉且经审核涉嫌侵权", "该文章因侵权投诉已被删除。"],
     ["该公众号已被封禁", "该公众号已被封禁，文章不可访问。"],
     ["此帐号已被屏蔽", "该帐号已被屏蔽，文章不可访问。"],
     ["page_rumor", "该文章已被标记为不实信息。"],
-    ["global_error_msg", "微信返回了错误页面，文章可能不存在。"],
-    ["weui-icon-warn", "微信提示错误，文章可能已被删除或链接无效。"],
   ];
   for (const [pattern, message] of errorPatterns) {
     if (html.includes(pattern)) return message;
   }
+
+  // Check for WeChat's actual error page structure (not just CSS class presence).
+  // The error page has a very short body with "weui-icon-warn" prominently displayed
+  // and no #js_content element. Normal articles always have #js_content.
+  if (!html.includes('id="js_content"') && !html.includes("picture_page_info_list")) {
+    // No article content container at all — likely an error or non-article page
+    if (html.includes("weui-msg") || html.includes("Parameter error")) {
+      return "微信返回了错误页面，文章可能已被删除或链接无效。";
+    }
+  }
+
   return null;
 }
 
