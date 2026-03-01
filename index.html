@@ -31,10 +31,59 @@
       gtag('js', new Date());
       gtag('config', 'G-B55BHX0460');
     </script>
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "ReadGZH",
+      "url": "https://readgzh.site",
+      "description": "微信公众号文章 AI 阅读工具。粘贴微信文章链接，一键生成 AI 可访问的页面。",
+      "applicationCategory": "UtilityApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "CNY"
+      }
+    }
+    </script>
   </head>
 
   <body>
     <div id="root"></div>
+    <noscript>
+      <header>
+        <h1>ReadGZH - 微信文章 AI 阅读器</h1>
+        <p>让 AI 读懂微信公众号。粘贴微信文章链接，一键生成 AI 可访问的页面，支持 ChatGPT、Claude、Perplexity 等 AI 工具直接阅读微信公众号内容。</p>
+      </header>
+      <main>
+        <section>
+          <h2>为什么需要 ReadGZH？</h2>
+          <p>微信公众号对外部访问有严格的反爬虫限制，AI 工具（如 ChatGPT、Claude、Gemini）发送的请求会被拦截，无法直接读取微信文章内容。ReadGZH 通过服务端代理自动抓取并优化文章，生成一个 AI 可直接访问的公开链接。</p>
+        </section>
+        <section>
+          <h2>核心功能</h2>
+          <p>自动提取微信公众号文章内容，支持普通图文和小绿书图片消息格式。去除所有样式噪音，过滤微信私有标签，Token 消耗减少 50% 以上。纯 HTML 直出，无需 JavaScript 渲染，兼容所有 AI 平台。</p>
+        </section>
+        <section>
+          <h2>如何使用</h2>
+          <p>复制以下提示词发给任何 AI 工具即可：「请帮我阅读这篇微信公众号文章，你可以通过访问以下链接获取内容：https://api.readgzh.site/rd?url=（把微信链接粘贴在这里）」</p>
+        </section>
+        <nav>
+          <h2>站内导航</h2>
+          <ul>
+            <li><a href="/articles">文章库 - 浏览已转换的微信公众号文章</a></li>
+            <li><a href="/docs">开发者文档 - API 接口说明</a></li>
+            <li><a href="/faq">常见问题 FAQ</a></li>
+            <li><a href="/privacy">隐私政策</a></li>
+            <li><a href="/terms">服务条款</a></li>
+            <li><a href="/cookies">Cookie 政策</a></li>
+          </ul>
+        </nav>
+      </main>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
