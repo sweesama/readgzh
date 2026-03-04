@@ -29,7 +29,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top bar with AI view toggle, nav links, and stats */}
+      {/* Top bar with AI view toggle and nav links */}
       <div className="fixed top-0 left-0 right-0 z-50 px-4 py-3 flex items-center justify-between">
         <Button
           size="sm"
@@ -66,12 +66,12 @@ const Index = () => {
               控制台
             </Button>
           </Link>
-          <StatsWidget />
         </div>
       </div>
 
       <main>
         <HeroSection />
+        <StatsWidget />
         <AIGuideSection />
         <FeaturesSection />
         <AdvantagesSection />

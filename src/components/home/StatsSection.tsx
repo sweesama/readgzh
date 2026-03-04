@@ -1,39 +1,61 @@
-import { useEffect, useState } from "react";
-import { FileText, Eye } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const StatsWidget = () => {
   const [totalArticles, setTotalArticles] = useState<number | null>(null);
-  const [totalViews, setTotalViews] = useState<number | null>(null);
+  const [displayCount, setDisplayCount] = useState(0);
+  const animRef = useRef<number>();
 
   useEffect(() => {
     const fetchStats = async () => {
       const { count } = await supabase.from("articles").select("*", { count: "exact", head: true });
       setTotalArticles(count ?? 0);
-
-      const { data } = await supabase.from("articles").select("view_count");
-      const views = data?.reduce((sum, row) => sum + (row.view_count || 0), 0) ?? 0;
-      setTotalViews(views);
     };
     fetchStats();
   }, []);
 
+  // Animate counting up
+  useEffect(() => {
+    if (totalArticles === null) return;
+    // Estimate ~2000 tokens per article average
+    const targetTokens = totalArticles * 2000;
+    const duration = 2000;
+    const startTime = performance.now();
+    const startVal = 0;
+
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplayCount(Math.round(startVal + (targetTokens - startVal) * eased));
+      if (progress < 1) {
+        animRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    animRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+    };
+  }, [totalArticles]);
+
+  const formatTokens = (n: number) => {
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
+    return n.toLocaleString();
+  };
+
   return (
-    <div className="flex items-center gap-3 bg-card/80 backdrop-blur-md border rounded-full px-4 py-2 shadow-sm text-xs">
-      <div className="flex items-center gap-1.5 text-muted-foreground">
-        <FileText className="h-3.5 w-3.5 text-primary" />
-        <span className="font-semibold text-foreground">
-          {totalArticles !== null ? totalArticles.toLocaleString() : "–"}
+    <div className="flex items-center justify-center gap-2 py-4">
+      <div className="inline-flex items-center gap-2 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-full px-5 py-2.5 shadow-sm">
+        <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+        <span className="text-sm text-muted-foreground">已帮 AI 阅读</span>
+        <span className="text-lg font-bold text-primary tabular-nums tracking-tight">
+          {totalArticles !== null ? formatTokens(displayCount) : "–"}
         </span>
-        <span>篇</span>
-      </div>
-      <div className="w-px h-3.5 bg-border" />
-      <div className="flex items-center gap-1.5 text-muted-foreground">
-        <Eye className="h-3.5 w-3.5 text-primary" />
-        <span className="font-semibold text-foreground">
-          {totalViews !== null ? totalViews.toLocaleString() : "–"}
-        </span>
-        <span>次阅读</span>
+        <span className="text-sm text-muted-foreground">tokens 的微信公众号内容</span>
       </div>
     </div>
   );
