@@ -9,17 +9,16 @@ const StatsWidget = () => {
 
   useEffect(() => {
     const fetchStats = async () => {
-      // Get actual content lengths from articles to estimate real tokens
       const { data } = await supabase.from("articles").select("content");
       if (data) {
-        // Rough token estimate: 1 Chinese char ≈ 1.5 tokens, 1 English word ≈ 1 token
-        // content.length gives char count; avg ~1.2 tokens per char for mixed zh/en
         const totalChars = data.reduce((sum, row) => sum + (row.content?.length || 0), 0);
         const estimatedTokens = Math.round(totalChars * 1.2);
         setTotalTokens(estimatedTokens);
       }
     };
     fetchStats();
+    const interval = setInterval(fetchStats, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   // Animate counting up
