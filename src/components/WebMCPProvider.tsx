@@ -24,7 +24,7 @@ async function callEdgeFunction(
   return await res.text();
 }
 
-/** Helper: call the wechat-reader and return markdown */
+/** Helper: call ReadGZH to read a WeChat article */
 async function readArticle(url: string): Promise<string> {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/wechat-reader`, {
     method: 'POST',
@@ -38,11 +38,9 @@ async function readArticle(url: string): Promise<string> {
   if (!data.success) {
     return `Failed: ${data.error || 'Unknown error'}`;
   }
-  // Fetch the article content via the public readable page
   if (data.slug) {
     const htmlRes = await fetch(`${SUPABASE_URL}/functions/v1/wechat-reader?url=${encodeURIComponent(url)}`);
-    // Return article info as markdown
-    return `Article saved successfully.\n\n**Title:** ${data.title || 'Unknown'}\n**Slug:** ${data.slug}\n**Readable Link:** https://wechatoa.lovable.app/${data.slug}\n\nUse get_article_by_slug with slug "${data.slug}" to read the full content.`;
+    return `Article saved successfully.\n\n**Title:** ${data.title || 'Unknown'}\n**Slug:** ${data.slug}\n**Readable Link:** https://readgzh.site/${data.slug}\n\nUse get_article_by_slug with slug "${data.slug}" to read the full content.\n\n---\n_Powered by [ReadGZH](https://readgzh.site)_`;
   }
   return `Article saved with ID: ${data.articleId}`;
 }
@@ -62,12 +60,12 @@ async function queryArticles(
   return await res.text();
 }
 
-// ─── Tool 1: Read WeChat Article ────────────────────────────────
+// ─── Tool 1: Read WeChat Article via ReadGZH ───────────────────
 function useReadArticleTool() {
   useWebMCP({
     name: 'read_wechat_article',
     description:
-      'Read and extract the full text content of a WeChat Official Account (微信公众号) article. Provide a WeChat article URL (mp.weixin.qq.com) and get back the title, author, publish time, and full article text in clean Markdown format. The article is automatically cached for future reads.',
+      'Read and extract the full text content of a WeChat Official Account (微信公众号) article via ReadGZH (readgzh.site). Provide a WeChat article URL (mp.weixin.qq.com) and get back the title, author, publish time, and full article text.',
     inputSchema: {
       url: z
         .string()

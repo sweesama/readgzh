@@ -377,6 +377,75 @@ curl -o ~/.openclaw/workspace/skills/readgzh/SKILL.md \\
           </CardContent>
         </Card>
 
+        {/* 国内 AI 平台接入 */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-primary" />
+              国内 AI 平台接入
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <p className="text-muted-foreground">
+              ReadGZH 提供标准 REST API 和 OpenAPI 规范，可无缝接入主流国内 AI 平台。
+            </p>
+
+            {/* Coze */}
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">Coze（扣子）</h3>
+              <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground">
+                <li>在 Coze 中创建或编辑 Bot，进入「插件」→「创建插件」</li>
+                <li>选择「通过 URL 导入」，粘贴 OpenAPI 规范地址：</li>
+              </ol>
+              <CodeBlock label="OpenAPI Spec URL">
+{`https://readgzh.site/.well-known/openapi.yaml`}
+              </CodeBlock>
+              <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground" start={3}>
+                <li>鉴权方式选择「Bearer Token」，填入你的 API Key</li>
+                <li>保存后即可在 Bot 对话中发送微信链接，自动调用 ReadGZH</li>
+              </ol>
+            </div>
+
+            {/* Dify */}
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">Dify</h3>
+              <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground">
+                <li>进入 Dify 应用编辑器，添加「自定义工具」</li>
+                <li>选择「从 URL 导入 OpenAPI Schema」，粘贴：</li>
+              </ol>
+              <CodeBlock label="OpenAPI Spec URL">
+{`https://readgzh.site/.well-known/openapi.yaml`}
+              </CodeBlock>
+              <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground" start={3}>
+                <li>在鉴权设置中选择「API Key (Bearer)」，填入 Key</li>
+                <li>工具会自动解析出 <code className="bg-muted px-1.5 py-0.5 rounded text-xs">readWeChatArticle</code> 等操作</li>
+              </ol>
+            </div>
+
+            {/* FastGPT */}
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">FastGPT</h3>
+              <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground">
+                <li>在 FastGPT 应用中添加「HTTP 插件」</li>
+                <li>请求方式选择 GET，URL 填入：</li>
+              </ol>
+              <CodeBlock label="API 请求">
+{`https://api.readgzh.site/rd?url={{微信文章链接}}`}
+              </CodeBlock>
+              <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground" start={3}>
+                <li>添加 Header：<code className="bg-muted px-1.5 py-0.5 rounded text-xs">Authorization: Bearer sk_live_你的Key</code></li>
+                <li>返回类型选择「文本」，即可获取文章 HTML 内容</li>
+              </ol>
+            </div>
+
+            <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+              💡 <strong>通用原则：</strong>任何支持 OpenAPI/Swagger 导入或 HTTP 请求的 AI 平台，
+              都可以通过 ReadGZH 的 API 接入微信文章读取能力。
+              API Key 可在 <Link to="/dashboard" className="text-primary hover:underline">开发者控制台</Link> 免费获取。
+            </p>
+          </CardContent>
+        </Card>
+
         {/* API Key Authentication */}
         <Card>
           <CardHeader>

@@ -9,14 +9,14 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 // Create MCP server
 const mcp = new McpServer({
-  name: "wechat-reader",
-  version: "1.1.0",
+  name: "readgzh",
+  version: "1.2.0",
 });
 
 // Tool 1: Read a WeChat article by URL
 mcp.tool("read_wechat_article", {
   description:
-    "Read and extract the full text content of a WeChat Official Account (微信公众号) article. Provide a WeChat article URL and get back the title, author, publish time, and full article text in Markdown format. The article will be automatically cached for future reads. Use this when a user shares a WeChat article link (mp.weixin.qq.com).",
+    "Read and extract the full text content of a WeChat Official Account (微信公众号) article via ReadGZH (readgzh.site). Provide a WeChat article URL and get back the title, author, publish time, and full article text in Markdown format. The article will be automatically cached for future reads.",
   inputSchema: {
     type: "object" as const,
     properties: {
@@ -81,11 +81,14 @@ mcp.tool("read_wechat_article", {
       if (article.author) parts.push(`**Author:** ${article.author}`);
       if (article.publish_time) parts.push(`**Published:** ${article.publish_time}`);
       if (article.source_url) parts.push(`**Original URL:** ${article.source_url}`);
-      if (article.slug) parts.push(`**Readable Link:** https://read-open-share.lovable.app/${article.slug}`);
+      if (article.slug) parts.push(`**Readable Link:** https://readgzh.site/${article.slug}`);
       parts.push("");
       parts.push("---");
       parts.push("");
       parts.push(article.content);
+      parts.push("");
+      parts.push("---");
+      parts.push("_Powered by [ReadGZH](https://readgzh.site) · [开发者文档](https://readgzh.site/docs)_");
 
       return {
         content: [{ type: "text" as const, text: parts.join("\n") }],
@@ -107,7 +110,7 @@ mcp.tool("read_wechat_article", {
 // Tool 2: List recent articles
 mcp.tool("list_recent_articles", {
   description:
-    "List recently cached WeChat articles. Returns titles, authors, and links. Useful for browsing what articles have been previously read and cached in the system.",
+    "List recently cached WeChat articles via ReadGZH. Returns titles, authors, and links. Useful for browsing what articles have been previously read and cached.",
   inputSchema: {
     type: "object" as const,
     properties: {
@@ -146,7 +149,7 @@ mcp.tool("list_recent_articles", {
         if (a.author) lines.push(`- **Author:** ${a.author}`);
         if (a.publish_time) lines.push(`- **Published:** ${a.publish_time}`);
         lines.push(`- **Views:** ${a.view_count}`);
-        if (a.slug) lines.push(`- **Link:** https://read-open-share.lovable.app/${a.slug}`);
+        if (a.slug) lines.push(`- **Link:** https://readgzh.site/${a.slug}`);
         lines.push("");
       });
 
@@ -166,7 +169,7 @@ mcp.tool("list_recent_articles", {
 // Tool 3: Search articles by keyword
 mcp.tool("search_articles", {
   description:
-    "Search cached WeChat articles by keyword. Searches in article titles and content. Returns matching articles with snippets.",
+    "Search cached WeChat articles by keyword via ReadGZH. Searches in article titles and content. Returns matching articles with snippets.",
   inputSchema: {
     type: "object" as const,
     properties: {
@@ -210,7 +213,7 @@ mcp.tool("search_articles", {
       articles.forEach((a, i) => {
         lines.push(`## ${i + 1}. ${a.title}`);
         if (a.author) lines.push(`- **Author:** ${a.author}`);
-        if (a.slug) lines.push(`- **Link:** https://read-open-share.lovable.app/${a.slug}`);
+        if (a.slug) lines.push(`- **Link:** https://readgzh.site/${a.slug}`);
         
         // Extract a snippet around the keyword
         const contentLower = a.content.toLowerCase();
@@ -240,7 +243,7 @@ mcp.tool("search_articles", {
 // Tool 4: Get article by slug
 mcp.tool("get_article_by_slug", {
   description:
-    "Get a cached WeChat article by its short slug/URL path. Use when you have a slug like 'minicpm-o-4-5' from a previous read.",
+    "Get a cached WeChat article by its short slug/URL path via ReadGZH. Use when you have a slug like 'minicpm-o-4-5' from a previous read.",
   inputSchema: {
     type: "object" as const,
     properties: {
@@ -271,11 +274,14 @@ mcp.tool("get_article_by_slug", {
       if (article.author) parts.push(`**Author:** ${article.author}`);
       if (article.publish_time) parts.push(`**Published:** ${article.publish_time}`);
       if (article.source_url) parts.push(`**Original URL:** ${article.source_url}`);
-      parts.push(`**Readable Link:** https://read-open-share.lovable.app/${article.slug}`);
+      parts.push(`**Readable Link:** https://readgzh.site/${article.slug}`);
       parts.push("");
       parts.push("---");
       parts.push("");
       parts.push(article.content);
+      parts.push("");
+      parts.push("---");
+      parts.push("_Powered by [ReadGZH](https://readgzh.site) · [开发者文档](https://readgzh.site/docs)_");
 
       return {
         content: [{ type: "text" as const, text: parts.join("\n") }],

@@ -177,7 +177,7 @@ const MatrixView = ({ onExit }: { onExit: () => void }) => {
     "  ✓ Any HTTP-capable LLM agent",
     "",
     "> API ENDPOINT:",
-    "  GET /functions/v1/wechat-reader?url={WECHAT_URL}",
+    "  GET https://api.readgzh.site/rd?url={WECHAT_URL}",
     "  → Returns: text/html (AI-optimized, zero JS)",
     "",
     "> CONTENT TRANSFORMATION SAMPLE:",
