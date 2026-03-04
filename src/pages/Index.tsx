@@ -6,7 +6,7 @@ import AdvantagesSection from "@/components/home/AdvantagesSection";
 import AIGuideSection from "@/components/home/AIGuideSection";
 import StatsWidget from "@/components/home/StatsSection";
 import Footer from "@/components/home/Footer";
-import { Bot, Eye, BookOpen, Code } from "lucide-react";
+import { Bot, Eye, BookOpen, Code, Zap, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
@@ -52,6 +52,18 @@ const Index = () => {
             <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs">
               <Code className="h-3.5 w-3.5" />
               文档
+            </Button>
+          </Link>
+          <Link to="/pricing">
+            <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs">
+              <Zap className="h-3.5 w-3.5" />
+              定价
+            </Button>
+          </Link>
+          <Link to="/dashboard">
+            <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs">
+              <Key className="h-3.5 w-3.5" />
+              控制台
             </Button>
           </Link>
           <StatsWidget />

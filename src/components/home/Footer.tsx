@@ -25,6 +25,8 @@ const Footer = () => {
             <ul className="space-y-2 text-sm">
               <li><Link to="/articles" className="text-muted-foreground hover:text-primary transition-colors">文章库</Link></li>
               <li><Link to="/docs" className="text-muted-foreground hover:text-primary transition-colors">开发者文档</Link></li>
+              <li><Link to="/pricing" className="text-muted-foreground hover:text-primary transition-colors">定价方案</Link></li>
+              <li><Link to="/dashboard" className="text-muted-foreground hover:text-primary transition-colors">开发者控制台</Link></li>
               <li><Link to="/faq" className="text-muted-foreground hover:text-primary transition-colors">常见问题 (FAQ)</Link></li>
             </ul>
           </div>
