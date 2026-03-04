@@ -1,6 +1,6 @@
 ---
 name: readgzh
-description: Read and extract full content from WeChat Official Account (微信公众号) articles. Supports text articles and image-based posts.
+description: "ReadGZH — 让 AI 读取微信公众号文章全文。支持普通图文和图片消息（小绿书）格式。"
 version: 1.0.0
 author: readgzh
 triggers:
@@ -10,79 +10,87 @@ triggers:
   - "mp.weixin"
   - "读文章"
   - "read article"
+  - "readgzh"
 tools:
   - name: read_wechat_article
-    description: Read and extract the full content of a WeChat Official Account article given its URL. Returns title, author, publish time, and full text content.
+    description: "通过 ReadGZH 读取微信公众号文章全文，返回标题、作者、发布时间和正文内容"
     parameters:
       url:
         type: string
-        description: The WeChat article URL (must be from mp.weixin.qq.com)
+        description: "微信文章链接（mp.weixin.qq.com）"
         required: true
   - name: search_articles
-    description: Search cached WeChat articles by keyword
+    description: "通过 ReadGZH 搜索已缓存的微信公众号文章"
     parameters:
       query:
         type: string
-        description: Search keyword
+        description: "搜索关键词"
         required: true
   - name: list_recent_articles
-    description: List recently cached WeChat articles
+    description: "通过 ReadGZH 列出最近缓存的微信公众号文章"
     parameters:
       limit:
         type: number
-        description: Number of articles to return (default 10)
+        description: "返回数量（默认 10）"
         required: false
   - name: get_article_by_slug
-    description: Get a cached article by its slug identifier
+    description: "通过 ReadGZH 按 slug 获取已缓存的文章"
     parameters:
       slug:
         type: string
-        description: The article's short identifier
+        description: "文章短链接标识符"
         required: true
 config:
   api_key:
     type: string
     required: false
-    description: "API Key (sk_live_...) for authenticated access. Get one free at https://readgzh.site/dashboard. Without a key, the skill uses the public endpoint with rate limits."
+    description: "ReadGZH API Key（sk_live_...）。在 https://readgzh.site/dashboard 免费获取。不填则使用公共接口（有速率限制）。"
 ---
 
-# ReadGZH — 微信公众号文章阅读器
+# ReadGZH — 微信公众号 AI 阅读器
 
-This skill allows you to read, search, and retrieve WeChat Official Account (微信公众号) articles.
+让 AI 无障碍读取微信公众号文章全文内容。
 
-## How It Works
+## 工作原理
 
-When a user shares a WeChat article link (`mp.weixin.qq.com`), use the `read_wechat_article` tool to fetch the full article content. The service automatically:
+当用户分享微信文章链接（`mp.weixin.qq.com`）时，使用 `read_wechat_article` 工具调用 ReadGZH 服务。ReadGZH 会自动：
 
-1. Detects and scrapes the article content
-2. Extracts title, author, publish time, and body text
-3. Caches the result for future free access
-4. Returns clean, AI-friendly text content
+1. 抓取并解析文章内容
+2. 提取标题、作者、发布时间和正文
+3. 缓存结果供后续免费访问
+4. 返回干净的 AI 友好格式文本
 
-## Usage Examples
+## 使用示例
 
-### Reading an article
-User: "帮我读一下这篇文章 https://mp.weixin.qq.com/s/xxxxx"
-→ Use `read_wechat_article` with the provided URL
+### 读取文章
+用户："帮我读一下这篇文章 https://mp.weixin.qq.com/s/xxxxx"
+→ 调用 `read_wechat_article`，传入链接
 
-### Searching cached articles
-User: "搜索关于 AI 的微信文章"
-→ Use `search_articles` with query "AI"
+### 搜索文章
+用户："搜索关于 AI 的微信文章"
+→ 调用 `search_articles`，query 为 "AI"
 
-### Listing recent articles
-User: "最近有什么文章？"
-→ Use `list_recent_articles`
+### 查看最近文章
+用户："最近有什么文章？"
+→ 调用 `list_recent_articles`
 
-## API Endpoints
+## API 端点
 
-All tools call the ReadGZH API at `https://api.readgzh.site`:
+所有工具调用 ReadGZH API（`https://api.readgzh.site`）：
 
-- **Read article**: `GET /rd?url={wechat_url}`
-- **Get by slug**: `GET /rd?s={slug}`
-- **MCP Server**: `POST /mcp-server` (for MCP-compatible clients)
+- **读取文章**: `GET /rd?url={微信链接}`
+- **按 slug 获取**: `GET /rd?s={slug}`
+- **MCP Server**: `POST https://api.readgzh.site/mcp-server`
 
-## Authentication
+## 鉴权
 
-If an API key is configured, include it as `Authorization: Bearer sk_live_...` header. Without a key, the public endpoint is used with daily rate limits.
+如配置了 API Key，请求头携带 `Authorization: Bearer sk_live_...`。
+未配置则使用公共接口，每日有速率限制。
 
-Get a free API key at https://readgzh.site/dashboard (50 credits/day).
+免费获取 API Key：https://readgzh.site/dashboard（每日 50 积分）
+
+## 了解更多
+
+- 🌐 官网：https://readgzh.site
+- 📖 开发者文档：https://readgzh.site/docs
+- 🔑 获取 API Key：https://readgzh.site/dashboard
