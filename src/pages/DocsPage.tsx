@@ -252,26 +252,26 @@ GET ${API_URL}/rd?id=abc123-...`}
                 {[
                   {
                     icon: BookOpen,
-                    name: "read_wechat_article",
+                    name: "readgzh.read",
                     desc: "读取微信文章全文",
                     params: "url: 微信文章链接",
                   },
                   {
                     icon: Search,
-                    name: "search_articles",
+                    name: "readgzh.search",
                     desc: "按关键词搜索已缓存文章",
                     params: "query: 搜索关键词",
                   },
                   {
                     icon: Globe,
-                    name: "list_recent_articles",
+                    name: "readgzh.list",
                     desc: "列出最近缓存的文章",
                     params: "limit: 返回数量（可选）",
                   },
                   {
                     icon: Code,
-                    name: "get_article_by_slug",
-                    desc: "通过 slug 获取文章",
+                    name: "readgzh.get",
+                    desc: "通过 slug 获取文章详情",
                     params: "slug: 文章短链接",
                   },
                 ].map((tool) => (
@@ -296,7 +296,7 @@ GET ${API_URL}/rd?id=abc123-...`}
                 <p className="font-medium">💬 你：</p>
                 <p className="text-muted-foreground italic">请帮我读一下这篇微信文章 https://mp.weixin.qq.com/s/xxxxx</p>
                 <p className="font-medium mt-3">🤖 Claude：</p>
-                <p className="text-muted-foreground italic">好的，让我来读取这篇文章...（自动调用 read_wechat_article 工具）</p>
+                <p className="text-muted-foreground italic">好的，让我来读取这篇文章...（自动调用 ReadGZH 读取全文）</p>
               </div>
             </div>
           </CardContent>
@@ -331,8 +331,7 @@ GET ${API_URL}/rd?id=abc123-...`}
 }`}
               </CodeBlock>
               <p className="text-sm text-muted-foreground">
-                配置完成后，OpenClaw 会自动发现 <code className="bg-muted px-1.5 py-0.5 rounded text-xs">read_wechat_article</code>、
-                <code className="bg-muted px-1.5 py-0.5 rounded text-xs">search_articles</code> 等工具。
+                配置完成后，OpenClaw 会自动发现 ReadGZH 提供的文章读取、搜索、列表等工具。
               </p>
             </div>
 
@@ -371,7 +370,7 @@ curl -o ~/.openclaw/workspace/skills/readgzh/SKILL.md \\
                 <p className="font-medium">💬 你：</p>
                 <p className="text-muted-foreground italic">帮我读一下这篇微信文章 https://mp.weixin.qq.com/s/xxxxx</p>
                 <p className="font-medium mt-3">🤖 OpenClaw：</p>
-                <p className="text-muted-foreground italic">正在使用 readgzh skill 读取文章...（自动调用 read_wechat_article）</p>
+                <p className="text-muted-foreground italic">正在使用 ReadGZH 读取文章...（自动调用 readgzh skill）</p>
               </div>
             </div>
           </CardContent>
@@ -418,7 +417,7 @@ curl -o ~/.openclaw/workspace/skills/readgzh/SKILL.md \\
               </CodeBlock>
               <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground" start={3}>
                 <li>在鉴权设置中选择「API Key (Bearer)」，填入 Key</li>
-                <li>工具会自动解析出 <code className="bg-muted px-1.5 py-0.5 rounded text-xs">readWeChatArticle</code> 等操作</li>
+                <li>工具会自动解析出 ReadGZH 提供的文章读取操作</li>
               </ol>
             </div>
 
@@ -521,12 +520,15 @@ curl -o ~/.openclaw/workspace/skills/readgzh/SKILL.md \\
         </Card>
 
         {/* Footer */}
-        <div className="text-center text-sm text-muted-foreground pb-8">
+        <div className="text-center text-sm text-muted-foreground pb-8 space-y-2">
           <p>
             MCP 服务端地址：<code className="bg-muted px-2 py-0.5 rounded text-xs">{API_URL}/mcp-server</code>
           </p>
-          <p className="mt-2">
+          <p>
             <Link to="/" className="text-primary hover:underline">← 返回首页</Link>
+          </p>
+          <p className="mt-4 text-xs text-muted-foreground/60">
+            Made by <span className="font-medium">Mzu</span> · <a href="https://readgzh.site" className="hover:underline">readgzh.site</a>
           </p>
         </div>
       </div>
