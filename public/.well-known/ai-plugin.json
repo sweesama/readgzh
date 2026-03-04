@@ -1,0 +1,19 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "ReadGZH - 微信文章阅读器",
+  "name_for_model": "readgzh",
+  "description_for_human": "让 AI 读取微信公众号文章全文内容，支持标题、作者、正文提取",
+  "description_for_model": "Use this plugin to read and extract the full text content of WeChat Official Account (微信公众号) articles. Given a WeChat article URL (mp.weixin.qq.com), it returns the article title, author, publish time, and full text content in clean format. Useful when users share WeChat article links and want AI to read, summarize, or analyze the content.",
+  "auth": {
+    "type": "service_http",
+    "authorization_type": "bearer",
+    "verification_tokens": {}
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://readgzh.site/.well-known/openapi.yaml"
+  },
+  "logo_url": "https://readgzh.site/logo.png",
+  "contact_email": "support@readgzh.site",
+  "legal_info_url": "https://readgzh.site/terms"
+}

@@ -1,0 +1,117 @@
+openapi: 3.1.0
+info:
+  title: ReadGZH API
+  description: |
+    读取微信公众号文章的 API。提供文章抓取、缓存读取和搜索功能。
+    
+    ## 认证方式
+    使用 API Key 认证，在请求头中添加 `Authorization: Bearer sk_live_your_key`。
+    前往 https://readgzh.site/dashboard 注册并获取免费 API Key。
+    
+    ## 积分计费
+    - 简单文章（纯文字，< 5 张图）：1 积分
+    - 复杂文章（≥ 5 张图或图片模板）：2 积分
+    - 已缓存文章的读取：免费
+    - 免费用户每日可领取 50 积分
+  version: 1.0.0
+  contact:
+    url: https://readgzh.site
+servers:
+  - url: https://api.readgzh.site
+    description: Production API
+paths:
+  /rd:
+    get:
+      operationId: readWeChatArticle
+      summary: 抓取并读取微信公众号文章
+      description: |
+        提供微信文章 URL，返回提取的文章内容（HTML 格式）。
+        如果文章已缓存，自动重定向到缓存版本（不消耗积分）。
+        如果是新文章，会先抓取并缓存，然后返回内容。
+      parameters:
+        - name: url
+          in: query
+          required: true
+          description: 微信公众号文章链接（mp.weixin.qq.com）
+          schema:
+            type: string
+            example: https://mp.weixin.qq.com/s/example
+      responses:
+        '200':
+          description: 成功返回文章内容（HTML 格式）
+          headers:
+            X-Credit-Cost:
+              description: 本次请求消耗的积分数
+              schema:
+                type: integer
+            X-Credits-Remaining:
+              description: 今日剩余积分数
+              schema:
+                type: integer
+          content:
+            text/html:
+              schema:
+                type: string
+                description: 包含文章标题、作者、正文的完整 HTML 页面
+        '429':
+          description: 积分不足或请求频率过高
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    head:
+      operationId: checkArticleAvailability
+      summary: 检查 API 可用性
+      description: 返回 200 OK，用于 AI Agent 预检链接
+      responses:
+        '200':
+          description: API 在线
+  /rd?s={slug}:
+    get:
+      operationId: getArticleBySlug
+      summary: 通过 slug 读取已缓存的文章
+      description: 读取已缓存文章的内容，不消耗积分
+      parameters:
+        - name: s
+          in: query
+          required: true
+          description: 文章的短标识符（slug）
+          schema:
+            type: string
+            example: minicpm-o-4-5
+      responses:
+        '200':
+          description: 文章 HTML 内容
+          content:
+            text/html:
+              schema:
+                type: string
+        '404':
+          description: 文章未找到
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        API Key 认证。前往 https://readgzh.site/dashboard 获取免费 Key。
+        格式：`Authorization: Bearer sk_live_your_key`
+  schemas:
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: API Key 积分已用完
+        hint:
+          type: string
+          example: 请到 readgzh.site/dashboard 领取免费积分
+        current:
+          type: integer
+        limit:
+          type: integer
+security:
+  - BearerAuth: []
