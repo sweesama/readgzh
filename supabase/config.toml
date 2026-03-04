@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.mcp-server]
 verify_jwt = false
+
+[functions.create-payment]
+verify_jwt = false

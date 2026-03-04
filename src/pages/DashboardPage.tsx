@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Copy, Key, Plus, Trash2, Gift, LogOut, ArrowLeft, Eye, EyeOff, BarChart3, Coins } from "lucide-react";
+import { Copy, Key, Plus, Trash2, Gift, LogOut, ArrowLeft, Eye, EyeOff, BarChart3, Coins, Zap, Loader2 } from "lucide-react";
 import Footer from "@/components/home/Footer";
 
 interface ApiKey {
@@ -48,6 +48,21 @@ const DashboardPage = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
   const [keysLoading, setKeysLoading] = useState(true);
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
+
+  const handleUpgrade = async () => {
+    setUpgradeLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-payment");
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+      }
+    } catch (err) {
+      toast({ title: "支付创建失败", description: String(err), variant: "destructive" });
+    }
+    setUpgradeLoading(false);
+  };
 
   const fetchKeys = useCallback(async () => {
     const { data } = await supabase.functions.invoke("api-keys", {
@@ -208,6 +223,23 @@ const DashboardPage = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8 space-y-8">
+        {/* Upgrade Banner */}
+        <Card className="border-primary/40 bg-gradient-to-r from-primary/10 to-primary/5">
+          <CardContent className="pt-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Zap className="h-8 w-8 text-primary" />
+              <div>
+                <p className="font-semibold">升级到 Pro</p>
+                <p className="text-sm text-muted-foreground">每日 2,000 积分 · 无需每日领取 · 优先抓取队列</p>
+              </div>
+            </div>
+            <Button onClick={handleUpgrade} disabled={upgradeLoading}>
+              {upgradeLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+              {upgradeLoading ? "处理中..." : "¥39 立即升级"}
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
