@@ -45,7 +45,7 @@ const Footer = () => {
         {/* Divider + copyright */}
         <div className="border-t pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
           <p>© {currentYear} ReadGZH. All rights reserved.</p>
-          <p>本服务仅用于个人学习和研究目的</p>
+          <p>© <span className="font-medium">Mzu</span> · <a href="https://readgzh.site" className="hover:underline">readgzh.site</a></p>
         </div>
       </div>
     </footer>
