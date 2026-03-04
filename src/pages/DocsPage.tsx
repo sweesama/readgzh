@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Copy, CheckCircle, Code, Globe, Bot, Search, BookOpen, Zap, Key } from "lucide-react";
+import { ArrowLeft, Copy, CheckCircle, Code, Globe, Bot, Search, BookOpen, Zap, Key, Cog } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const SITE_URL = "https://readgzh.site";
@@ -297,6 +297,78 @@ GET ${API_URL}/rd?id=abc123-...`}
                 <p className="text-muted-foreground italic">请帮我读一下这篇微信文章 https://mp.weixin.qq.com/s/xxxxx</p>
                 <p className="font-medium mt-3">🤖 Claude：</p>
                 <p className="text-muted-foreground italic">好的，让我来读取这篇文章...（自动调用 read_wechat_article 工具）</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* OpenClaw Skills */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Cog className="h-5 w-5 text-primary" />
+              OpenClaw Skills 接入
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <p className="text-muted-foreground">
+              ReadGZH 提供原生 <a href="https://docs.openclaw.ai/tools/creating-skills" target="_blank" rel="noopener" className="text-primary hover:underline">OpenClaw Skill</a> 支持，
+              可直接在 OpenClaw 中使用微信文章读取能力。
+            </p>
+
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">方式一：通过 MCP 接入（推荐）</h3>
+              <p className="text-sm text-muted-foreground">
+                OpenClaw 原生支持 MCP 协议。只需在 OpenClaw 的 MCP 配置中添加 ReadGZH 服务即可：
+              </p>
+              <CodeBlock label="OpenClaw MCP 配置">
+{`{
+  "mcpServers": {
+    "readgzh": {
+      "url": "${API_URL}/mcp-server"
+    }
+  }
+}`}
+              </CodeBlock>
+              <p className="text-sm text-muted-foreground">
+                配置完成后，OpenClaw 会自动发现 <code className="bg-muted px-1.5 py-0.5 rounded text-xs">read_wechat_article</code>、
+                <code className="bg-muted px-1.5 py-0.5 rounded text-xs">search_articles</code> 等工具。
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">方式二：安装 SKILL.md</h3>
+              <p className="text-sm text-muted-foreground">
+                你也可以将 ReadGZH 作为独立 Skill 安装到 OpenClaw workspace：
+              </p>
+              <CodeBlock label="安装 Skill">
+{`# 下载 SKILL.md 到 OpenClaw skills 目录
+mkdir -p ~/.openclaw/workspace/skills/readgzh
+curl -o ~/.openclaw/workspace/skills/readgzh/SKILL.md \\
+  https://readgzh.site/.well-known/SKILL.md`}
+              </CodeBlock>
+              <p className="text-sm text-muted-foreground">
+                安装后重启 OpenClaw，当用户提到「微信」「公众号」或分享 mp.weixin.qq.com 链接时，Skill 会自动触发。
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">配置 API Key（可选）</h3>
+              <p className="text-sm text-muted-foreground">
+                如需使用带鉴权的 API（更高配额），在 Skill 配置中添加 API Key：
+              </p>
+              <CodeBlock label="config.yaml">
+{`api_key: "sk_live_你的Key"`}
+              </CodeBlock>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">使用示例</h3>
+              <div className="bg-muted/50 rounded-lg p-4 space-y-2 text-sm">
+                <p className="font-medium">💬 你：</p>
+                <p className="text-muted-foreground italic">帮我读一下这篇微信文章 https://mp.weixin.qq.com/s/xxxxx</p>
+                <p className="font-medium mt-3">🤖 OpenClaw：</p>
+                <p className="text-muted-foreground italic">正在使用 readgzh skill 读取文章...（自动调用 read_wechat_article）</p>
               </div>
             </div>
           </CardContent>
