@@ -473,9 +473,9 @@ async function handleReadMode(slug: string | null, articleId: string | null): Pr
     <div class="content">
       ${contentBody}
     </div>
-    <div class="footer">
+    <div class="footer" style="margin-top:3em;padding-top:1em;border-top:1px solid #eee;color:#aaa;font-size:0.85em;">
       ${sourceLink}
-      <p>由微信公众号 AI 阅读器提供</p>
+      <p style="margin-top:0.8em;">Powered by <a href="https://readgzh.site" style="color:#aaa;text-decoration:none;">ReadGZH</a> · <a href="https://readgzh.site/docs" style="color:#aaa;text-decoration:none;">开发者文档</a></p>
     </div>
   </article>
 </body>

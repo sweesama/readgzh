@@ -238,7 +238,7 @@ GET ${API_URL}/rd?id=abc123-...`}
               <CodeBlock label="claude_desktop_config.json">
 {`{
   "mcpServers": {
-    "wechat-reader": {
+    "readgzh": {
       "url": "${API_URL}/mcp-server"
     }
   }
@@ -337,13 +337,16 @@ GET ${API_URL}/rd?id=abc123-...`}
             </div>
 
             <div className="space-y-3">
-              <h3 className="font-semibold text-lg">方式二：安装 SKILL.md</h3>
+              <h3 className="font-semibold text-lg">方式二：一键安装 Skill</h3>
               <p className="text-sm text-muted-foreground">
-                你也可以将 ReadGZH 作为独立 Skill 安装到 OpenClaw workspace：
+                如果 ReadGZH 已发布到 ClawHub，可直接一键安装：
               </p>
-              <CodeBlock label="安装 Skill">
-{`# 下载 SKILL.md 到 OpenClaw skills 目录
-mkdir -p ~/.openclaw/workspace/skills/readgzh
+              <CodeBlock label="通过 ClawHub 安装（推荐）">
+{`clawhub install readgzh`}
+              </CodeBlock>
+              <p className="text-sm text-muted-foreground">或者手动下载安装：</p>
+              <CodeBlock label="手动安装">
+{`mkdir -p ~/.openclaw/workspace/skills/readgzh
 curl -o ~/.openclaw/workspace/skills/readgzh/SKILL.md \\
   https://readgzh.site/.well-known/SKILL.md`}
               </CodeBlock>
