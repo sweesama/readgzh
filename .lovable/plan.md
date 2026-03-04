@@ -1,115 +1,41 @@
 
 
-# 微信公众号 AI 阅读器 - MVP 方案
+## Stripe 一次性支付集成方案
 
-## 产品概述
+### 背景
+- Stripe 已启用，密钥已自动配置
+- 已创建 Stripe 产品 `ReadGZH Pro`（prod_U5RkD78UQRIlZD）和价格 price_1T7GqgB04cx1cwwsUCydmZHv（¥39 CNY）
+- 项目已有 Google OAuth 登录和 Dashboard 页面
+- 采用一次性支付模式（先上线，后续再加订阅）
 
-一个让 AI 能够读取微信公众号文章的云服务。用户或 AI 输入微信公众号链接，服务返回提取的文章内容（API 返回 JSON 给 AI，同时提供美化的阅读页面给人类用户）。
+### 实施步骤
 
----
+**1. 创建 `create-payment` Edge Function**
+- 验证用户身份（从 Authorization header 获取）
+- 查找或创建 Stripe Customer
+- 创建 `mode: "payment"` 的 Checkout Session
+- 返回 Stripe Checkout URL 给前端跳转
+- 在 `supabase/config.toml` 中添加 `[functions.create-payment]` 配置
 
-## 核心功能
+**2. 创建支付成功页面 `/payment-success`**
+- 简洁的支付成功确认页面
+- 引导用户回到 Dashboard
+- 在 `App.tsx` 中注册路由
 
-### 1. 首页 - 链接转换工具
-- 简洁的输入框，用户粘贴微信公众号链接
-- 一键生成可读版本的链接
-- 展示使用方法和示例
+**3. 更新 PricingPage**
+- Pro 套餐按钮从"即将推出"（disabled）改为"立即购买"
+- 点击后调用 `create-payment` Edge Function
+- 获取 Checkout URL 后在新标签页打开 Stripe 结账
+- 未登录用户先跳转 Dashboard 登录
 
-### 2. 阅读页面
-- 美化的文章展示页面（标题、作者、正文）
-- 清爽的阅读体验，无广告干扰
-- 显示原文链接（法律合规）
-- 复制内容按钮（方便粘贴给 AI）
+**4. 在 Dashboard 添加升级入口**
+- 在控制台顶部或积分卡片区域添加"升级到 Pro"按钮
+- 同样调用 `create-payment` 发起支付
 
-### 3. API 接口
-- 端点：`/api/read?url=微信链接`
-- 返回 JSON 格式：`{title, author, content, publishTime}`
-- 给 AI 开发者和集成使用
-- 支持内容缓存，减少重复抓取
-
----
-
-## 页面结构
-
-### 页面 1：首页（/）
-- 产品名称和简介
-- 链接输入框 + 转换按钮
-- 使用说明（给普通用户和 AI 开发者）
-- 功能特点展示
-
-### 页面 2：阅读页面（/read?url=xxx）
-- 提取并美化显示的文章内容
-- 文章标题、作者、发布时间
-- 正文内容（纯文本，不保存图片）
-- 原文链接 + 复制按钮
-
----
-
-## 技术架构
-
-### 前端（Lovable）
-- React 页面：首页和阅读页面
-- 响应式设计，支持手机访问
-- 简洁美观的 UI
-
-### 后端（Lovable Cloud Edge Function）
-- 接收微信公众号链接
-- 提取文章内容（标题、作者、正文）
-- 返回 JSON 数据
-- 基础缓存机制（避免重复抓取）
-
----
-
-## 用户使用流程
-
-### 流程 A：普通用户
-1. 打开首页，粘贴微信公众号链接
-2. 点击"转换"按钮
-3. 跳转到美化的阅读页面
-4. 可复制内容粘贴给任何 AI
-
-### 流程 B：直接访问
-1. 用户直接访问 `yoursite.com/read?url=微信链接`
-2. 看到美化的阅读页面
-
-### 流程 C：AI 开发者
-1. 调用 API：`GET /api/read?url=微信链接`
-2. 获得 JSON 格式的文章内容
-3. 集成到自己的 AI 应用中
-
----
-
-## 设计风格
-
-- 简洁现代的风格
-- 主色调：清爽的蓝色或绿色
-- 重点突出阅读体验
-- 移动端友好
-
----
-
-## MVP 范围（第一版）
-
-### ✅ 包含
-- 首页链接转换工具
-- 阅读页面
-- 基础 API 接口
-- 简单的内容缓存
-
-### ❌ 暂不包含（后续迭代）
-- 用户账号系统
-- 付费功能
-- 高级 API 配额管理
-- 图片存储
-- MCP 插件
-
----
-
-## 预期成果
-
-完成后你将拥有：
-1. 一个可以公开访问的网站
-2. 可以让任何 AI（ChatGPT、Claude 等）读取微信公众号内容
-3. 可以分享给其他有同样需求的用户
-4. 为后续商业化打下基础
+### 技术细节
+- Price ID: `price_1T7GqgB04cx1cwwsUCydmZHv`
+- Stripe API version: `2025-08-27.basil`
+- 成功回调 URL: `{origin}/payment-success`
+- 取消回调 URL: `{origin}/pricing`
+- STRIPE_SECRET_KEY 已在环境变量中，无需额外配置
 
