@@ -16,6 +16,7 @@ import CookiesPage from "./pages/CookiesPage";
 import FAQPage from "./pages/FAQPage";
 import DashboardPage from "./pages/DashboardPage";
 import PricingPage from "./pages/PricingPage";
+import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 
 // Error boundary to prevent WebMCP from crashing the app
 class WebMCPErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
