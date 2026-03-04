@@ -154,6 +154,68 @@ GET ${API_URL}/rd?id=abc123-...`}
           </CardContent>
         </Card>
 
+        {/* ChatGPT Action */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bot className="h-5 w-5 text-primary" />
+              ChatGPT Action 接入（自定义 GPTs）
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <p className="text-muted-foreground">
+              你可以将 ReadGZH 集成为 ChatGPT 的自定义 Action，让你的 GPTs 能直接读取微信文章。
+            </p>
+
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">1. 创建或编辑 GPTs</h3>
+              <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground">
+                <li>打开 <a href="https://chat.openai.com/gpts/editor" target="_blank" rel="noopener" className="text-primary hover:underline">ChatGPT GPTs 编辑器</a></li>
+                <li>点击「Configure」→「Actions」→「Create new action」</li>
+                <li>在 Schema 输入框中选择「Import from URL」</li>
+              </ol>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">2. 导入 OpenAPI 规范</h3>
+              <p className="text-sm text-muted-foreground">
+                粘贴以下 URL 导入 API 定义：
+              </p>
+              <CodeBlock label="OpenAPI Spec URL">
+{`https://readgzh.site/.well-known/openapi.yaml`}
+              </CodeBlock>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">3. 配置鉴权</h3>
+              <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground">
+                <li>Authentication Type 选择「API Key」</li>
+                <li>Auth Type 选择「Bearer」</li>
+                <li>粘贴你的 API Key（<code className="bg-muted px-1.5 py-0.5 rounded text-xs">sk_live_...</code>，可在 <Link to="/dashboard" className="text-primary hover:underline">控制台</Link> 创建）</li>
+              </ol>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">4. 设置 GPTs 指令</h3>
+              <p className="text-sm text-muted-foreground">
+                在 GPTs 的 Instructions 中添加以下内容：
+              </p>
+              <CodeBlock label="GPTs Instructions 示例">
+{`当用户分享微信公众号文章链接（mp.weixin.qq.com）时，
+使用 readWeChatArticle action 读取文章全文内容，
+然后根据用户需求进行总结、翻译或分析。`}
+              </CodeBlock>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">5. 测试</h3>
+              <p className="text-sm text-muted-foreground">
+                保存后，在 GPTs 对话中发送一个微信文章链接，GPTs 会自动调用 ReadGZH 读取全文。
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* MCP Protocol */}
         <Card>
           <CardHeader>
