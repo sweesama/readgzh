@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Copy, Key, Plus, Trash2, Gift, LogOut, ArrowLeft, Eye, EyeOff, BarChart3, Coins, Zap, Loader2 } from "lucide-react";
+import { Copy, Key, Plus, Trash2, Gift, LogOut, ArrowLeft, Eye, EyeOff, BarChart3, Coins, Zap, Loader2, Crown } from "lucide-react";
 import Footer from "@/components/home/Footer";
 
 interface ApiKey {
@@ -49,6 +49,8 @@ const DashboardPage = () => {
   const [isClaiming, setIsClaiming] = useState(false);
   const [keysLoading, setKeysLoading] = useState(true);
   const [upgradeLoading, setUpgradeLoading] = useState(false);
+  const [isPro, setIsPro] = useState(false);
+  const [proLoading, setProLoading] = useState(true);
 
   const handleUpgrade = async () => {
     setUpgradeLoading(true);
@@ -86,14 +88,26 @@ const DashboardPage = () => {
     if (data?.success) setBalance(data.balance);
   }, []);
 
+  const checkProStatus = useCallback(async () => {
+    setProLoading(true);
+    try {
+      const { data } = await supabase.functions.invoke("check-payment");
+      if (data?.is_pro) setIsPro(true);
+    } catch {
+      // ignore
+    }
+    setProLoading(false);
+  }, []);
+
   useEffect(() => {
     if (!loading && !user) return;
     if (user) {
       fetchKeys();
       fetchUsage();
       fetchBalance();
+      checkProStatus();
     }
-  }, [user, loading, fetchKeys, fetchUsage, fetchBalance]);
+  }, [user, loading, fetchKeys, fetchUsage, fetchBalance, checkProStatus]);
 
   const handleLogin = async () => {
     const { error } = await lovable.auth.signInWithOAuth("google", {
@@ -171,6 +185,7 @@ const DashboardPage = () => {
 
   const hasClaimed = balance?.claimed_today ?? false;
   const remainingCredits = balance?.remaining_credits ?? 0;
+  const dailyLimit = isPro ? 2000 : 50;
 
   if (loading) {
     return (
@@ -212,6 +227,11 @@ const DashboardPage = () => {
               <ArrowLeft className="mr-2 h-4 w-4" />首页
             </Button>
             <h1 className="text-xl font-bold">开发者控制台</h1>
+            {!proLoading && (
+              <Badge variant={isPro ? "default" : "secondary"} className={isPro ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0" : ""}>
+                {isPro ? <><Crown className="h-3 w-3 mr-1" />Pro</> : "Free"}
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground">{user.email}</span>
@@ -223,22 +243,37 @@ const DashboardPage = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8 space-y-8">
-        {/* Upgrade Banner */}
-        <Card className="border-primary/40 bg-gradient-to-r from-primary/10 to-primary/5">
-          <CardContent className="pt-6 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Zap className="h-8 w-8 text-primary" />
-              <div>
-                <p className="font-semibold">升级到 Pro</p>
-                <p className="text-sm text-muted-foreground">每日 2,000 积分 · 无需每日领取 · 优先抓取队列</p>
+        {/* Upgrade Banner - only show for free users */}
+        {!isPro && !proLoading && (
+          <Card className="border-primary/40 bg-gradient-to-r from-primary/10 to-primary/5">
+            <CardContent className="pt-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Zap className="h-8 w-8 text-primary" />
+                <div>
+                  <p className="font-semibold">升级到 Pro</p>
+                  <p className="text-sm text-muted-foreground">每日 2,000 积分 · 无需每日领取 · 优先抓取队列</p>
+                </div>
               </div>
-            </div>
-            <Button onClick={handleUpgrade} disabled={upgradeLoading}>
-              {upgradeLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
-              {upgradeLoading ? "处理中..." : "¥39 立即升级"}
-            </Button>
-          </CardContent>
-        </Card>
+              <Button onClick={handleUpgrade} disabled={upgradeLoading}>
+                {upgradeLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+                {upgradeLoading ? "处理中..." : "¥39 立即升级"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Pro Status Banner */}
+        {isPro && (
+          <Card className="border-amber-500/40 bg-gradient-to-r from-amber-500/10 to-orange-500/5">
+            <CardContent className="pt-6 flex items-center gap-3">
+              <Crown className="h-8 w-8 text-amber-500" />
+              <div>
+                <p className="font-semibold">Pro 会员</p>
+                <p className="text-sm text-muted-foreground">每日 2,000 积分 · 优先抓取队列 · 感谢支持 ❤️</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -271,13 +306,20 @@ const DashboardPage = () => {
                 <div>
                   <p className="text-sm text-muted-foreground">今日剩余积分</p>
                   <p className="text-3xl font-bold">
-                    {hasClaimed ? remainingCredits : <span className="text-muted-foreground">—</span>}
-                    {hasClaimed && <span className="text-base font-normal text-muted-foreground"> / 50</span>}
+                    {isPro ? (
+                      <>{dailyLimit - todayTotal}<span className="text-base font-normal text-muted-foreground"> / {dailyLimit}</span></>
+                    ) : hasClaimed ? (
+                      <>{remainingCredits}<span className="text-base font-normal text-muted-foreground"> / {dailyLimit}</span></>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </p>
                 </div>
                 <Coins className="h-8 w-8 text-primary" />
               </div>
-              {hasClaimed ? (
+              {isPro ? (
+                <p className="text-xs text-muted-foreground mt-3">✅ Pro 会员自动获取每日积分</p>
+              ) : hasClaimed ? (
                 <p className="text-xs text-muted-foreground mt-3">✅ 今日积分已领取 · 简单文章 1 积分，复杂文章 2 积分</p>
               ) : (
                 <Button
@@ -330,7 +372,6 @@ const DashboardPage = () => {
             <CardDescription>管理你的 API Key，每个账号最多 3 个活跃 Key</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Create new key */}
             <div className="flex gap-3">
               <Input
                 placeholder="Key 名称（可选，如 'Production'）"
@@ -344,7 +385,6 @@ const DashboardPage = () => {
               </Button>
             </div>
 
-            {/* Keys list */}
             {keysLoading ? (
               <div className="text-muted-foreground text-sm py-4">加载中...</div>
             ) : keys.length === 0 ? (
