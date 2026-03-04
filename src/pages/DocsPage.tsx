@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Copy, CheckCircle, Code, Globe, Bot, Search, BookOpen, Zap } from "lucide-react";
+import { ArrowLeft, Copy, CheckCircle, Code, Globe, Bot, Search, BookOpen, Zap, Key } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const SITE_URL = "https://readgzh.site";
@@ -240,6 +240,61 @@ GET ${API_URL}/rd?id=abc123-...`}
           </CardContent>
         </Card>
 
+        {/* API Key Authentication */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5 text-primary" />
+              API Key 鉴权
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <p className="text-muted-foreground">
+              网页版免费使用，无需 Key。API 调用需要携带 API Key，可在{" "}
+              <Link to="/dashboard" className="text-primary hover:underline">开发者控制台</Link> 免费创建。
+            </p>
+
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">获取 API Key</h3>
+              <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground">
+                <li>前往 <Link to="/dashboard" className="text-primary hover:underline">开发者控制台</Link>，使用 Google 账号登录</li>
+                <li>点击「创建 Key」生成一个 <code className="bg-muted px-1.5 py-0.5 rounded text-xs">sk_live_...</code> 格式的密钥</li>
+                <li>每天点击「领取今日额度」获取 50 次免费调用</li>
+                <li>需要更多额度？查看 <Link to="/pricing" className="text-primary hover:underline">定价方案</Link></li>
+              </ol>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">使用方式</h3>
+              <p className="text-sm text-muted-foreground">
+                在请求中添加 <code className="bg-muted px-1.5 py-0.5 rounded text-xs">Authorization</code> 头：
+              </p>
+              <CodeBlock label="带鉴权的 API 请求">
+{`curl "${API_URL}/rd?url=https://mp.weixin.qq.com/s/xxxxx" \\
+  -H "Authorization: Bearer sk_live_你的Key"`}
+              </CodeBlock>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">错误响应</h3>
+              <div className="grid gap-2 text-sm">
+                <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                  <code className="font-semibold text-destructive shrink-0">401</code>
+                  <div>
+                    <p className="text-muted-foreground">未提供 API Key 或 Key 无效</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                  <code className="font-semibold text-destructive shrink-0">429</code>
+                  <div>
+                    <p className="text-muted-foreground">已达每日调用上限，响应头包含 <code className="bg-muted px-1 rounded text-xs">X-RateLimit-Remaining</code></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Usage Notes */}
         <Card>
           <CardHeader>
@@ -253,7 +308,7 @@ GET ${API_URL}/rd?id=abc123-...`}
               <li>仅支持微信公众号链接（mp.weixin.qq.com）</li>
               <li>文章内容会自动缓存，重复请求不会重新抓取</li>
               <li>图片消息会提取所有图片和文字描述</li>
-              <li>免费使用，每天每 IP 限制 100 次调用</li>
+              <li>网页版免费使用；API 调用需要 Key，每日 50 次免费额度（需领取）</li>
               <li>请遵守相关法律法规，仅用于个人学习和研究</li>
             </ul>
           </CardContent>
