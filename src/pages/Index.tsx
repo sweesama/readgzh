@@ -71,8 +71,8 @@ const Index = () => {
 
       <main>
         <HeroSection />
-        <StatsWidget />
         <AIGuideSection />
+        <StatsWidget />
         <FeaturesSection />
         <AdvantagesSection />
       </main>
