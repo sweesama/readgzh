@@ -218,9 +218,15 @@ export type Database = {
         Returns: Json
       }
       cleanup_old_rate_limits: { Args: never; Returns: undefined }
+      get_user_balance: { Args: { p_user_id: string }; Returns: Json }
       increment_view_count: { Args: { article_id: string }; Returns: undefined }
       record_cache_hit: { Args: { p_key_hash: string }; Returns: undefined }
-      validate_api_key: { Args: { p_key_hash: string }; Returns: Json }
+      validate_api_key:
+        | { Args: { p_key_hash: string }; Returns: Json }
+        | {
+            Args: { p_credit_cost?: number; p_key_hash: string }
+            Returns: Json
+          }
     }
     Enums: {
       [_ in never]: never

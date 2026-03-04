@@ -510,7 +510,7 @@ async function hashApiKey(key: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function checkApiKeyAuth(req: Request): Promise<{
+async function checkApiKeyAuth(req: Request, creditCost: number = 1): Promise<{
   isApiKey: boolean;
   allowed: boolean;
   current: number;
@@ -518,6 +518,7 @@ async function checkApiKeyAuth(req: Request): Promise<{
   limit: number;
   tier?: string;
   keyHash?: string;
+  creditCost?: number;
 } | null> {
   const authHeader = req.headers.get("authorization") || "";
   if (!authHeader.startsWith("Bearer sk_live_")) return null;
@@ -530,12 +531,12 @@ async function checkApiKeyAuth(req: Request): Promise<{
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
-    const { data, error } = await supabase.rpc("validate_api_key", { p_key_hash: keyHash });
+    const { data, error } = await supabase.rpc("validate_api_key", { p_key_hash: keyHash, p_credit_cost: creditCost });
     if (error) {
       console.error("API key validation error:", error);
       return { isApiKey: true, allowed: false, current: 0, remaining: 0, limit: 0 };
     }
-    const result = data as { valid: boolean; allowed: boolean; current: number; limit: number; remaining: number; tier?: string };
+    const result = data as { valid: boolean; allowed: boolean; current: number; limit: number; remaining: number; tier?: string; credit_cost?: number };
     if (!result.valid) {
       return { isApiKey: true, allowed: false, current: 0, remaining: 0, limit: 0 };
     }
@@ -547,10 +548,32 @@ async function checkApiKeyAuth(req: Request): Promise<{
       limit: result.limit,
       tier: result.tier,
       keyHash,
+      creditCost,
     };
   } catch (err) {
     console.error("API key auth error:", err);
     return { isApiKey: true, allowed: false, current: 0, remaining: 0, limit: 0 };
+  }
+}
+
+// Calculate credit cost based on content complexity
+function calculateCreditCost(contentHtml: string, isPicture: boolean): number {
+  if (isPicture) return 2; // Picture templates (小绿书) always cost 2
+  const imgCount = (contentHtml.match(/<img\s/gi) || []).length;
+  return imgCount >= 5 ? 2 : 1;
+}
+
+// Deduct extra credits for complex articles (called after scrape)
+async function deductExtraCredit(keyHash: string): Promise<void> {
+  try {
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+    // Deduct 1 additional credit (the first was already deducted during validation)
+    await supabase.rpc("validate_api_key", { p_key_hash: keyHash, p_credit_cost: 1 });
+  } catch (err) {
+    console.error("Extra credit deduction error:", err);
   }
 }
 
@@ -585,10 +608,10 @@ async function checkRateLimit(req: Request): Promise<{ allowed: boolean; current
 function rateLimitResponse(rateInfo: { current: number; remaining: number; limit?: number; isApiKey?: boolean }): Response {
   const limit = rateInfo.limit || DAILY_LIMIT;
   const errorMsg = rateInfo.isApiKey
-    ? `API Key 额度已用完，今日限制 ${limit} 次`
+    ? `API Key 积分已用完，今日限制 ${limit} 积分`
     : `请求过于频繁，每天限制 ${DAILY_LIMIT} 次调用`;
   const hint = rateInfo.isApiKey
-    ? "请到 readgzh.site/dashboard 领取免费额度或升级套餐"
+    ? "请到 readgzh.site/dashboard 领取免费积分或升级套餐"
     : "如需更多额度，请到 readgzh.site/dashboard 获取 API Key";
 
   return new Response(
@@ -655,7 +678,7 @@ Deno.serve(async (req) => {
         return rateLimitResponse(rateInfo);
       }
 
-      return await handleScrapeAndRedirect(url);
+      return await handleScrapeAndRedirect(url, rateInfo?.keyHash);
     }
 
     // POST request: scrape or submit article
@@ -686,7 +709,7 @@ Deno.serve(async (req) => {
         return rateLimitResponse(rateInfo);
       }
 
-      return await handleScrape(url);
+      return await handleScrape(url, rateInfo?.keyHash);
     }
 
     return new Response("Method not allowed", { status: 405, headers: corsHeaders });
@@ -788,7 +811,7 @@ async function handleDirectSubmit(body: Record<string, unknown>): Promise<Respon
 }
 
 // GET ?url= handler: scrape, store, then return SSR HTML directly (no redirect)
-async function handleScrapeAndRedirect(url: string): Promise<Response> {
+async function handleScrapeAndRedirect(url: string, keyHash?: string): Promise<Response> {
   if (!url.includes("mp.weixin.qq.com") && !url.includes("weixin.qq.com")) {
     return new Response(
       `<!DOCTYPE html><html><body><h1>错误</h1><p>请提供有效的微信公众号文章链接</p></body></html>`,
@@ -823,7 +846,7 @@ async function handleScrapeAndRedirect(url: string): Promise<Response> {
   }
 
   // Not cached – scrape via handleScrape (which stores it), then return HTML
-  const scrapeResult = await handleScrape(url);
+  const scrapeResult = await handleScrape(url, keyHash);
   const resultData = await scrapeResult.json();
 
   if (!resultData.success) {
@@ -838,7 +861,7 @@ async function handleScrapeAndRedirect(url: string): Promise<Response> {
   return await handleReadMode(savedSlug || null, savedSlug ? null : resultData.articleId);
 }
 
-async function handleScrape(url: string): Promise<Response> {
+async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     if (!url.includes("mp.weixin.qq.com") && !url.includes("weixin.qq.com")) {
       return new Response(
         JSON.stringify({ success: false, error: "请提供有效的微信公众号文章链接" }),
@@ -1029,8 +1052,16 @@ async function handleScrape(url: string): Promise<Response> {
 
     console.log("Saved:", saved.id, saved.slug, metadata.title, "Text:", textContent.length, "HTML:", contentHtml.length);
 
+    // Calculate credit cost and deduct extra if complex article
+    const isPicture = isPictureTemplate(html!);
+    const creditCost = calculateCreditCost(contentHtml, isPicture);
+    if (creditCost > 1 && keyHash) {
+      console.log(`Complex article detected (cost=${creditCost}), deducting extra credit`);
+      await deductExtraCredit(keyHash);
+    }
+
     return new Response(
-      JSON.stringify({ success: true, cached: false, articleId: saved.id, slug: saved.slug }),
+      JSON.stringify({ success: true, cached: false, articleId: saved.id, slug: saved.slug, creditCost }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 }

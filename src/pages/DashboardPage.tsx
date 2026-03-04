@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Copy, Key, Plus, Trash2, Gift, LogOut, ArrowLeft, Eye, EyeOff, BarChart3 } from "lucide-react";
+import { Copy, Key, Plus, Trash2, Gift, LogOut, ArrowLeft, Eye, EyeOff, BarChart3, Coins } from "lucide-react";
 import Footer from "@/components/home/Footer";
 
 interface ApiKey {
@@ -29,11 +29,19 @@ interface UsageRecord {
   api_key_id: string;
 }
 
+interface Balance {
+  claimed_today: boolean;
+  total_credits: number;
+  used_credits: number;
+  remaining_credits: number;
+}
+
 const DashboardPage = () => {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [usage, setUsage] = useState<UsageRecord[]>([]);
+  const [balance, setBalance] = useState<Balance | null>(null);
   const [newKeyName, setNewKeyName] = useState("");
   const [newKey, setNewKey] = useState<string | null>(null);
   const [showNewKey, setShowNewKey] = useState(false);
@@ -56,13 +64,21 @@ const DashboardPage = () => {
     if (data?.success) setUsage(data.usage);
   }, []);
 
+  const fetchBalance = useCallback(async () => {
+    const { data } = await supabase.functions.invoke("api-keys", {
+      body: { action: "balance" },
+    });
+    if (data?.success) setBalance(data.balance);
+  }, []);
+
   useEffect(() => {
     if (!loading && !user) return;
     if (user) {
       fetchKeys();
       fetchUsage();
+      fetchBalance();
     }
-  }, [user, loading, fetchKeys, fetchUsage]);
+  }, [user, loading, fetchKeys, fetchUsage, fetchBalance]);
 
   const handleLogin = async () => {
     const { error } = await lovable.auth.signInWithOAuth("google", {
@@ -112,6 +128,7 @@ const DashboardPage = () => {
       });
       if (data?.success) {
         toast({ title: "🎉 领取成功", description: data.message });
+        fetchBalance();
       } else {
         toast({ title: "领取失败", description: data?.error, variant: "destructive" });
       }
@@ -137,6 +154,9 @@ const DashboardPage = () => {
   });
   const weekTotal = last7Days.reduce((sum, u) => sum + u.request_count, 0);
 
+  const hasClaimed = balance?.claimed_today ?? false;
+  const remainingCredits = balance?.remaining_credits ?? 0;
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -156,7 +176,7 @@ const DashboardPage = () => {
           <div className="max-w-md mx-auto text-center">
             <Key className="h-16 w-16 mx-auto mb-6 text-primary" />
             <h1 className="text-3xl font-bold mb-3">开发者控制台</h1>
-            <p className="text-muted-foreground mb-8">登录后可以生成 API Key，管理用量，领取每日免费额度</p>
+            <p className="text-muted-foreground mb-8">登录后可以生成 API Key，管理用量，领取每日免费积分</p>
             <Button onClick={handleLogin} size="lg" className="w-full max-w-xs">
               <img src="https://www.google.com/favicon.ico" alt="" className="w-5 h-5 mr-2" />
               使用 Google 账号登录
@@ -194,20 +214,20 @@ const DashboardPage = () => {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">今日用量</p>
-                  <p className="text-3xl font-bold">{todayTotal}</p>
+                  <p className="text-sm text-muted-foreground">今日消耗</p>
+                  <p className="text-3xl font-bold">{todayTotal} <span className="text-base font-normal text-muted-foreground">积分</span></p>
                 </div>
                 <BarChart3 className="h-8 w-8 text-primary" />
               </div>
-              <p className="text-xs text-muted-foreground mt-1">缓存命中 {todayCached} 次</p>
+              <p className="text-xs text-muted-foreground mt-1">缓存命中 {todayCached} 次（不消耗积分）</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">近 7 天总量</p>
-                  <p className="text-3xl font-bold">{weekTotal}</p>
+                  <p className="text-sm text-muted-foreground">近 7 天消耗</p>
+                  <p className="text-3xl font-bold">{weekTotal} <span className="text-base font-normal text-muted-foreground">积分</span></p>
                 </div>
                 <BarChart3 className="h-8 w-8 text-muted-foreground" />
               </div>
@@ -217,20 +237,27 @@ const DashboardPage = () => {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">每日免费额度</p>
-                  <p className="text-3xl font-bold">50 次/天</p>
+                  <p className="text-sm text-muted-foreground">今日剩余积分</p>
+                  <p className="text-3xl font-bold">
+                    {hasClaimed ? remainingCredits : <span className="text-muted-foreground">—</span>}
+                    {hasClaimed && <span className="text-base font-normal text-muted-foreground"> / 50</span>}
+                  </p>
                 </div>
-                <Gift className="h-8 w-8 text-primary" />
+                <Coins className="h-8 w-8 text-primary" />
               </div>
-              <Button
-                onClick={claimCredits}
-                disabled={isClaiming}
-                size="sm"
-                className="mt-3 w-full"
-              >
-                <Gift className="mr-2 h-4 w-4" />
-                {isClaiming ? "领取中..." : "领取今日额度"}
-              </Button>
+              {hasClaimed ? (
+                <p className="text-xs text-muted-foreground mt-3">✅ 今日积分已领取 · 简单文章 1 积分，复杂文章 2 积分</p>
+              ) : (
+                <Button
+                  onClick={claimCredits}
+                  disabled={isClaiming}
+                  size="sm"
+                  className="mt-3 w-full"
+                >
+                  <Gift className="mr-2 h-4 w-4" />
+                  {isClaiming ? "领取中..." : "领取今日 50 积分"}
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -310,7 +337,7 @@ const DashboardPage = () => {
                       <p className="text-xs text-muted-foreground">
                         创建于 {new Date(key.created_at).toLocaleDateString("zh-CN")}
                         {key.last_used_at && ` · 最后使用 ${new Date(key.last_used_at).toLocaleDateString("zh-CN")}`}
-                        {` · 限额 ${key.daily_limit} 次/天`}
+                        {` · 限额 ${key.daily_limit} 积分/天`}
                       </p>
                     </div>
                     {key.is_active && (
@@ -335,7 +362,7 @@ const DashboardPage = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />用量明细（近 30 天）
+                <BarChart3 className="h-5 w-5" />积分消耗明细（近 30 天）
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -344,13 +371,12 @@ const DashboardPage = () => {
                   <thead>
                     <tr className="border-b">
                       <th className="text-left py-2 font-medium text-muted-foreground">日期</th>
-                      <th className="text-right py-2 font-medium text-muted-foreground">请求数</th>
+                      <th className="text-right py-2 font-medium text-muted-foreground">消耗积分</th>
                       <th className="text-right py-2 font-medium text-muted-foreground">缓存命中</th>
                       <th className="text-right py-2 font-medium text-muted-foreground">实际抓取</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {/* Aggregate by date */}
                     {Object.entries(
                       usage.reduce((acc, u) => {
                         if (!acc[u.usage_date]) acc[u.usage_date] = { requests: 0, cached: 0 };
@@ -374,6 +400,35 @@ const DashboardPage = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Credit Cost Guide */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Coins className="h-5 w-5" />积分计费规则
+            </CardTitle>
+            <CardDescription>根据文章复杂度消耗不同积分</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div className="p-4 rounded-lg border bg-muted/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant="secondary">1 积分</Badge>
+                  <span className="font-medium">简单文章</span>
+                </div>
+                <p className="text-muted-foreground">纯文字为主，图片少于 5 张的普通图文</p>
+              </div>
+              <div className="p-4 rounded-lg border bg-muted/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant="default">2 积分</Badge>
+                  <span className="font-medium">复杂文章</span>
+                </div>
+                <p className="text-muted-foreground">包含大量图片（≥5 张）或小绿书图片模板</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-3">💡 已缓存文章的读取永远免费，不消耗积分</p>
+          </CardContent>
+        </Card>
 
         {/* Quick Start Guide */}
         <Card>

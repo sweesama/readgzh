@@ -187,13 +187,23 @@ Deno.serve(async (req) => {
       if (error) throw error;
 
       return new Response(
-        JSON.stringify({ success: true, credits: 50, message: "成功领取 50 次免费额度！" }),
+        JSON.stringify({ success: true, credits: 50, message: "成功领取 50 积分！" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === "balance") {
+      const { data, error } = await serviceClient.rpc("get_user_balance", { p_user_id: user.id });
+      if (error) throw error;
+
+      return new Response(
+        JSON.stringify({ success: true, balance: data }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     return new Response(
-      JSON.stringify({ error: "Unknown action. Use: create, list, revoke, usage, claim_credits" }),
+      JSON.stringify({ error: "Unknown action. Use: create, list, revoke, usage, claim_credits, balance" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
