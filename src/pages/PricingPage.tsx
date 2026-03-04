@@ -10,12 +10,12 @@ const tiers = [
     name: "Free",
     price: "¥0",
     period: "永久免费",
-    description: "每天到网站领取 50 次免费额度",
+    description: "每天到网站领取 50 积分免费额度",
     icon: Gift,
     highlight: false,
     features: [
-      "每日 50 次 API 调用",
-      "需每日到网站领取额度",
+      "每日 50 积分（简单文章 1 积分，复杂文章 2 积分）",
+      "需每日到网站领取积分",
       "完整的文章解析能力",
       "缓存文章免费读取",
       "WebMCP 协议支持",
@@ -32,7 +32,7 @@ const tiers = [
     icon: Zap,
     highlight: true,
     features: [
-      "每日 2,000 次 API 调用",
+      "每日 2,000 积分",
       "无需每日领取，自动重置",
       "完整的文章解析能力",
       "缓存文章免费读取",
@@ -51,7 +51,7 @@ const tiers = [
     icon: Building2,
     highlight: false,
     features: [
-      "不限量 API 调用",
+      "不限量积分",
       "私有部署选项",
       "专属抓取通道",
       "SLA 保障 99.9%",
@@ -77,7 +77,7 @@ const PricingPage = () => {
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">简单透明的定价</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            免费开始使用，随业务增长升级。缓存文章的读取永远免费，只有新文章抓取才消耗额度。
+            免费开始使用，随业务增长升级。缓存文章免费读取，新文章按复杂度消耗 1-2 积分。
           </p>
         </div>
 
@@ -135,11 +135,11 @@ const PricingPage = () => {
           {[
             {
               q: "缓存文章需要消耗额度吗？",
-              a: "不需要！已经抓取过的文章再次读取完全免费，不消耗任何额度。只有首次抓取新文章才会消耗一次额度。",
+              a: "不需要！已经抓取过的文章再次读取完全免费，不消耗任何积分。只有首次抓取新文章才会根据复杂度消耗 1-2 积分。",
             },
             {
               q: "免费层的每日领取是什么意思？",
-              a: "免费用户每天需要到 ReadGZH 网站点击「领取额度」按钮，即可获得当日 50 次免费 API 调用额度。这有助于我们控制成本。",
+              a: "免费用户每天需要到 ReadGZH 网站点击「领取积分」按钮，即可获得当日 50 积分。简单文章消耗 1 积分，含大量图片的复杂文章消耗 2 积分。",
             },
             {
               q: "如何付费升级到 Pro？",
