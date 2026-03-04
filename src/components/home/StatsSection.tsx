@@ -9,9 +9,9 @@ const StatsWidget = () => {
 
   useEffect(() => {
     const fetchStats = async () => {
-      const { data } = await supabase.from("articles").select("content");
+      const { data } = await supabase.from("articles").select("content, view_count");
       if (data) {
-        const totalChars = data.reduce((sum, row) => sum + (row.content?.length || 0), 0);
+        const totalChars = data.reduce((sum, row) => sum + (row.content?.length || 0) * Math.max(row.view_count || 1, 1), 0);
         const estimatedTokens = Math.round(totalChars * 1.2);
         setTotalTokens(estimatedTokens);
       }
