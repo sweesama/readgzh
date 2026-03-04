@@ -528,7 +528,7 @@ curl -o ~/.openclaw/workspace/skills/readgzh/SKILL.md \\
             <Link to="/" className="text-primary hover:underline">← 返回首页</Link>
           </p>
           <p className="mt-4 text-xs text-muted-foreground/60">
-            Made by <span className="font-medium">Mzu</span> · <a href="https://readgzh.site" className="hover:underline">readgzh.site</a>
+            © <span className="font-medium">Mzu</span> · <a href="https://readgzh.site" className="hover:underline">readgzh.site</a>
           </p>
         </div>
       </div>
