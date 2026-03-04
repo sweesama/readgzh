@@ -14,6 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_keys: {
+        Row: {
+          created_at: string
+          daily_limit: number
+          id: string
+          is_active: boolean
+          key_hash: string
+          key_prefix: string
+          last_used_at: string | null
+          name: string
+          tier: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          daily_limit?: number
+          id?: string
+          is_active?: boolean
+          key_hash: string
+          key_prefix: string
+          last_used_at?: string | null
+          name?: string
+          tier?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          daily_limit?: number
+          id?: string
+          is_active?: boolean
+          key_hash?: string
+          key_prefix?: string
+          last_used_at?: string | null
+          name?: string
+          tier?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      api_usage: {
+        Row: {
+          api_key_id: string
+          cached_count: number
+          created_at: string
+          id: string
+          request_count: number
+          updated_at: string
+          usage_date: string
+        }
+        Insert: {
+          api_key_id: string
+          cached_count?: number
+          created_at?: string
+          id?: string
+          request_count?: number
+          updated_at?: string
+          usage_date?: string
+        }
+        Update: {
+          api_key_id?: string
+          cached_count?: number
+          created_at?: string
+          id?: string
+          request_count?: number
+          updated_at?: string
+          usage_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_usage_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       articles: {
         Row: {
           author: string | null
@@ -50,6 +127,57 @@ export type Database = {
           source_url?: string | null
           title?: string
           view_count?: number
+        }
+        Relationships: []
+      }
+      daily_credits: {
+        Row: {
+          claim_date: string
+          created_at: string
+          credits_claimed: number
+          id: string
+          user_id: string
+        }
+        Insert: {
+          claim_date?: string
+          created_at?: string
+          credits_claimed?: number
+          id?: string
+          user_id: string
+        }
+        Update: {
+          claim_date?: string
+          created_at?: string
+          credits_claimed?: number
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -91,6 +219,8 @@ export type Database = {
       }
       cleanup_old_rate_limits: { Args: never; Returns: undefined }
       increment_view_count: { Args: { article_id: string }; Returns: undefined }
+      record_cache_hit: { Args: { p_key_hash: string }; Returns: undefined }
+      validate_api_key: { Args: { p_key_hash: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
