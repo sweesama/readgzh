@@ -14,6 +14,8 @@ import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 import CookiesPage from "./pages/CookiesPage";
 import FAQPage from "./pages/FAQPage";
+import DashboardPage from "./pages/DashboardPage";
+import PricingPage from "./pages/PricingPage";
 
 // Error boundary to prevent WebMCP from crashing the app
 class WebMCPErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
@@ -53,6 +55,8 @@ const App = () => (
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/cookies" element={<CookiesPage />} />
           <Route path="/faq" element={<FAQPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

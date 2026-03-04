@@ -502,9 +502,64 @@ function getClientIp(req: Request): string {
 
 const DAILY_LIMIT = 100;
 
-async function checkRateLimit(req: Request): Promise<{ allowed: boolean; current: number; remaining: number } | null> {
+async function hashApiKey(key: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(key);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function checkApiKeyAuth(req: Request): Promise<{
+  isApiKey: boolean;
+  allowed: boolean;
+  current: number;
+  remaining: number;
+  limit: number;
+  tier?: string;
+  keyHash?: string;
+} | null> {
+  const authHeader = req.headers.get("authorization") || "";
+  if (!authHeader.startsWith("Bearer sk_live_")) return null;
+
+  const apiKey = authHeader.replace("Bearer ", "");
+  const keyHash = await hashApiKey(apiKey);
+
+  try {
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+    const { data, error } = await supabase.rpc("validate_api_key", { p_key_hash: keyHash });
+    if (error) {
+      console.error("API key validation error:", error);
+      return { isApiKey: true, allowed: false, current: 0, remaining: 0, limit: 0 };
+    }
+    const result = data as { valid: boolean; allowed: boolean; current: number; limit: number; remaining: number; tier?: string };
+    if (!result.valid) {
+      return { isApiKey: true, allowed: false, current: 0, remaining: 0, limit: 0 };
+    }
+    return {
+      isApiKey: true,
+      allowed: result.allowed,
+      current: result.current,
+      remaining: result.remaining,
+      limit: result.limit,
+      tier: result.tier,
+      keyHash,
+    };
+  } catch (err) {
+    console.error("API key auth error:", err);
+    return { isApiKey: true, allowed: false, current: 0, remaining: 0, limit: 0 };
+  }
+}
+
+async function checkRateLimit(req: Request): Promise<{ allowed: boolean; current: number; remaining: number; limit: number; isApiKey?: boolean; tier?: string; keyHash?: string } | null> {
+  const apiKeyResult = await checkApiKeyAuth(req);
+  if (apiKeyResult) return apiKeyResult;
+
   const ip = getClientIp(req);
-  if (ip === "unknown") return { allowed: true, current: 0, remaining: DAILY_LIMIT };
+  if (ip === "unknown") return { allowed: true, current: 0, remaining: DAILY_LIMIT, limit: DAILY_LIMIT };
 
   try {
     const supabase = createClient(
@@ -517,30 +572,39 @@ async function checkRateLimit(req: Request): Promise<{ allowed: boolean; current
     });
     if (error) {
       console.error("Rate limit check error:", error);
-      return { allowed: true, current: 0, remaining: DAILY_LIMIT }; // fail open
+      return { allowed: true, current: 0, remaining: DAILY_LIMIT, limit: DAILY_LIMIT };
     }
-    return data as { allowed: boolean; current: number; remaining: number };
+    const result = data as { allowed: boolean; current: number; remaining: number };
+    return { ...result, limit: DAILY_LIMIT };
   } catch (err) {
     console.error("Rate limit error:", err);
-    return { allowed: true, current: 0, remaining: DAILY_LIMIT }; // fail open
+    return { allowed: true, current: 0, remaining: DAILY_LIMIT, limit: DAILY_LIMIT };
   }
 }
 
-function rateLimitResponse(rateInfo: { current: number; remaining: number }): Response {
+function rateLimitResponse(rateInfo: { current: number; remaining: number; limit?: number; isApiKey?: boolean }): Response {
+  const limit = rateInfo.limit || DAILY_LIMIT;
+  const errorMsg = rateInfo.isApiKey
+    ? `API Key 额度已用完，今日限制 ${limit} 次`
+    : `请求过于频繁，每天限制 ${DAILY_LIMIT} 次调用`;
+  const hint = rateInfo.isApiKey
+    ? "请到 readgzh.site/dashboard 领取免费额度或升级套餐"
+    : "如需更多额度，请到 readgzh.site/dashboard 获取 API Key";
+
   return new Response(
     JSON.stringify({
       success: false,
-      error: `请求过于频繁，每天限制 ${DAILY_LIMIT} 次调用`,
-      hint: "如需更多额度，请联系我们获取 API Key",
+      error: errorMsg,
+      hint,
       current: rateInfo.current,
-      limit: DAILY_LIMIT,
+      limit,
     }),
     {
       status: 200,
       headers: {
         ...corsHeaders,
         "Content-Type": "application/json",
-        "X-RateLimit-Limit": String(DAILY_LIMIT),
+        "X-RateLimit-Limit": String(limit),
         "X-RateLimit-Remaining": String(rateInfo.remaining),
       },
     }
