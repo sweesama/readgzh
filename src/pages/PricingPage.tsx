@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, ArrowLeft, Zap, Building2, Gift } from "lucide-react";
+import { Check, ArrowLeft, Zap, Building2, Gift, Loader2 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import Footer from "@/components/home/Footer";
 
 const tiers = [
@@ -40,8 +44,8 @@ const tiers = [
       "用量统计面板",
       "邮件支持",
     ],
-    cta: "即将推出",
-    ctaLink: null,
+    cta: "立即购买",
+    ctaLink: "checkout",
   },
   {
     name: "Enterprise",
@@ -66,6 +70,28 @@ const tiers = [
 
 const PricingPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+  const handleCheckout = async () => {
+    if (!user) {
+      navigate("/dashboard");
+      return;
+    }
+    setCheckoutLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-payment");
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+      } else {
+        throw new Error("No checkout URL returned");
+      }
+    } catch (err) {
+      toast({ title: "支付创建失败", description: String(err), variant: "destructive" });
+    }
+    setCheckoutLoading(false);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -114,15 +140,21 @@ const PricingPage = () => {
                   className="w-full mt-6"
                   variant={tier.highlight ? "default" : "outline"}
                   onClick={() => {
-                    if (tier.ctaLink?.startsWith("mailto:")) {
+                    if (tier.ctaLink === "checkout") {
+                      handleCheckout();
+                    } else if (tier.ctaLink?.startsWith("mailto:")) {
                       window.location.href = tier.ctaLink;
                     } else if (tier.ctaLink) {
                       navigate(tier.ctaLink);
                     }
                   }}
-                  disabled={!tier.ctaLink}
+                  disabled={!tier.ctaLink || (tier.ctaLink === "checkout" && checkoutLoading)}
                 >
-                  {tier.cta}
+                  {tier.ctaLink === "checkout" && checkoutLoading ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" />处理中...</>
+                  ) : (
+                    tier.cta
+                  )}
                 </Button>
               </CardContent>
             </Card>
