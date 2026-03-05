@@ -101,6 +101,7 @@ export type Database = {
           raw_html: string | null
           slug: string | null
           source_url: string | null
+          summary: string | null
           title: string
           view_count: number
         }
@@ -113,6 +114,7 @@ export type Database = {
           raw_html?: string | null
           slug?: string | null
           source_url?: string | null
+          summary?: string | null
           title: string
           view_count?: number
         }
@@ -125,6 +127,7 @@ export type Database = {
           raw_html?: string | null
           slug?: string | null
           source_url?: string | null
+          summary?: string | null
           title?: string
           view_count?: number
         }

@@ -1,0 +1,1 @@
+ALTER TABLE public.articles ADD COLUMN IF NOT EXISTS summary text DEFAULT NULL;
