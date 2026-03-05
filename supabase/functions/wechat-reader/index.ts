@@ -938,7 +938,45 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Check rate limit for scrape requests
+      // Check cache FIRST before deducting credits
+      if (url.includes("mp.weixin.qq.com") || url.includes("weixin.qq.com")) {
+        const cacheSupabase = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+        );
+        let cacheSlug: string | null = null;
+        const cacheSlugMatch = url.match(/\/(s\/[^?#]+)/);
+        if (cacheSlugMatch) cacheSlug = cacheSlugMatch[1];
+
+        let existing = null;
+        if (cacheSlug) {
+          const { data } = await cacheSupabase.from("articles").select("id, slug").eq("slug", cacheSlug).maybeSingle();
+          existing = data;
+        }
+        if (!existing) {
+          const { data } = await cacheSupabase.from("articles").select("id, slug").eq("source_url", url).maybeSingle();
+          existing = data;
+        }
+
+        if (existing) {
+          console.log("Cache hit (no credit deducted):", existing.id);
+          // Record cache hit for API key users (no credit cost)
+          const apiAuth = await checkApiKeyAuth(req, 0);
+          if (apiAuth?.keyHash) {
+            const supabase2 = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+            await supabase2.rpc("record_cache_hit", { p_key_hash: apiAuth.keyHash });
+          }
+          const slugId = existing.slug?.replace(/^s\//, "") || "";
+          const response = await handleReadMode(slugId || null, slugId ? null : existing.id);
+          // Add cache headers
+          const headers = new Headers(response.headers);
+          headers.set("X-Cache", "HIT");
+          headers.set("X-Credit-Cost", "0");
+          return new Response(response.body, { status: response.status, headers });
+        }
+      }
+
+      // Not cached – check rate limit (deducts 1 credit for API key users)
       const rateInfo = await checkRateLimit(req);
       if (rateInfo && !rateInfo.allowed) {
         return rateLimitResponse(rateInfo);
