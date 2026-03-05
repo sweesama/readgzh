@@ -7,9 +7,9 @@ import { toast } from "@/hooks/use-toast";
 const API_BASE = "https://api.readgzh.site";
 
 const AI_GUIDE_TEMPLATE = `请帮我阅读这篇微信公众号文章，你可以通过访问以下链接获取内容：
-${API_BASE}/rd?url=（把微信链接粘贴在这里）
+${API_BASE}/rd?url=（把微信链接粘贴在这里）&key=（你的API Key，在 readgzh.site/dashboard 免费获取）
 
-例如：${API_BASE}/rd?url=https://mp.weixin.qq.com/s/xxxxx`;
+例如：${API_BASE}/rd?url=https://mp.weixin.qq.com/s/xxxxx&key=sk_live_你的key`;
 
 const AIGuideSection = () => {
   const [copied, setCopied] = useState(false);
