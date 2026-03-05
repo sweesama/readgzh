@@ -24,13 +24,13 @@ const AdvantagesSection = () => (
       </p>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {advantages.map((item, i) => (
-          <div key={i} className="flex gap-4 p-5 rounded-xl border bg-card hover:shadow-md transition-shadow">
+          <div key={i} className="flex gap-4 p-5 rounded-xl border bg-card hover:shadow-md transition-shadow min-h-[120px]">
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
               <item.icon className="h-5 w-5 text-primary" />
             </div>
-            <div>
+            <div className="flex flex-col">
               <h3 className="font-semibold text-foreground mb-1">{item.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+              <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">{item.desc}</p>
             </div>
           </div>
         ))}
