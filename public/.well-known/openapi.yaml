@@ -36,6 +36,13 @@ paths:
           schema:
             type: string
             example: https://mp.weixin.qq.com/s/example
+        - name: key
+          in: query
+          required: false
+          description: API Key（sk_live_...），适用于无法发送 Authorization Header 的 AI Agent 环境
+          schema:
+            type: string
+            example: sk_live_your_key
       responses:
         '200':
           description: 成功返回文章内容（HTML 格式）
@@ -141,6 +148,8 @@ components:
       description: |
         API Key 认证。前往 https://readgzh.site/dashboard 获取免费 Key。
         格式：`Authorization: Bearer sk_live_your_key`
+        
+        **备选方案**：如果 HTTP Header 被代理剥离，可使用 URL 参数：`?key=sk_live_your_key`
   schemas:
     Error:
       type: object
