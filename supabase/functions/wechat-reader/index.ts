@@ -595,10 +595,24 @@ async function checkApiKeyAuth(req: Request, creditCost: number = 1): Promise<{
   keyHash?: string;
   creditCost?: number;
 } | null> {
+  // Try Authorization header first, then fall back to ?key= query parameter
+  let apiKey = "";
   const authHeader = req.headers.get("authorization") || "";
-  if (!authHeader.startsWith("Bearer sk_live_")) return null;
-
-  const apiKey = authHeader.replace("Bearer ", "");
+  if (authHeader.startsWith("Bearer sk_live_")) {
+    apiKey = authHeader.replace("Bearer ", "");
+    console.log("API Key source: Authorization header");
+  } else {
+    // Fallback: check ?key= query parameter (for AI agents whose headers get stripped by proxies)
+    try {
+      const url = new URL(req.url);
+      const keyParam = url.searchParams.get("key");
+      if (keyParam && keyParam.startsWith("sk_live_")) {
+        apiKey = keyParam;
+        console.log("API Key source: URL query parameter (?key=)");
+      }
+    } catch (_) { /* ignore URL parse errors */ }
+  }
+  if (!apiKey) return null;
   const keyHash = await hashApiKey(apiKey);
 
   try {

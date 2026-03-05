@@ -97,7 +97,12 @@ config:
 
 ## 鉴权
 
-如配置了 API Key，请求头携带 `Authorization: Bearer sk_live_...`。
+**方式一（推荐）**：请求头携带 `Authorization: Bearer sk_live_...`。
+
+**方式二（备选，适合 AI Agent）**：在 URL 中添加 `?key=sk_live_...` 参数。当 HTTP Header 被代理/CDN 剥离时使用此方式。
+
+示例：`GET /rd?url=WECHAT_URL&key=sk_live_ABC123`
+
 未配置则使用公共接口，每日有速率限制。
 
 免费获取 API Key：https://readgzh.site/dashboard（每日 50 积分）
