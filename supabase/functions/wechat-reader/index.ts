@@ -652,7 +652,11 @@ async function deductExtraCredit(keyHash: string): Promise<void> {
 
 async function checkRateLimit(req: Request): Promise<{ allowed: boolean; current: number; remaining: number; limit: number; isApiKey?: boolean; tier?: string; keyHash?: string } | null> {
   const apiKeyResult = await checkApiKeyAuth(req);
-  if (apiKeyResult) return apiKeyResult;
+  if (apiKeyResult) {
+    console.log("API Key auth result:", JSON.stringify({ allowed: apiKeyResult.allowed, current: apiKeyResult.current, remaining: apiKeyResult.remaining, tier: apiKeyResult.tier, hasKeyHash: !!apiKeyResult.keyHash }));
+    return apiKeyResult;
+  }
+  console.log("No API Key detected, falling back to IP rate limiting");
 
   const ip = getClientIp(req);
   if (ip === "unknown") return { allowed: true, current: 0, remaining: DAILY_LIMIT, limit: DAILY_LIMIT };
@@ -963,7 +967,7 @@ Deno.serve(async (req) => {
     console.error("Error:", error);
     return new Response(
       JSON.stringify({ success: false, error: `处理请求失败: ${error instanceof Error ? error.message : "未知错误"}` }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
@@ -1269,7 +1273,7 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     if (!textContent || textContent.length < MIN_CONTENT_LENGTH) {
       return new Response(
         JSON.stringify({ success: false, error: "无法提取文章内容，文章可能已被删除或需要在微信中打开。", hint: "部分文章内容通过 JavaScript 动态加载，服务端无法直接获取。" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -1292,7 +1296,7 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
       console.error("DB error:", dbError);
       return new Response(
         JSON.stringify({ success: false, error: "保存文章失败，请稍后重试" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
