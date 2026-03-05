@@ -949,7 +949,7 @@ Deno.serve(async (req) => {
       if (!url) {
         return new Response(
           JSON.stringify({ success: false, error: "请提供微信文章链接" }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
