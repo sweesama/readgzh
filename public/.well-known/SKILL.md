@@ -44,6 +44,10 @@ tools:
         type: number
         description: "分块编号（从 1 开始），用于读取长文章的指定部分"
         required: false
+      mode:
+        type: string
+        description: "设为 'summary' 时返回 AI 生成的结构化摘要（JSON），而非完整 HTML"
+        required: false
 config:
   api_key:
     type: string

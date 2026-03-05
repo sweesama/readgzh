@@ -88,6 +88,7 @@ paths:
         读取已缓存文章的内容，不消耗积分。
         长文章会自动分块（每块约 40KB），可通过 part 参数指定读取的分块。
         响应头 X-Total-Parts 和 X-Current-Part 指示总块数和当前块。
+        添加 mode=summary 参数可获取 AI 生成的结构化摘要（JSON 格式）。
       parameters:
         - name: s
           in: query
@@ -104,9 +105,16 @@ paths:
             type: integer
             minimum: 1
             example: 1
+        - name: mode
+          in: query
+          required: false
+          description: 设为 summary 时返回 AI 生成的结构化摘要（JSON），而非完整 HTML
+          schema:
+            type: string
+            enum: [summary]
       responses:
         '200':
-          description: 文章 HTML 内容
+          description: 文章 HTML 内容或 JSON 摘要（取决于 mode 参数）
           headers:
             X-Total-Parts:
               description: 文章总分块数
@@ -120,6 +128,9 @@ paths:
             text/html:
               schema:
                 type: string
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SummaryResponse'
         '404':
           description: 文章未找到
 components:
@@ -175,5 +186,29 @@ components:
           type: integer
         limit:
           type: integer
+    SummaryResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        title:
+          type: string
+        author:
+          type: string
+        publish_time:
+          type: string
+        summary:
+          type: string
+          description: AI 生成的 300-500 字结构化摘要
+        content_url:
+          type: string
+          description: 完整文章的阅读链接
+        total_parts:
+          type: integer
+          description: 完整文章的分块数（用于 ?part=N 分段读取）
+        content_length:
+          type: integer
+          description: 原文内容长度（字符数）
 security:
   - BearerAuth: []
