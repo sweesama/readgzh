@@ -227,11 +227,30 @@ function extractMetadata(html: string) {
   if (pubTimeEl) publishTime = (pubTimeEl as Element).textContent?.trim() || null;
   // Method 2: Extract from raw HTML script variables (works for static fetch)
   if (!publishTime) {
-    // Try var ct = "timestamp" (Unix seconds)
+    // Try var ct = "timestamp" (Unix seconds) - standard articles
     const ctMatch = html.match(/var\s+ct\s*=\s*"(\d{10})"/);
     if (ctMatch) {
       const ts = parseInt(ctMatch[1], 10);
-      // Convert to China Standard Time (UTC+8) since WeChat articles are always in CST
+      const chinaOffsetMs = 8 * 60 * 60 * 1000;
+      const d = new Date(ts * 1000 + chinaOffsetMs);
+      publishTime = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")} ${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+    }
+  }
+  if (!publishTime) {
+    // Try create_time in picture template pages (小绿书) - e.g. var create_time = "1709654400" or create_time = "timestamp"
+    const createTimeMatch = html.match(/(?:var\s+)?create_time\s*=\s*"(\d{10})"/);
+    if (createTimeMatch) {
+      const ts = parseInt(createTimeMatch[1], 10);
+      const chinaOffsetMs = 8 * 60 * 60 * 1000;
+      const d = new Date(ts * 1000 + chinaOffsetMs);
+      publishTime = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")} ${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+    }
+  }
+  if (!publishTime) {
+    // Try any 10-digit unix timestamp near "ct" or "publish_time" or "create_time" keywords
+    const genericTsMatch = html.match(/(?:ct|publish_time|create_time|oriCreateTime|createTime)\s*[:=]\s*['"]*(\d{10})['"]/);
+    if (genericTsMatch) {
+      const ts = parseInt(genericTsMatch[1], 10);
       const chinaOffsetMs = 8 * 60 * 60 * 1000;
       const d = new Date(ts * 1000 + chinaOffsetMs);
       publishTime = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")} ${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
@@ -938,7 +957,45 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Check rate limit for scrape requests
+      // Check cache FIRST before deducting credits
+      if (url.includes("mp.weixin.qq.com") || url.includes("weixin.qq.com")) {
+        const cacheSupabase = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+        );
+        let cacheSlug: string | null = null;
+        const cacheSlugMatch = url.match(/\/(s\/[^?#]+)/);
+        if (cacheSlugMatch) cacheSlug = cacheSlugMatch[1];
+
+        let existing = null;
+        if (cacheSlug) {
+          const { data } = await cacheSupabase.from("articles").select("id, slug").eq("slug", cacheSlug).maybeSingle();
+          existing = data;
+        }
+        if (!existing) {
+          const { data } = await cacheSupabase.from("articles").select("id, slug").eq("source_url", url).maybeSingle();
+          existing = data;
+        }
+
+        if (existing) {
+          console.log("Cache hit (no credit deducted):", existing.id);
+          // Record cache hit for API key users (no credit cost)
+          const apiAuth = await checkApiKeyAuth(req, 0);
+          if (apiAuth?.keyHash) {
+            const supabase2 = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+            await supabase2.rpc("record_cache_hit", { p_key_hash: apiAuth.keyHash });
+          }
+          const slugId = existing.slug?.replace(/^s\//, "") || "";
+          const response = await handleReadMode(slugId || null, slugId ? null : existing.id);
+          // Add cache headers
+          const headers = new Headers(response.headers);
+          headers.set("X-Cache", "HIT");
+          headers.set("X-Credit-Cost", "0");
+          return new Response(response.body, { status: response.status, headers });
+        }
+      }
+
+      // Not cached – check rate limit (deducts 1 credit for API key users)
       const rateInfo = await checkRateLimit(req);
       if (rateInfo && !rateInfo.allowed) {
         return rateLimitResponse(rateInfo);
