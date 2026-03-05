@@ -231,8 +231,10 @@ function extractMetadata(html: string) {
     const ctMatch = html.match(/var\s+ct\s*=\s*"(\d{10})"/);
     if (ctMatch) {
       const ts = parseInt(ctMatch[1], 10);
-      const d = new Date(ts * 1000);
-      publishTime = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+      // Convert to China Standard Time (UTC+8) since WeChat articles are always in CST
+      const chinaOffsetMs = 8 * 60 * 60 * 1000;
+      const d = new Date(ts * 1000 + chinaOffsetMs);
+      publishTime = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")} ${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
     }
   }
   if (!publishTime) {
