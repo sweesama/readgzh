@@ -220,10 +220,31 @@ function extractMetadata(html: string) {
     if (ogAuthor) author = (ogAuthor as Element).getAttribute("content") || "";
   }
 
-  // Publish time
+  // Publish time - try multiple extraction methods
   let publishTime = null;
+  // Method 1: DOM element (works when JS has rendered)
   const pubTimeEl = doc.querySelector("#publish_time");
   if (pubTimeEl) publishTime = (pubTimeEl as Element).textContent?.trim() || null;
+  // Method 2: Extract from raw HTML script variables (works for static fetch)
+  if (!publishTime) {
+    // Try var ct = "timestamp" (Unix seconds)
+    const ctMatch = html.match(/var\s+ct\s*=\s*"(\d{10})"/);
+    if (ctMatch) {
+      const ts = parseInt(ctMatch[1], 10);
+      const d = new Date(ts * 1000);
+      publishTime = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    }
+  }
+  if (!publishTime) {
+    // Try var publish_time = "2026-03-05" or similar
+    const ptMatch = html.match(/var\s+publish_time\s*=\s*"([^"]+)"/);
+    if (ptMatch) publishTime = ptMatch[1];
+  }
+  if (!publishTime) {
+    // Try meta tag og:article:published_time
+    const metaPubTime = doc.querySelector('meta[property="article:published_time"]');
+    if (metaPubTime) publishTime = (metaPubTime as Element).getAttribute("content") || null;
+  }
 
   return {
     title: title || "无标题",
@@ -893,7 +914,7 @@ Deno.serve(async (req) => {
       if (!url) {
         return new Response(
           JSON.stringify({ success: false, error: "请提供微信文章链接" }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
@@ -1076,8 +1097,8 @@ async function handleScrapeAndRedirect(url: string, keyHash?: string): Promise<R
 
   if (!resultData.success) {
     return new Response(
-      `<!DOCTYPE html><html><body><h1>抓取失败</h1><p>${resultData.error || "未知错误"}</p><p>请稍后重试</p></body></html>`,
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } }
+      JSON.stringify({ success: false, error: resultData.error || "未知错误", message: "抓取失败，请稍后重试" }),
+      { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
@@ -1090,7 +1111,7 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     if (!url.includes("mp.weixin.qq.com") && !url.includes("weixin.qq.com")) {
       return new Response(
         JSON.stringify({ success: false, error: "请提供有效的微信公众号文章链接" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
