@@ -840,9 +840,36 @@ Deno.serve(async (req) => {
       if (slug || articleId) {
         const mode = params.get("mode");
         
-        // Summary mode: return AI-generated summary as JSON
+      // Summary mode: return AI-generated summary as JSON (Pro only)
         if (mode === "summary") {
           console.log("Summary mode: slug=", slug, "id=", articleId);
+          
+          // Check API Key auth and require Pro tier
+          const apiAuth = await checkApiKeyAuth(req, 0); // 0 cost for summary (it's a Pro feature, not credit-based)
+          if (!apiAuth || !apiAuth.isApiKey) {
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: "api_key_required",
+                message: "摘要功能需要 API Key，请在请求头中添加 Authorization: Bearer sk_live_...",
+                dashboard_url: "https://readgzh.site/dashboard",
+              }),
+              { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+          if (apiAuth.tier !== "pro") {
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: "pro_required",
+                message: "AI 智能摘要是 Pro 专属功能，请升级到 Pro 套餐",
+                pricing_url: "https://readgzh.site/pricing",
+                dashboard_url: "https://readgzh.site/dashboard",
+              }),
+              { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+          
           return await handleSummaryMode(slug, articleId);
         }
         
