@@ -34,12 +34,16 @@ tools:
         description: "返回数量（默认 10）"
         required: false
   - name: get_article_by_slug
-    description: "通过 ReadGZH 按 slug 获取已缓存的文章"
+    description: "通过 ReadGZH 按 slug 获取已缓存的文章。长文自动分块（~40KB/块），用 part 参数分段读取"
     parameters:
       slug:
         type: string
         description: "文章短链接标识符"
         required: true
+      part:
+        type: number
+        description: "分块编号（从 1 开始），用于读取长文章的指定部分"
+        required: false
 config:
   api_key:
     type: string
@@ -79,8 +83,13 @@ config:
 所有工具调用 ReadGZH API（`https://api.readgzh.site`）：
 
 - **读取文章**: `GET /rd?url={微信链接}`
-- **按 slug 获取**: `GET /rd?s={slug}`
+- **按 slug 获取**: `GET /rd?s={slug}` （长文可加 `&part=1`、`&part=2` 分段读取）
 - **MCP Server**: `POST https://api.readgzh.site/mcp-server`
+
+## 错误码
+
+- `402 Insufficient Credits`: 积分不足，响应包含 `pricing_url` 充值链接
+- `429 Rate Limited`: IP 请求频率过高
 
 ## 鉴权
 

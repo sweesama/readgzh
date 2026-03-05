@@ -366,7 +366,30 @@ function proxyImagesForSsr(html: string): string {
   );
 }
 
-async function handleReadMode(slug: string | null, articleId: string | null): Promise<Response> {
+// Split content into chunks for ?part=N pagination
+const PART_SIZE = 40000; // ~40KB per part
+
+function splitIntoParts(content: string): string[] {
+  if (content.length <= PART_SIZE) return [content];
+  const parts: string[] = [];
+  let i = 0;
+  while (i < content.length) {
+    let end = Math.min(i + PART_SIZE, content.length);
+    // Try to break at a paragraph boundary to avoid splitting mid-tag
+    if (end < content.length) {
+      const lastP = content.lastIndexOf("</p>", end);
+      const lastDiv = content.lastIndexOf("</div>", end);
+      const lastNewline = content.lastIndexOf("\n", end);
+      const breakPoint = Math.max(lastP > i ? lastP + 4 : -1, lastDiv > i ? lastDiv + 6 : -1, lastNewline > i ? lastNewline + 1 : -1);
+      if (breakPoint > i) end = breakPoint;
+    }
+    parts.push(content.substring(i, end));
+    i = end;
+  }
+  return parts;
+}
+
+async function handleReadMode(slug: string | null, articleId: string | null, partNum?: number): Promise<Response> {
   if (!slug && !articleId) {
     return new Response("Missing article identifier. Use ?s=slug or ?id=uuid", {
       status: 400,
@@ -412,33 +435,56 @@ async function handleReadMode(slug: string | null, articleId: string | null): Pr
     sanitized = sanitized.replace(/\s+on\w+="[^"]*"/g, "");
     sanitized = sanitized.replace(/visibility:\s*hidden[^;]*;?/g, "");
     sanitized = sanitized.replace(/opacity:\s*0[^;]*;?/g, "");
-    // Strip ALL inline style attributes – AI doesn't need styling
     sanitized = sanitized.replace(/\s*style="[^"]*"/gi, "");
     sanitized = sanitized.replace(/\s*style='[^']*'/gi, "");
-    // Remove class attributes
     sanitized = sanitized.replace(/\s*class="[^"]*"/gi, "");
     sanitized = sanitized.replace(/\s*class='[^']*'/gi, "");
-    // Remove all data-* and id attributes (zero value for AI)
     sanitized = sanitized.replace(/\s*data-[\w-]+="[^"]*"/gi, "");
     sanitized = sanitized.replace(/\s*id="[^"]*"/gi, "");
-    // Remove WeChat custom tags (mp-common-profile, mp-style-type, etc.)
     sanitized = sanitized.replace(/<mp-[\w-]+[^>]*>[\s\S]*?<\/mp-[\w-]+>/gi, "");
     sanitized = sanitized.replace(/<mp-[\w-]+[^>]*\/>/gi, "");
-    // Replace <br> with real newlines – saves tokens, easier for AI to parse
     sanitized = sanitized.replace(/<br\s*\/?>/gi, "\n");
-    // Collapse &nbsp; to regular spaces
     sanitized = sanitized.replace(/&nbsp;/gi, " ");
-    // Remove empty tags and deeply nested empty wrappers (run multiple passes)
     for (let i = 0; i < 3; i++) {
       sanitized = sanitized.replace(/<(div|span|section|p)>\s*<\/\1>/gi, "");
     }
-    // Collapse excessive whitespace/newlines
     sanitized = sanitized.replace(/\n{3,}/g, "\n\n");
     sanitized = proxyImagesForSsr(sanitized);
     sanitized = replaceVideoIframesForSsr(sanitized, article.source_url);
     contentBody = sanitized;
   } else {
     contentBody = formatContentToHtml(article.content);
+  }
+
+  // Handle ?part=N pagination for long articles
+  const parts = splitIntoParts(contentBody);
+  const totalParts = parts.length;
+  const requestedPart = partNum && partNum >= 1 && partNum <= totalParts ? partNum : undefined;
+
+  // If article has multiple parts, add pagination info
+  let paginationMeta = "";
+  let paginationFooter = "";
+  if (totalParts > 1) {
+    const currentPart = requestedPart || 1;
+    const slugPath = article.slug?.replace(/^s\//, "") || "";
+    const baseParam = slugPath ? `s=${slugPath}` : `id=${article.id}`;
+    
+    paginationMeta = `<meta name="x-total-parts" content="${totalParts}"><meta name="x-current-part" content="${currentPart}">`;
+    
+    const navLinks: string[] = [];
+    if (currentPart > 1) {
+      navLinks.push(`<a href="?${baseParam}&part=${currentPart - 1}">← 上一部分</a>`);
+    }
+    if (currentPart < totalParts) {
+      navLinks.push(`<a href="?${baseParam}&part=${currentPart + 1}">下一部分 →</a>`);
+    }
+    paginationFooter = `<div style="margin:2em 0;padding:1em;background:#f5f5f5;border-radius:8px;text-align:center;">
+      <p>📄 第 ${currentPart} / ${totalParts} 部分 (每部分约 40KB)</p>
+      <p>${navLinks.join(" | ")}</p>
+    </div>`;
+    
+    // Only show requested part
+    contentBody = parts[(requestedPart || 1) - 1];
   }
 
   const html = `<!DOCTYPE html>
@@ -452,6 +498,7 @@ async function handleReadMode(slug: string | null, articleId: string | null): Pr
   <meta property="og:title" content="${escapeHtml(article.title)}">
   <meta property="og:description" content="${escapeHtml(article.content.substring(0, 200))}">
   <meta property="og:type" content="article">
+  ${paginationMeta}
   <style>
     body { max-width: 800px; margin: 0 auto; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.8; color: #333; }
     h1 { font-size: 1.8em; margin-bottom: 0.5em; }
@@ -473,6 +520,7 @@ async function handleReadMode(slug: string | null, articleId: string | null): Pr
     <div class="content">
       ${contentBody}
     </div>
+    ${paginationFooter}
     <div class="footer" style="margin-top:3em;padding-top:1em;border-top:1px solid #eee;color:#aaa;font-size:0.85em;">
       ${sourceLink}
       <p style="margin-top:0.8em;">Powered by <a href="https://readgzh.site" style="color:#aaa;text-decoration:none;">ReadGZH</a> · <a href="https://readgzh.site/docs" style="color:#aaa;text-decoration:none;">开发者文档</a></p>
@@ -486,6 +534,10 @@ async function handleReadMode(slug: string | null, articleId: string | null): Pr
       ...corsHeaders,
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "public, max-age=3600",
+      ...(totalParts > 1 ? {
+        "X-Total-Parts": String(totalParts),
+        "X-Current-Part": String(requestedPart || 1),
+      } : {}),
     },
   });
 }
@@ -607,23 +659,29 @@ async function checkRateLimit(req: Request): Promise<{ allowed: boolean; current
 
 function rateLimitResponse(rateInfo: { current: number; remaining: number; limit?: number; isApiKey?: boolean }): Response {
   const limit = rateInfo.limit || DAILY_LIMIT;
-  const errorMsg = rateInfo.isApiKey
+  const isCreditsExhausted = rateInfo.isApiKey;
+  const statusCode = isCreditsExhausted ? 402 : 429;
+  const errorCode = isCreditsExhausted ? "insufficient_credits" : "rate_limit_exceeded";
+  const errorMsg = isCreditsExhausted
     ? `API Key 积分已用完，今日限制 ${limit} 积分`
     : `请求过于频繁，每天限制 ${DAILY_LIMIT} 次调用`;
-  const hint = rateInfo.isApiKey
+  const hint = isCreditsExhausted
     ? "请到 readgzh.site/dashboard 领取免费积分或升级套餐"
     : "如需更多额度，请到 readgzh.site/dashboard 获取 API Key";
 
   return new Response(
     JSON.stringify({
       success: false,
-      error: errorMsg,
+      error: errorCode,
+      message: errorMsg,
       hint,
       current: rateInfo.current,
       limit,
+      pricing_url: "https://readgzh.site/pricing",
+      dashboard_url: "https://readgzh.site/dashboard",
     }),
     {
-      status: 200,
+      status: statusCode,
       headers: {
         ...corsHeaders,
         "Content-Type": "application/json",
@@ -650,8 +708,10 @@ Deno.serve(async (req) => {
 
       // Read mode (serving cached articles) - no rate limit needed
       if (slug || articleId) {
-        console.log("Read mode: slug=", slug, "id=", articleId);
-        const response = await handleReadMode(slug, articleId);
+        const partParam = params.get("part");
+        const partNum = partParam ? parseInt(partParam, 10) : undefined;
+        console.log("Read mode: slug=", slug, "id=", articleId, "part=", partNum);
+        const response = await handleReadMode(slug, articleId, partNum);
         // For HEAD requests, return headers only (no body)
         if (req.method === "HEAD") {
           return new Response(null, { status: response.status, headers: response.headers });
