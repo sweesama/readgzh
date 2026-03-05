@@ -51,8 +51,10 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Parse body ONCE upfront to avoid consuming the stream multiple times
+    const body = await req.json().catch(() => ({}));
     const url = new URL(req.url);
-    const action = url.searchParams.get("action") || (await req.json().catch(() => ({}))).action;
+    const action = url.searchParams.get("action") || body.action;
 
     const serviceClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -74,7 +76,6 @@ Deno.serve(async (req) => {
         );
       }
 
-      const body = await req.json().catch(() => ({}));
       const keyName = body.name || "Default";
       const rawKey = generateApiKey();
       const keyHash = await hashKey(rawKey);
@@ -119,7 +120,6 @@ Deno.serve(async (req) => {
     }
 
     if (action === "revoke") {
-      const body = await req.json().catch(() => ({}));
       const keyId = body.key_id;
       if (!keyId) {
         return new Response(
