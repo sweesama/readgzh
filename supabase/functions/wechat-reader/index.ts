@@ -708,8 +708,10 @@ Deno.serve(async (req) => {
 
       // Read mode (serving cached articles) - no rate limit needed
       if (slug || articleId) {
-        console.log("Read mode: slug=", slug, "id=", articleId);
-        const response = await handleReadMode(slug, articleId);
+        const partParam = params.get("part");
+        const partNum = partParam ? parseInt(partParam, 10) : undefined;
+        console.log("Read mode: slug=", slug, "id=", articleId, "part=", partNum);
+        const response = await handleReadMode(slug, articleId, partNum);
         // For HEAD requests, return headers only (no body)
         if (req.method === "HEAD") {
           return new Response(null, { status: response.status, headers: response.headers });
