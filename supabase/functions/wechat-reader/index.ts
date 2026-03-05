@@ -692,6 +692,136 @@ function rateLimitResponse(rateInfo: { current: number; remaining: number; limit
   );
 }
 
+// ===== Summary Mode: AI-generated structured summary =====
+async function generateSummary(content: string, title: string): Promise<string> {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) {
+    throw new Error("AI summary service not configured");
+  }
+
+  // Truncate content to ~8000 chars to keep input tokens reasonable
+  const truncatedContent = content.substring(0, 8000);
+
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-3-flash-preview",
+      messages: [
+        {
+          role: "system",
+          content: `你是一个专业的中文内容摘要助手。请为给定的微信公众号文章生成一个结构化摘要。
+
+要求：
+1. 总字数控制在 300-500 字
+2. 使用以下结构：
+   - 📌 核心观点（1-2句话概括文章主旨）
+   - 📋 关键要点（3-5个要点，每个1-2句话）
+   - 🏷️ 标签（3-5个关键词标签）
+3. 语言简洁、信息密度高
+4. 保留原文的关键数据和事实
+5. 不要添加原文没有的信息`,
+        },
+        {
+          role: "user",
+          content: `请为以下文章生成结构化摘要：\n\n标题：${title}\n\n正文：\n${truncatedContent}`,
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    console.error("AI summary error:", response.status, errText);
+    if (response.status === 429) throw new Error("AI service rate limited, please try later");
+    if (response.status === 402) throw new Error("AI service quota exceeded");
+    throw new Error("Failed to generate summary");
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || "摘要生成失败";
+}
+
+async function handleSummaryMode(slug: string | null, articleId: string | null): Promise<Response> {
+  if (!slug && !articleId) {
+    return new Response(
+      JSON.stringify({ success: false, error: "Missing article identifier. Use ?s=slug or ?id=uuid" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+
+  let query = supabase.from("articles").select("id, title, author, content, slug, publish_time, summary, view_count");
+  if (slug) {
+    query = query.eq("slug", `s/${slug}`);
+  } else if (articleId) {
+    query = query.eq("id", articleId);
+  }
+
+  const { data: article, error } = await query.single();
+
+  if (error || !article) {
+    return new Response(
+      JSON.stringify({ success: false, error: "Article not found" }),
+      { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  // Increment view count
+  supabase.rpc("increment_view_count", { article_id: article.id }).then(() => {});
+
+  // Use cached summary if available
+  let summary = article.summary;
+  if (!summary) {
+    try {
+      summary = await generateSummary(article.content, article.title);
+      // Cache the summary for future requests (fire and forget)
+      supabase.from("articles").update({ summary }).eq("id", article.id).then(() => {});
+    } catch (err) {
+      console.error("Summary generation failed:", err);
+      return new Response(
+        JSON.stringify({ success: false, error: err instanceof Error ? err.message : "Summary generation failed" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+  }
+
+  // Calculate content parts info
+  const contentLength = article.content?.length || 0;
+  const totalParts = Math.ceil(contentLength / PART_SIZE) || 1;
+  const slugPath = article.slug?.replace(/^s\//, "") || "";
+  const contentUrl = slugPath
+    ? `https://readgzh.site/${slugPath}`
+    : `https://api.readgzh.site/rd?id=${article.id}`;
+
+  return new Response(
+    JSON.stringify({
+      success: true,
+      title: article.title,
+      author: article.author,
+      publish_time: article.publish_time,
+      summary,
+      content_url: contentUrl,
+      total_parts: totalParts,
+      content_length: contentLength,
+    }),
+    {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/json",
+        "Cache-Control": "public, max-age=3600",
+      },
+    }
+  );
+}
+
 // ===== Main Handler =====
 console.log("wechat-reader function loaded");
 Deno.serve(async (req) => {
@@ -708,6 +838,14 @@ Deno.serve(async (req) => {
 
       // Read mode (serving cached articles) - no rate limit needed
       if (slug || articleId) {
+        const mode = params.get("mode");
+        
+        // Summary mode: return AI-generated summary as JSON
+        if (mode === "summary") {
+          console.log("Summary mode: slug=", slug, "id=", articleId);
+          return await handleSummaryMode(slug, articleId);
+        }
+        
         const partParam = params.get("part");
         const partNum = partParam ? parseInt(partParam, 10) : undefined;
         console.log("Read mode: slug=", slug, "id=", articleId, "part=", partNum);
