@@ -48,13 +48,27 @@ paths:
               description: 今日剩余积分数
               schema:
                 type: integer
+            X-Total-Parts:
+              description: 文章总分块数（长文时返回）
+              schema:
+                type: integer
+            X-Current-Part:
+              description: 当前分块编号（长文时返回）
+              schema:
+                type: integer
           content:
             text/html:
               schema:
                 type: string
                 description: 包含文章标题、作者、正文的完整 HTML 页面
+        '402':
+          description: 积分不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InsufficientCreditsError'
         '429':
-          description: 积分不足或请求频率过高
+          description: 请求频率过高
           content:
             application/json:
               schema:
@@ -70,7 +84,10 @@ paths:
     get:
       operationId: getArticleBySlug
       summary: 通过 slug 读取已缓存的文章
-      description: 读取已缓存文章的内容，不消耗积分
+      description: |
+        读取已缓存文章的内容，不消耗积分。
+        长文章会自动分块（每块约 40KB），可通过 part 参数指定读取的分块。
+        响应头 X-Total-Parts 和 X-Current-Part 指示总块数和当前块。
       parameters:
         - name: s
           in: query
@@ -79,9 +96,26 @@ paths:
           schema:
             type: string
             example: minicpm-o-4-5
+        - name: part
+          in: query
+          required: false
+          description: 分块编号（从 1 开始），用于分段读取长文章
+          schema:
+            type: integer
+            minimum: 1
+            example: 1
       responses:
         '200':
           description: 文章 HTML 内容
+          headers:
+            X-Total-Parts:
+              description: 文章总分块数
+              schema:
+                type: integer
+            X-Current-Part:
+              description: 当前分块编号
+              schema:
+                type: integer
           content:
             text/html:
               schema:
@@ -105,10 +139,38 @@ components:
           example: false
         error:
           type: string
-          example: API Key 积分已用完
+          example: rate_limit_exceeded
+        message:
+          type: string
+          example: 请求过于频繁，每天限制 100 次调用
         hint:
           type: string
-          example: 请到 readgzh.site/dashboard 领取免费积分
+          example: 如需更多额度，请到 readgzh.site/dashboard 获取 API Key
+        current:
+          type: integer
+        limit:
+          type: integer
+    InsufficientCreditsError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: insufficient_credits
+        message:
+          type: string
+          example: API Key 积分已用完，今日限制 50 积分
+        hint:
+          type: string
+          example: 请到 readgzh.site/dashboard 领取免费积分或升级套餐
+        pricing_url:
+          type: string
+          example: https://readgzh.site/pricing
+        dashboard_url:
+          type: string
+          example: https://readgzh.site/dashboard
         current:
           type: integer
         limit:
