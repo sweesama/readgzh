@@ -838,6 +838,14 @@ Deno.serve(async (req) => {
 
       // Read mode (serving cached articles) - no rate limit needed
       if (slug || articleId) {
+        const mode = params.get("mode");
+        
+        // Summary mode: return AI-generated summary as JSON
+        if (mode === "summary") {
+          console.log("Summary mode: slug=", slug, "id=", articleId);
+          return await handleSummaryMode(slug, articleId);
+        }
+        
         const partParam = params.get("part");
         const partNum = partParam ? parseInt(partParam, 10) : undefined;
         console.log("Read mode: slug=", slug, "id=", articleId, "part=", partNum);
