@@ -1171,7 +1171,7 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     if (!html || html.length < 500) {
       return new Response(
         JSON.stringify({ success: false, error: "无法获取文章内容，请稍后重试" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -1181,7 +1181,7 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
       console.log("WeChat error page detected:", wechatError);
       return new Response(
         JSON.stringify({ success: false, error: wechatError }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -1198,13 +1198,13 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
         } else {
           return new Response(
             JSON.stringify({ success: false, error: "微信需要验证，暂时无法自动抓取此文章。请稍后重试。" }),
-            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
       } else {
         return new Response(
           JSON.stringify({ success: false, error: "微信需要验证，暂时无法自动抓取此文章。请稍后重试。" }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
     }
