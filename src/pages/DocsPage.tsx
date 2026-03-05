@@ -138,6 +138,46 @@ GET ${API_URL}/rd?id=abc123-...`}
               </CodeBlock>
             </div>
 
+            {/* Endpoint 2.5: Pagination */}
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">2.1 长文分页读取（?part=N）</h3>
+              <p className="text-sm text-muted-foreground">
+                长文章会自动拆分为约 40KB 的分块。通过 <code className="bg-muted px-1.5 py-0.5 rounded text-xs">part</code> 参数逐段读取。
+                响应头 <code className="bg-muted px-1.5 py-0.5 rounded text-xs">X-Total-Parts</code> 和 <code className="bg-muted px-1.5 py-0.5 rounded text-xs">X-Current-Part</code> 指示总块数和当前块。
+              </p>
+              <CodeBlock label="分页读取">
+{`# 读取第 1 部分
+GET ${API_URL}/rd?s=article-title&part=1
+
+# 读取第 2 部分
+GET ${API_URL}/rd?s=article-title&part=2`}
+              </CodeBlock>
+            </div>
+
+            {/* Endpoint 2.6: Summary */}
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">2.2 AI 智能摘要（?mode=summary）<span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">Pro</span></h3>
+              <p className="text-sm text-muted-foreground">
+                添加 <code className="bg-muted px-1.5 py-0.5 rounded text-xs">mode=summary</code> 参数，返回 AI 生成的 300-500 字结构化摘要（JSON 格式）。
+                摘要结果会自动缓存，后续请求直接返回。<strong>此功能为 Pro 专属。</strong>
+              </p>
+              <CodeBlock label="摘要请求">
+{`GET ${API_URL}/rd?s=article-title&mode=summary \\
+  -H "Authorization: Bearer sk_live_你的Pro_Key"`}
+              </CodeBlock>
+              <CodeBlock label="响应示例">
+{`{
+  "success": true,
+  "title": "文章标题",
+  "author": "作者名",
+  "summary": "📌 核心观点：...\n📋 关键要点：...\n🏷️ 标签：...",
+  "content_url": "https://readgzh.site/article-slug",
+  "total_parts": 3,
+  "content_length": 12000
+}`}
+              </CodeBlock>
+            </div>
+
             {/* Endpoint 3: One-step */}
             <div className="space-y-3">
               <h3 className="font-semibold text-lg">3. 一步到位（推荐）</h3>
@@ -490,9 +530,21 @@ curl -o ~/.openclaw/workspace/skills/readgzh/SKILL.md \\
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                  <code className="font-semibold text-orange-500 shrink-0">402</code>
+                  <div>
+                    <p className="text-muted-foreground">API Key 积分已用完。响应包含 <code className="bg-muted px-1 rounded text-xs">pricing_url</code> 和 <code className="bg-muted px-1 rounded text-xs">dashboard_url</code> 引导充值</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                  <code className="font-semibold text-orange-500 shrink-0">403</code>
+                  <div>
+                    <p className="text-muted-foreground">功能需要 Pro 套餐（如 <code className="bg-muted px-1 rounded text-xs">?mode=summary</code>）</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
                   <code className="font-semibold text-destructive shrink-0">429</code>
                   <div>
-                    <p className="text-muted-foreground">已达每日调用上限，响应头包含 <code className="bg-muted px-1 rounded text-xs">X-RateLimit-Remaining</code></p>
+                    <p className="text-muted-foreground">IP 请求频率过高（无 API Key 时），响应头包含 <code className="bg-muted px-1 rounded text-xs">X-RateLimit-Remaining</code></p>
                   </div>
                 </div>
               </div>
