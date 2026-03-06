@@ -92,12 +92,17 @@ const DashboardPage = () => {
     setProLoading(true);
     try {
       const { data } = await supabase.functions.invoke("check-payment");
-      if (data?.is_pro) setIsPro(true);
+      if (data?.is_pro) {
+        setIsPro(true);
+        // Pro status synced to DB by check-payment, refresh keys and balance
+        fetchKeys();
+        fetchBalance();
+      }
     } catch {
       // ignore
     }
     setProLoading(false);
-  }, []);
+  }, [fetchKeys, fetchBalance]);
 
   useEffect(() => {
     if (!loading && !user) return;

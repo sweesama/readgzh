@@ -60,6 +60,91 @@ Deno.serve(async (req) => {
       (s) => s.payment_status === "paid" && s.status === "complete"
     );
 
+    // ===== CRITICAL: Sync Pro status to database =====
+    // If user has paid, upgrade all their active API keys to Pro tier with 2000 daily limit
+    if (hasPaid) {
+      const serviceClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+
+      const { error: updateError } = await serviceClient
+        .from("api_keys")
+        .update({ tier: "pro", daily_limit: 2000 })
+        .eq("user_id", userData.user.id)
+        .eq("is_active", true)
+        .neq("tier", "pro"); // Only update if not already pro
+
+      if (updateError) {
+        console.error("Failed to sync Pro status to API keys:", updateError);
+      } else {
+        console.log("Pro status synced to API keys for user:", userData.user.id);
+      }
+
+      // Auto-claim credits for Pro users (so they don't need to manually claim)
+      const today = new Date().toISOString().split("T")[0];
+      const { data: existingClaim } = await serviceClient
+        .from("daily_credits")
+        .select("id")
+        .eq("user_id", userData.user.id)
+        .eq("claim_date", today)
+        .maybeSingle();
+
+      if (!existingClaim) {
+        await serviceClient.from("daily_credits").insert({
+          user_id: userData.user.id,
+          claim_date: today,
+          credits_claimed: 2000,
+        });
+        console.log("Auto-claimed 2000 credits for Pro user:", userData.user.id);
+      }
+    }
+
+    // Check for refunds — if ALL payments are refunded, downgrade back to free
+    if (hasPaid) {
+      const paidSessions = sessions.data.filter(
+        (s) => s.payment_status === "paid" && s.status === "complete"
+      );
+      
+      let allRefunded = true;
+      for (const session of paidSessions) {
+        if (session.payment_intent) {
+          const pi = await stripe.paymentIntents.retrieve(session.payment_intent as string);
+          // Check if fully refunded
+          if (pi.status !== "canceled" && pi.amount_received > (pi.amount_received - (pi.amount || 0))) {
+            // Check refunds
+            const refunds = await stripe.refunds.list({ payment_intent: pi.id, limit: 1 });
+            if (refunds.data.length === 0 || refunds.data[0].status !== "succeeded") {
+              allRefunded = false;
+              break;
+            }
+          } else {
+            allRefunded = false;
+            break;
+          }
+        }
+      }
+
+      if (allRefunded && paidSessions.length > 0) {
+        // Downgrade: all payments refunded
+        const serviceClient = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+        );
+        await serviceClient
+          .from("api_keys")
+          .update({ tier: "free", daily_limit: 50 })
+          .eq("user_id", userData.user.id)
+          .eq("is_active", true)
+          .eq("tier", "pro");
+
+        console.log("User refunded, downgraded to free:", userData.user.id);
+        return new Response(JSON.stringify({ is_pro: false, refunded: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     return new Response(JSON.stringify({ is_pro: hasPaid }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
