@@ -36,13 +36,14 @@ const tiers = [
     icon: Zap,
     highlight: true,
     features: [
-      "每日 2,000 积分",
-      "无需每日领取，自动重置",
+      "每日 2,000 积分（每天自动重置）",
+      "无需每日领取，自动刷新",
       "完整的文章解析能力",
       "缓存文章免费读取",
       "AI 智能摘要（?mode=summary）",
       "优先抓取队列",
       "用量统计面板",
+      "可购买加量包扩展额度",
       "邮件支持",
     ],
     cta: "立即购买",
@@ -81,7 +82,9 @@ const PricingPage = () => {
     }
     setCheckoutLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-payment");
+      const { data, error } = await supabase.functions.invoke("create-payment", {
+        body: { type: "pro" },
+      });
       if (error) throw error;
       if (data?.url) {
         window.open(data.url, "_blank");
@@ -106,6 +109,7 @@ const PricingPage = () => {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             免费开始使用，随业务增长升级。缓存文章免费读取，新文章按复杂度消耗 1-2 积分。
           </p>
+          <p className="text-sm text-muted-foreground mt-2">支持信用卡、支付宝等多种支付方式</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-16">
