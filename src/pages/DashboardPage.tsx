@@ -34,6 +34,9 @@ interface Balance {
   total_credits: number;
   used_credits: number;
   remaining_credits: number;
+  is_pro?: boolean;
+  daily_limit?: number;
+  bonus_credits?: number;
 }
 
 const DashboardPage = () => {
@@ -55,13 +58,31 @@ const DashboardPage = () => {
   const handleUpgrade = async () => {
     setUpgradeLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-payment");
+      const { data, error } = await supabase.functions.invoke("create-payment", {
+        body: { type: "pro" },
+      });
       if (error) throw error;
       if (data?.url) {
         window.open(data.url, "_blank");
       }
     } catch (err) {
       toast({ title: "支付创建失败", description: String(err), variant: "destructive" });
+    }
+    setUpgradeLoading(false);
+  };
+
+  const handleBuyCredits = async () => {
+    setUpgradeLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-payment", {
+        body: { type: "credits" },
+      });
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+      }
+    } catch (err) {
+      toast({ title: "购买失败", description: String(err), variant: "destructive" });
     }
     setUpgradeLoading(false);
   };
