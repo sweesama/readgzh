@@ -211,7 +211,9 @@ const DashboardPage = () => {
 
   const hasClaimed = balance?.claimed_today ?? false;
   const remainingCredits = balance?.remaining_credits ?? 0;
-  const dailyLimit = isPro ? 2000 : 50;
+  const totalCredits = balance?.total_credits ?? 0;
+  const bonusCredits = balance?.bonus_credits ?? 0;
+  const dailyLimit = balance?.daily_limit ?? (isPro ? 2000 : 50);
 
   if (loading) {
     return (
