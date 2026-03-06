@@ -178,16 +178,28 @@ Deno.serve(async (req) => {
         );
       }
 
+      // Check if user is Pro (has any pro-tier active key)
+      const { data: proKeys } = await serviceClient
+        .from("api_keys")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .eq("tier", "pro")
+        .limit(1);
+
+      const isPro = (proKeys && proKeys.length > 0);
+      const creditAmount = isPro ? 2000 : 50;
+
       const { error } = await serviceClient.from("daily_credits").insert({
         user_id: user.id,
         claim_date: today,
-        credits_claimed: 50,
+        credits_claimed: creditAmount,
       });
 
       if (error) throw error;
 
       return new Response(
-        JSON.stringify({ success: true, credits: 50, message: "成功领取 50 积分！" }),
+        JSON.stringify({ success: true, credits: creditAmount, message: isPro ? "Pro 会员自动获取 2000 积分！" : "成功领取 50 积分！" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
