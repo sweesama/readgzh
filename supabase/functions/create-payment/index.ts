@@ -37,6 +37,9 @@ Deno.serve(async (req) => {
     }
 
     const user = userData.user;
+    const body = await req.json().catch(() => ({}));
+    const type = body.type || "pro"; // "pro" or "credits"
+
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
       apiVersion: "2025-08-27.basil",
     });
@@ -50,21 +53,35 @@ Deno.serve(async (req) => {
 
     const origin = req.headers.get("origin") || "https://readgzh.lovable.app";
 
+    // Choose price based on type
+    let priceId: string;
+    let successUrl: string;
+    if (type === "credits") {
+      priceId = "price_1T7tEZB04cx1cwwsvtQBDXY5"; // 500 credits pack ¥9
+      successUrl = `${origin}/dashboard?credits_purchased=500`;
+    } else {
+      priceId = "price_1T7GqgB04cx1cwwsUCydmZHv"; // Pro ¥39
+      successUrl = `${origin}/payment-success`;
+    }
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email!,
       line_items: [
         {
-          price: "price_1T7GqgB04cx1cwwsUCydmZHv",
+          price: priceId,
           quantity: 1,
         },
       ],
       mode: "payment",
-      success_url: `${origin}/payment-success`,
+      success_url: successUrl,
       cancel_url: `${origin}/pricing`,
       metadata: {
         user_id: user.id,
+        type,
       },
+      // Enable multiple payment methods (Stripe auto-shows available ones)
+      payment_method_types: undefined, // Let Stripe auto-detect based on account config
     });
 
     return new Response(JSON.stringify({ url: session.url }), {
