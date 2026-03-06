@@ -334,10 +334,8 @@ const DashboardPage = () => {
                 <div>
                   <p className="text-sm text-muted-foreground">今日剩余积分</p>
                   <p className="text-3xl font-bold">
-                    {isPro ? (
-                      <>{dailyLimit - todayTotal}<span className="text-base font-normal text-muted-foreground"> / {dailyLimit}</span></>
-                    ) : hasClaimed ? (
-                      <>{remainingCredits}<span className="text-base font-normal text-muted-foreground"> / {dailyLimit}</span></>
+                    {isPro || hasClaimed ? (
+                      <>{remainingCredits}<span className="text-base font-normal text-muted-foreground"> / {totalCredits}</span></>
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
@@ -345,10 +343,37 @@ const DashboardPage = () => {
                 </div>
                 <Coins className="h-8 w-8 text-primary" />
               </div>
+              {bonusCredits > 0 && (
+                <p className="text-xs text-primary mt-1">🎁 含 {bonusCredits} 加量包积分</p>
+              )}
               {isPro ? (
-                <p className="text-xs text-muted-foreground mt-3">✅ Pro 会员自动获取每日积分</p>
+                <div className="mt-3 space-y-2">
+                  <p className="text-xs text-muted-foreground">✅ Pro 会员每日自动重置 {dailyLimit} 积分</p>
+                  <Button
+                    onClick={handleBuyCredits}
+                    disabled={upgradeLoading}
+                    size="sm"
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    {upgradeLoading ? "处理中..." : "购买加量包 (500积分 / ¥9)"}
+                  </Button>
+                </div>
               ) : hasClaimed ? (
-                <p className="text-xs text-muted-foreground mt-3">✅ 今日积分已领取 · 简单文章 1 积分，复杂文章 2 积分</p>
+                <div className="mt-3 space-y-2">
+                  <p className="text-xs text-muted-foreground">✅ 今日积分已领取 · 简单文章 1 积分，复杂文章 2 积分</p>
+                  <Button
+                    onClick={handleBuyCredits}
+                    disabled={upgradeLoading}
+                    size="sm"
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    {upgradeLoading ? "处理中..." : "购买加量包 (500积分 / ¥9)"}
+                  </Button>
+                </div>
               ) : (
                 <Button
                   onClick={claimCredits}
