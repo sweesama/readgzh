@@ -34,6 +34,9 @@ interface Balance {
   total_credits: number;
   used_credits: number;
   remaining_credits: number;
+  is_pro?: boolean;
+  daily_limit?: number;
+  bonus_credits?: number;
 }
 
 const DashboardPage = () => {
@@ -55,13 +58,31 @@ const DashboardPage = () => {
   const handleUpgrade = async () => {
     setUpgradeLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-payment");
+      const { data, error } = await supabase.functions.invoke("create-payment", {
+        body: { type: "pro" },
+      });
       if (error) throw error;
       if (data?.url) {
         window.open(data.url, "_blank");
       }
     } catch (err) {
       toast({ title: "支付创建失败", description: String(err), variant: "destructive" });
+    }
+    setUpgradeLoading(false);
+  };
+
+  const handleBuyCredits = async () => {
+    setUpgradeLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-payment", {
+        body: { type: "credits" },
+      });
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+      }
+    } catch (err) {
+      toast({ title: "购买失败", description: String(err), variant: "destructive" });
     }
     setUpgradeLoading(false);
   };
@@ -111,6 +132,16 @@ const DashboardPage = () => {
       fetchUsage();
       fetchBalance();
       checkProStatus();
+
+      // Handle return from credit pack purchase
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("credits_purchased")) {
+        toast({ title: "🎉 积分购买成功", description: `${params.get("credits_purchased")} 积分已到账` });
+        // Clean URL
+        window.history.replaceState({}, "", "/dashboard");
+        // Re-check payment to process the credit pack
+        checkProStatus();
+      }
     }
   }, [user, loading, fetchKeys, fetchUsage, fetchBalance, checkProStatus]);
 
@@ -190,7 +221,9 @@ const DashboardPage = () => {
 
   const hasClaimed = balance?.claimed_today ?? false;
   const remainingCredits = balance?.remaining_credits ?? 0;
-  const dailyLimit = isPro ? 2000 : 50;
+  const totalCredits = balance?.total_credits ?? 0;
+  const bonusCredits = balance?.bonus_credits ?? 0;
+  const dailyLimit = balance?.daily_limit ?? (isPro ? 2000 : 50);
 
   if (loading) {
     return (
@@ -311,10 +344,8 @@ const DashboardPage = () => {
                 <div>
                   <p className="text-sm text-muted-foreground">今日剩余积分</p>
                   <p className="text-3xl font-bold">
-                    {isPro ? (
-                      <>{dailyLimit - todayTotal}<span className="text-base font-normal text-muted-foreground"> / {dailyLimit}</span></>
-                    ) : hasClaimed ? (
-                      <>{remainingCredits}<span className="text-base font-normal text-muted-foreground"> / {dailyLimit}</span></>
+                    {isPro || hasClaimed ? (
+                      <>{remainingCredits}<span className="text-base font-normal text-muted-foreground"> / {totalCredits}</span></>
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
@@ -322,10 +353,37 @@ const DashboardPage = () => {
                 </div>
                 <Coins className="h-8 w-8 text-primary" />
               </div>
+              {bonusCredits > 0 && (
+                <p className="text-xs text-primary mt-1">🎁 含 {bonusCredits} 加量包积分</p>
+              )}
               {isPro ? (
-                <p className="text-xs text-muted-foreground mt-3">✅ Pro 会员自动获取每日积分</p>
+                <div className="mt-3 space-y-2">
+                  <p className="text-xs text-muted-foreground">✅ Pro 会员每日自动重置 {dailyLimit} 积分</p>
+                  <Button
+                    onClick={handleBuyCredits}
+                    disabled={upgradeLoading}
+                    size="sm"
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    {upgradeLoading ? "处理中..." : "购买加量包 (500积分 / ¥9)"}
+                  </Button>
+                </div>
               ) : hasClaimed ? (
-                <p className="text-xs text-muted-foreground mt-3">✅ 今日积分已领取 · 简单文章 1 积分，复杂文章 2 积分</p>
+                <div className="mt-3 space-y-2">
+                  <p className="text-xs text-muted-foreground">✅ 今日积分已领取 · 简单文章 1 积分，复杂文章 2 积分</p>
+                  <Button
+                    onClick={handleBuyCredits}
+                    disabled={upgradeLoading}
+                    size="sm"
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    {upgradeLoading ? "处理中..." : "购买加量包 (500积分 / ¥9)"}
+                  </Button>
+                </div>
               ) : (
                 <Button
                   onClick={claimCredits}

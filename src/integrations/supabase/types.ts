@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       api_keys: {
         Row: {
+          bonus_credits: number
           created_at: string
           daily_limit: number
           id: string
@@ -28,6 +29,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          bonus_credits?: number
           created_at?: string
           daily_limit?: number
           id?: string
@@ -40,6 +42,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          bonus_credits?: number
           created_at?: string
           daily_limit?: number
           id?: string

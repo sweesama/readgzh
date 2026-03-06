@@ -36,13 +36,14 @@ const tiers = [
     icon: Zap,
     highlight: true,
     features: [
-      "每日 2,000 积分",
-      "无需每日领取，自动重置",
+      "每日 2,000 积分（每天自动重置）",
+      "无需每日领取，自动刷新",
       "完整的文章解析能力",
       "缓存文章免费读取",
       "AI 智能摘要（?mode=summary）",
       "优先抓取队列",
       "用量统计面板",
+      "可购买加量包扩展额度",
       "邮件支持",
     ],
     cta: "立即购买",
@@ -81,7 +82,9 @@ const PricingPage = () => {
     }
     setCheckoutLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-payment");
+      const { data, error } = await supabase.functions.invoke("create-payment", {
+        body: { type: "pro" },
+      });
       if (error) throw error;
       if (data?.url) {
         window.open(data.url, "_blank");
@@ -106,6 +109,7 @@ const PricingPage = () => {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             免费开始使用，随业务增长升级。缓存文章免费读取，新文章按复杂度消耗 1-2 积分。
           </p>
+          <p className="text-sm text-muted-foreground mt-2">支持信用卡、支付宝等多种支付方式</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-16">
@@ -175,8 +179,16 @@ const PricingPage = () => {
               a: "免费用户每天需要到 ReadGZH 网站点击「领取积分」按钮，即可获得当日 50 积分。简单文章消耗 1 积分，含大量图片的复杂文章消耗 2 积分。",
             },
             {
-              q: "如何付费升级到 Pro？",
-              a: "Pro 套餐即将推出，敬请期待！目前免费层已经能满足大多数个人开发者的需求。",
+              q: "Pro 用户的积分是自动重置的吗？",
+              a: "是的！Pro 用户每天自动获得 2,000 积分，无需手动领取。每天零点自动重置，完全无感。",
+            },
+            {
+              q: "如果 2000 积分用完了怎么办？",
+              a: "你可以在控制台购买「加量包」（500 积分 / ¥9），加量包积分不会每日重置，用完为止，可叠加购买。",
+            },
+            {
+              q: "支持哪些支付方式？",
+              a: "我们通过 Stripe 支持信用卡（Visa/Mastercard）和支付宝。如需微信支付或其他方式，请联系我们。",
             },
             {
               q: "API Key 安全吗？",
