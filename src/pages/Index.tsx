@@ -15,10 +15,14 @@ const Index = () => {
   const [isPro, setIsPro] = useState(false);
 
   useEffect(() => {
-    // Check Pro status
-    supabase.functions.invoke("check-payment").then(({ data }) => {
-      if (data?.is_pro) setIsPro(true);
-    }).catch(() => {});
+    // Only check Pro status if user is logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        supabase.functions.invoke("check-payment").then(({ data }) => {
+          if (data?.is_pro) setIsPro(true);
+        }).catch(() => {});
+      }
+    });
   }, []);
 
   useEffect(() => {
