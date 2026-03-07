@@ -187,18 +187,17 @@ const DashboardPage = () => {
       fetchUsage();
       fetchBalance();
       checkProStatus();
+      fetchProfile();
 
       // Handle return from credit pack purchase
       const params = new URLSearchParams(window.location.search);
       if (params.get("credits_purchased")) {
         toast({ title: "🎉 积分购买成功", description: `${params.get("credits_purchased")} 积分已到账` });
-        // Clean URL
         window.history.replaceState({}, "", "/dashboard");
-        // Re-check payment to process the credit pack
         checkProStatus();
       }
     }
-  }, [user, loading, fetchKeys, fetchUsage, fetchBalance, checkProStatus]);
+  }, [user, loading, fetchKeys, fetchUsage, fetchBalance, checkProStatus, fetchProfile]);
 
   const handleGoogleLogin = async () => {
     const { error } = await lovable.auth.signInWithOAuth("google", {
