@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import HeroSection from "@/components/home/HeroSection";
 import FeaturesSection from "@/components/home/FeaturesSection";
@@ -6,11 +6,20 @@ import AdvantagesSection from "@/components/home/AdvantagesSection";
 import AIGuideSection from "@/components/home/AIGuideSection";
 import StatsWidget from "@/components/home/StatsSection";
 import Footer from "@/components/home/Footer";
-import { Bot, Eye, BookOpen, Code, Zap, Key } from "lucide-react";
+import { Bot, Eye, BookOpen, Code, Zap, Key, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [aiView, setAiView] = useState(false);
+  const [isPro, setIsPro] = useState(false);
+
+  useEffect(() => {
+    // Check Pro status
+    supabase.functions.invoke("check-payment").then(({ data }) => {
+      if (data?.is_pro) setIsPro(true);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -61,9 +70,17 @@ const Index = () => {
             </Button>
           </Link>
           <Link to="/dashboard">
-            <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs">
-              <Key className="h-3.5 w-3.5" />
-              控制台
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              className={`gap-1.5 rounded-full backdrop-blur-md shadow-sm text-xs ${
+                isPro 
+                  ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600" 
+                  : "bg-card/80"
+              }`}
+            >
+              {isPro ? <Crown className="h-3.5 w-3.5" /> : <Key className="h-3.5 w-3.5" />}
+              {isPro ? "Pro 控制台" : "控制台"}
             </Button>
           </Link>
         </div>

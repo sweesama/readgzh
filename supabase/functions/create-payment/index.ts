@@ -44,11 +44,19 @@ Deno.serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
-    // Find or reference existing Stripe customer
+    // Always ensure a Stripe customer exists for this user
     const customers = await stripe.customers.list({ email: user.email!, limit: 1 });
-    let customerId: string | undefined;
+    let customerId: string;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
+    } else {
+      // Create a new customer
+      const newCustomer = await stripe.customers.create({
+        email: user.email!,
+        metadata: { supabase_user_id: user.id },
+      });
+      customerId = newCustomer.id;
+      console.log(`Created Stripe customer ${customerId} for ${user.email}`);
     }
 
     const origin = req.headers.get("origin") || "https://readgzh.lovable.app";
@@ -66,7 +74,6 @@ Deno.serve(async (req) => {
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      customer_email: customerId ? undefined : user.email!,
       line_items: [
         {
           price: priceId,
@@ -80,8 +87,6 @@ Deno.serve(async (req) => {
         user_id: user.id,
         type,
       },
-      // Enable multiple payment methods (Stripe auto-shows available ones)
-      payment_method_types: undefined, // Let Stripe auto-detect based on account config
     });
 
     return new Response(JSON.stringify({ url: session.url }), {
