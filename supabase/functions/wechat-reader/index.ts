@@ -452,11 +452,13 @@ function htmlToMarkdown(html: string, title: string, author: string, publishTime
   text = text.replace(/<(em|i)[^>]*>([\s\S]*?)<\/\1>/gi, (_, _t, c) => `*${c.trim()}*`);
   // Links
   text = text.replace(/<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (_, href, c) => `[${c.trim()}](${href})`);
-  // Images → placeholder
-  text = text.replace(/<img[^>]*alt="([^"]*)"[^>]*\/?>/gi, (_, alt) => `[图片${alt ? ': ' + alt : ''}]`);
-  text = text.replace(/<img[^>]*\/?>/gi, '[图片]');
-  // Figures
-  text = text.replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, '[图片]');
+  // Images → Markdown format with URL preserved for multi-modal AI
+  text = text.replace(/<img[^>]*?(?:data-src|src)="([^"]*)"[^>]*?alt="([^"]*)"[^>]*?\/?>/gi, (_, src, alt) => `![${alt || '图片'}](${src})`);
+  text = text.replace(/<img[^>]*?alt="([^"]*)"[^>]*?(?:data-src|src)="([^"]*)"[^>]*?\/?>/gi, (_, alt, src) => `![${alt || '图片'}](${src})`);
+  text = text.replace(/<img[^>]*?(?:data-src|src)="([^"]*)"[^>]*?\/?>/gi, (_, src) => `![图片](${src})`);
+  text = text.replace(/<img[^>]*\/?>/gi, '');
+  // Figures with images already converted above
+  text = text.replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, '');
   // Line breaks / paragraphs
   text = text.replace(/<br\s*\/?>/gi, '\n');
   text = text.replace(/<\/p>/gi, '\n\n');
