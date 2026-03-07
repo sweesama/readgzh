@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import HeroSection from "@/components/home/HeroSection";
 import FeaturesSection from "@/components/home/FeaturesSection";
@@ -6,11 +6,13 @@ import AdvantagesSection from "@/components/home/AdvantagesSection";
 import AIGuideSection from "@/components/home/AIGuideSection";
 import StatsWidget from "@/components/home/StatsSection";
 import Footer from "@/components/home/Footer";
-import { Bot, Eye, BookOpen, Code, Zap, Key } from "lucide-react";
+import { Bot, Eye, BookOpen, Code, Zap, Key, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [aiView, setAiView] = useState(false);
+  const [isPro, setIsPro] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
