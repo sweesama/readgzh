@@ -54,6 +54,11 @@ const DashboardPage = () => {
   const [upgradeLoading, setUpgradeLoading] = useState(false);
   const [isPro, setIsPro] = useState(false);
   const [proLoading, setProLoading] = useState(true);
+  // Email OTP state
+  const [loginEmail, setLoginEmail] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
 
   const handleUpgrade = async () => {
     setUpgradeLoading(true);
