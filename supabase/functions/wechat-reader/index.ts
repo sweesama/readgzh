@@ -1,10 +1,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import Stripe from "https://esm.sh/stripe@18.5.0";
 import { DOMParser, Element } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "X-Powered-By": "ReadGZH (readgzh.site)",
 };
 
 // Check if content indicates a verification/captcha page
@@ -431,7 +433,52 @@ function splitIntoParts(content: string): string[] {
   return parts;
 }
 
-async function handleReadMode(slug: string | null, articleId: string | null, partNum?: number): Promise<Response> {
+// Convert HTML content to clean Markdown text
+function htmlToMarkdown(html: string, title: string, author: string, publishTime: string | null, sourceUrl: string | null): string {
+  let md = `# ${title}\n\n`;
+  md += `**作者：** ${author}\n`;
+  if (publishTime) md += `**发布时间：** ${publishTime}\n`;
+  md += `\n---\n\n`;
+
+  // Strip all HTML tags, convert common ones to Markdown
+  let text = html;
+  // Headers
+  text = text.replace(/<h1[^>]*>([\s\S]*?)<\/h1>/gi, (_, c) => `# ${c.trim()}\n\n`);
+  text = text.replace(/<h2[^>]*>([\s\S]*?)<\/h2>/gi, (_, c) => `## ${c.trim()}\n\n`);
+  text = text.replace(/<h3[^>]*>([\s\S]*?)<\/h3>/gi, (_, c) => `### ${c.trim()}\n\n`);
+  text = text.replace(/<h[4-6][^>]*>([\s\S]*?)<\/h[4-6]>/gi, (_, c) => `#### ${c.trim()}\n\n`);
+  // Bold/italic
+  text = text.replace(/<(strong|b)[^>]*>([\s\S]*?)<\/\1>/gi, (_, _t, c) => `**${c.trim()}**`);
+  text = text.replace(/<(em|i)[^>]*>([\s\S]*?)<\/\1>/gi, (_, _t, c) => `*${c.trim()}*`);
+  // Links
+  text = text.replace(/<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (_, href, c) => `[${c.trim()}](${href})`);
+  // Images → placeholder
+  text = text.replace(/<img[^>]*alt="([^"]*)"[^>]*\/?>/gi, (_, alt) => `[图片${alt ? ': ' + alt : ''}]`);
+  text = text.replace(/<img[^>]*\/?>/gi, '[图片]');
+  // Figures
+  text = text.replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, '[图片]');
+  // Line breaks / paragraphs
+  text = text.replace(/<br\s*\/?>/gi, '\n');
+  text = text.replace(/<\/p>/gi, '\n\n');
+  text = text.replace(/<\/div>/gi, '\n');
+  text = text.replace(/<\/li>/gi, '\n');
+  text = text.replace(/<li[^>]*>/gi, '- ');
+  text = text.replace(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/gi, (_, c) => c.trim().split('\n').map((l: string) => `> ${l}`).join('\n') + '\n\n');
+  text = text.replace(/<hr\s*\/?>/gi, '\n---\n');
+  // Strip remaining tags
+  text = text.replace(/<[^>]+>/g, '');
+  // Decode entities
+  text = text.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+  // Normalize whitespace
+  text = text.replace(/\n{3,}/g, '\n\n').trim();
+
+  md += text;
+  if (sourceUrl) md += `\n\n---\n**原文链接：** ${sourceUrl}`;
+  md += `\n\n---\n*Powered by [ReadGZH](https://readgzh.site)*`;
+  return md;
+}
+
+async function handleReadMode(slug: string | null, articleId: string | null, partNum?: number, formatText?: boolean): Promise<Response> {
   if (!slug && !articleId) {
     return new Response("Missing article identifier. Use ?s=slug or ?id=uuid", {
       status: 400,
@@ -496,6 +543,26 @@ async function handleReadMode(slug: string | null, articleId: string | null, par
     contentBody = sanitized;
   } else {
     contentBody = formatContentToHtml(article.content);
+  }
+
+  // format=text: return pure Markdown
+  if (formatText) {
+    const mdContent = htmlToMarkdown(contentBody, article.title, article.author || '未知作者', article.publish_time, article.source_url);
+    const mdParts = splitIntoParts(mdContent);
+    const totalParts = mdParts.length;
+    const currentPart = partNum && partNum >= 1 && partNum <= totalParts ? partNum : 1;
+    let body = mdParts[currentPart - 1];
+    if (totalParts > 1) {
+      body = `> 📄 第 ${currentPart} / ${totalParts} 部分\n\n` + body;
+    }
+    return new Response(body, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "public, max-age=3600",
+        ...(totalParts > 1 ? { "X-Total-Parts": String(totalParts), "X-Current-Part": String(currentPart) } : {}),
+      },
+    });
   }
 
   // Handle ?part=N pagination for long articles
