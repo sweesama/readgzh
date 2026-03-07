@@ -495,14 +495,15 @@ curl -o ~/.openclaw/workspace/skills/readgzh/SKILL.md \\
           </CardHeader>
           <CardContent className="space-y-6">
             <p className="text-muted-foreground">
-              网页版免费使用，无需 Key。API 调用需要携带 API Key，可在{" "}
+              所有 API 均可免费使用，无需 Key（受 IP 速率限制，每日 100 次）。
+              携带 API Key 可获得更高配额（每日 50 积分起），可在{" "}
               <Link to="/dashboard" className="text-primary hover:underline">开发者控制台</Link> 免费创建。
             </p>
 
             <div className="space-y-3">
               <h3 className="font-semibold text-lg">获取 API Key</h3>
               <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground">
-                <li>前往 <Link to="/dashboard" className="text-primary hover:underline">开发者控制台</Link>，使用 Google 账号登录</li>
+                <li>前往 <Link to="/dashboard" className="text-primary hover:underline">开发者控制台</Link>，使用邮箱验证码、Google 或 Apple 登录</li>
                 <li>点击「创建 Key」生成一个 <code className="bg-muted px-1.5 py-0.5 rounded text-xs">sk_live_...</code> 格式的密钥</li>
                 <li>每天点击「领取今日积分」获取 50 积分（简单文章 1 积分，复杂文章 2 积分）</li>
                 <li>需要更多积分？查看 <Link to="/pricing" className="text-primary hover:underline">定价方案</Link></li>
@@ -565,7 +566,7 @@ curl -o ~/.openclaw/workspace/skills/readgzh/SKILL.md \\
               <li>仅支持微信公众号链接（mp.weixin.qq.com）</li>
               <li>文章内容会自动缓存，重复请求不会重新抓取</li>
               <li>图片消息会提取所有图片和文字描述</li>
-              <li>网页版免费使用；API 调用需要 Key，每日 50 积分（需领取）</li>
+              <li>所有接口免费使用，无需 Key（IP 限速 100 次/天）；携带 Key 可获更高配额（每日 50 积分起）</li>
               <li>请遵守相关法律法规，仅用于个人学习和研究</li>
             </ul>
           </CardContent>
