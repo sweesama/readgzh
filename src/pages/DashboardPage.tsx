@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Copy, Key, Plus, Trash2, Gift, LogOut, ArrowLeft, Eye, EyeOff, BarChart3, Coins, Zap, Loader2, Crown } from "lucide-react";
+import { Copy, Key, Plus, Trash2, Gift, LogOut, ArrowLeft, Eye, EyeOff, BarChart3, Coins, Zap, Loader2, Crown, Mail } from "lucide-react";
 import Footer from "@/components/home/Footer";
 
 interface ApiKey {
@@ -54,6 +54,11 @@ const DashboardPage = () => {
   const [upgradeLoading, setUpgradeLoading] = useState(false);
   const [isPro, setIsPro] = useState(false);
   const [proLoading, setProLoading] = useState(true);
+  // Email OTP state
+  const [loginEmail, setLoginEmail] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
 
   const handleUpgrade = async () => {
     setUpgradeLoading(true);
@@ -145,13 +150,58 @@ const DashboardPage = () => {
     }
   }, [user, loading, fetchKeys, fetchUsage, fetchBalance, checkProStatus]);
 
-  const handleLogin = async () => {
+  const handleGoogleLogin = async () => {
     const { error } = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin + "/dashboard",
     });
     if (error) {
       toast({ title: "登录失败", description: String(error), variant: "destructive" });
     }
+  };
+
+  const handleAppleLogin = async () => {
+    const { error } = await lovable.auth.signInWithOAuth("apple", {
+      redirect_uri: window.location.origin + "/dashboard",
+    });
+    if (error) {
+      toast({ title: "登录失败", description: String(error), variant: "destructive" });
+    }
+  };
+
+  const handleSendOtp = async () => {
+    if (!loginEmail) {
+      toast({ title: "请输入邮箱地址", variant: "destructive" });
+      return;
+    }
+    setOtpLoading(true);
+    const { error } = await supabase.auth.signInWithOtp({
+      email: loginEmail,
+      options: { shouldCreateUser: true },
+    });
+    if (error) {
+      toast({ title: "发送验证码失败", description: error.message, variant: "destructive" });
+    } else {
+      setOtpSent(true);
+      toast({ title: "验证码已发送", description: "请查收邮件，输入 6 位验证码" });
+    }
+    setOtpLoading(false);
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otpCode) {
+      toast({ title: "请输入验证码", variant: "destructive" });
+      return;
+    }
+    setOtpLoading(true);
+    const { error } = await supabase.auth.verifyOtp({
+      email: loginEmail,
+      token: otpCode,
+      type: "email",
+    });
+    if (error) {
+      toast({ title: "验证失败", description: error.message, variant: "destructive" });
+    }
+    setOtpLoading(false);
   };
 
   const createKey = async () => {
@@ -241,14 +291,76 @@ const DashboardPage = () => {
           <Button variant="ghost" onClick={() => navigate("/")} className="mb-8">
             <ArrowLeft className="mr-2 h-4 w-4" />返回首页
           </Button>
-          <div className="max-w-md mx-auto text-center">
-            <Key className="h-16 w-16 mx-auto mb-6 text-primary" />
-            <h1 className="text-3xl font-bold mb-3">开发者控制台</h1>
-            <p className="text-muted-foreground mb-8">登录后可以生成 API Key，管理用量，领取每日免费积分</p>
-            <Button onClick={handleLogin} size="lg" className="w-full max-w-xs">
-              <img src="https://www.google.com/favicon.ico" alt="" className="w-5 h-5 mr-2" />
-              使用 Google 账号登录
-            </Button>
+          <div className="max-w-md mx-auto text-center space-y-6">
+            <Key className="h-16 w-16 mx-auto mb-2 text-primary" />
+            <h1 className="text-3xl font-bold">开发者控制台</h1>
+            <p className="text-muted-foreground">登录后可以生成 API Key，管理用量，领取每日免费积分</p>
+
+            {/* Email OTP Login */}
+            <Card>
+              <CardContent className="pt-6 space-y-3">
+                {!otpSent ? (
+                  <>
+                    <div className="flex gap-2">
+                      <Input
+                        type="email"
+                        placeholder="输入邮箱地址（支持 QQ、网易等）"
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleSendOtp()}
+                      />
+                      <Button onClick={handleSendOtp} disabled={otpLoading} className="shrink-0">
+                        {otpLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4 mr-1" />}
+                        发送验证码
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">无需密码，一次性验证码登录</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm">验证码已发送至 <span className="font-medium">{loginEmail}</span></p>
+                    <div className="flex gap-2">
+                      <Input
+                        type="text"
+                        placeholder="输入 6 位验证码"
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleVerifyOtp()}
+                        maxLength={6}
+                        className="text-center tracking-widest text-lg"
+                      />
+                      <Button onClick={handleVerifyOtp} disabled={otpLoading} className="shrink-0">
+                        {otpLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "验证登录"}
+                      </Button>
+                    </div>
+                    <Button variant="link" size="sm" onClick={() => { setOtpSent(false); setOtpCode(""); }}>
+                      换一个邮箱 / 重新发送
+                    </Button>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">或使用第三方账号</span>
+              </div>
+            </div>
+
+            {/* OAuth buttons */}
+            <div className="flex flex-col gap-3 max-w-xs mx-auto">
+              <Button onClick={handleGoogleLogin} size="lg" variant="outline" className="w-full">
+                <img src="https://www.google.com/favicon.ico" alt="" className="w-5 h-5 mr-2" />
+                使用 Google 账号登录
+              </Button>
+              <Button onClick={handleAppleLogin} size="lg" variant="outline" className="w-full">
+                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+                使用 Apple 账号登录
+              </Button>
+            </div>
           </div>
         </div>
       </div>
