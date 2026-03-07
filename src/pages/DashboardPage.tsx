@@ -59,6 +59,18 @@ const DashboardPage = () => {
   const [otpCode, setOtpCode] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
+  // Subscription info
+  const [subscriptionInfo, setSubscriptionInfo] = useState<{
+    status: string | null;
+    interval: string | null;
+    current_period_end: string | null;
+  } | null>(null);
+  const [isLegacyPro, setIsLegacyPro] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+  // Nickname editing
+  const [displayName, setDisplayName] = useState("");
+  const [editingName, setEditingName] = useState(false);
+  const [nameLoading, setNameLoading] = useState(false);
 
   const handleUpgrade = async () => {
     setUpgradeLoading(true);
