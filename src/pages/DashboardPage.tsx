@@ -433,7 +433,29 @@ const DashboardPage = () => {
             )}
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">{user.email}</span>
+            {editingName ? (
+              <div className="flex items-center gap-1.5">
+                <Input
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="h-8 w-40 text-sm"
+                  placeholder="设置昵称"
+                  onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
+                />
+                <Button size="sm" variant="ghost" onClick={handleSaveName} disabled={nameLoading}>
+                  {nameLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "保存"}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditingName(false)}>取消</Button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setEditingName(true)}
+                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {displayName || user.email}
+                <Pencil className="h-3 w-3" />
+              </button>
+            )}
             <Button variant="outline" size="sm" onClick={signOut}>
               <LogOut className="mr-2 h-4 w-4" />退出
             </Button>
@@ -445,7 +467,7 @@ const DashboardPage = () => {
         {/* Upgrade Banner - only show for free users */}
         {!isPro && !proLoading && (
           <Card className="border-primary/40 bg-gradient-to-r from-primary/10 to-primary/5">
-            <CardContent className="pt-6 flex items-center justify-between">
+            <CardContent className="pt-6 flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-3">
                 <Zap className="h-8 w-8 text-primary" />
                 <div>
@@ -453,10 +475,15 @@ const DashboardPage = () => {
                   <p className="text-sm text-muted-foreground">每日 2,000 积分 · 无需每日领取 · 优先抓取队列</p>
                 </div>
               </div>
-              <Button onClick={handleUpgrade} disabled={upgradeLoading}>
-                {upgradeLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
-                {upgradeLoading ? "处理中..." : "¥39 立即升级"}
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={() => handleUpgrade("pro")} disabled={upgradeLoading} size="sm">
+                  {upgradeLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+                  ¥39/月
+                </Button>
+                <Button onClick={() => handleUpgrade("pro_annual")} disabled={upgradeLoading} variant="outline" size="sm">
+                  ¥299/年 <Badge variant="secondary" className="ml-1 text-xs">省¥169</Badge>
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -464,12 +491,35 @@ const DashboardPage = () => {
         {/* Pro Status Banner */}
         {isPro && (
           <Card className="border-amber-500/40 bg-gradient-to-r from-amber-500/10 to-orange-500/5">
-            <CardContent className="pt-6 flex items-center gap-3">
-              <Crown className="h-8 w-8 text-amber-500" />
-              <div>
-                <p className="font-semibold">Pro 会员</p>
-                <p className="text-sm text-muted-foreground">每日 2,000 积分 · 优先抓取队列 · 感谢支持 ❤️</p>
+            <CardContent className="pt-6 flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <Crown className="h-8 w-8 text-amber-500" />
+                <div>
+                  <p className="font-semibold">Pro 会员</p>
+                  {subscriptionInfo ? (
+                    <p className="text-sm text-muted-foreground">
+                      {subscriptionInfo.interval === "year" ? "年付订阅" : "月付订阅"}
+                      {subscriptionInfo.status === "canceling" && " · 已取消，"}
+                      {subscriptionInfo.current_period_end && (
+                        <>
+                          {subscriptionInfo.status === "canceling" ? "有效至 " : " · 下次续费 "}
+                          {new Date(subscriptionInfo.current_period_end).toLocaleDateString("zh-CN")}
+                        </>
+                      )}
+                    </p>
+                  ) : isLegacyPro ? (
+                    <p className="text-sm text-muted-foreground">永久会员 · 感谢早期支持 ❤️</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">每日 2,000 积分 · 感谢支持 ❤️</p>
+                  )}
+                </div>
               </div>
+              {subscriptionInfo && (
+                <Button onClick={handleManageSubscription} disabled={portalLoading} variant="outline" size="sm">
+                  {portalLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
+                  管理订阅
+                </Button>
+              )}
             </CardContent>
           </Card>
         )}
