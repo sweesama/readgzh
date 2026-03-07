@@ -72,11 +72,11 @@ const DashboardPage = () => {
   const [editingName, setEditingName] = useState(false);
   const [nameLoading, setNameLoading] = useState(false);
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = async (type: "pro" | "pro_annual" = "pro") => {
     setUpgradeLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("create-payment", {
-        body: { type: "pro" },
+        body: { type },
       });
       if (error) throw error;
       if (data?.url) {
@@ -132,15 +132,53 @@ const DashboardPage = () => {
       const { data } = await supabase.functions.invoke("check-payment");
       if (data?.is_pro) {
         setIsPro(true);
-        // Pro status synced to DB by check-payment, refresh keys and balance
         fetchKeys();
         fetchBalance();
+      }
+      if (data?.subscription) {
+        setSubscriptionInfo(data.subscription);
+      }
+      if (data?.legacy) {
+        setIsLegacyPro(true);
       }
     } catch {
       // ignore
     }
     setProLoading(false);
   }, [fetchKeys, fetchBalance]);
+
+  // Fetch display name from profile
+  const fetchProfile = useCallback(async () => {
+    const { data } = await supabase.from("profiles").select("display_name").eq("id", user?.id || "").single();
+    if (data?.display_name) setDisplayName(data.display_name);
+  }, [user?.id]);
+
+  const handleSaveName = async () => {
+    if (!displayName.trim()) return;
+    setNameLoading(true);
+    const { error } = await supabase.from("profiles").update({ display_name: displayName.trim() }).eq("id", user!.id);
+    if (error) {
+      toast({ title: "保存失败", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "昵称已更新" });
+      setEditingName(false);
+    }
+    setNameLoading(false);
+  };
+
+  const handleManageSubscription = async () => {
+    setPortalLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("customer-portal");
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+      }
+    } catch (err) {
+      toast({ title: "无法打开订阅管理", description: String(err), variant: "destructive" });
+    }
+    setPortalLoading(false);
+  };
 
   useEffect(() => {
     if (!loading && !user) return;
