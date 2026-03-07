@@ -150,13 +150,58 @@ const DashboardPage = () => {
     }
   }, [user, loading, fetchKeys, fetchUsage, fetchBalance, checkProStatus]);
 
-  const handleLogin = async () => {
+  const handleGoogleLogin = async () => {
     const { error } = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin + "/dashboard",
     });
     if (error) {
       toast({ title: "登录失败", description: String(error), variant: "destructive" });
     }
+  };
+
+  const handleAppleLogin = async () => {
+    const { error } = await lovable.auth.signInWithOAuth("apple", {
+      redirect_uri: window.location.origin + "/dashboard",
+    });
+    if (error) {
+      toast({ title: "登录失败", description: String(error), variant: "destructive" });
+    }
+  };
+
+  const handleSendOtp = async () => {
+    if (!loginEmail) {
+      toast({ title: "请输入邮箱地址", variant: "destructive" });
+      return;
+    }
+    setOtpLoading(true);
+    const { error } = await supabase.auth.signInWithOtp({
+      email: loginEmail,
+      options: { shouldCreateUser: true },
+    });
+    if (error) {
+      toast({ title: "发送验证码失败", description: error.message, variant: "destructive" });
+    } else {
+      setOtpSent(true);
+      toast({ title: "验证码已发送", description: "请查收邮件，输入 6 位验证码" });
+    }
+    setOtpLoading(false);
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otpCode) {
+      toast({ title: "请输入验证码", variant: "destructive" });
+      return;
+    }
+    setOtpLoading(true);
+    const { error } = await supabase.auth.verifyOtp({
+      email: loginEmail,
+      token: otpCode,
+      type: "email",
+    });
+    if (error) {
+      toast({ title: "验证失败", description: error.message, variant: "destructive" });
+    }
+    setOtpLoading(false);
   };
 
   const createKey = async () => {
