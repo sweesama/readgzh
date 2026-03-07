@@ -663,7 +663,7 @@ function getClientIp(req: Request): string {
   return "unknown";
 }
 
-const DAILY_LIMIT = 100;
+const DAILY_LIMIT = 10;
 
 async function hashApiKey(key: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -793,10 +793,10 @@ function rateLimitResponse(rateInfo: { current: number; remaining: number; limit
   const errorCode = isCreditsExhausted ? "insufficient_credits" : "rate_limit_exceeded";
   const errorMsg = isCreditsExhausted
     ? `API Key 积分已用完，今日限制 ${limit} 积分`
-    : `请求过于频繁，每天限制 ${DAILY_LIMIT} 次调用`;
+    : `未授权请求已达每日上限（${DAILY_LIMIT} 次）。注册免费获取 50 积分/天，稳定无限制。`;
   const hint = isCreditsExhausted
     ? "请到 readgzh.site/dashboard 领取免费积分或升级套餐"
-    : "如需更多额度，请到 readgzh.site/dashboard 获取 API Key";
+    : "立即注册：readgzh.site/dashboard — 免费创建 API Key，每日 50 积分，告别 IP 限制";
 
   return new Response(
     JSON.stringify({
