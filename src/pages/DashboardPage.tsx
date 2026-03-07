@@ -304,7 +304,7 @@ const DashboardPage = () => {
                     <div className="flex gap-2">
                       <Input
                         type="email"
-                        placeholder="输入邮箱地址（支持 QQ、网易等）"
+                        placeholder="输入邮箱地址"
                         value={loginEmail}
                         onChange={(e) => setLoginEmail(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleSendOtp()}
