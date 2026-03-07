@@ -1,10 +1,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import Stripe from "https://esm.sh/stripe@18.5.0";
 import { DOMParser, Element } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "X-Powered-By": "ReadGZH (readgzh.site)",
 };
 
 // Check if content indicates a verification/captcha page
@@ -431,7 +433,52 @@ function splitIntoParts(content: string): string[] {
   return parts;
 }
 
-async function handleReadMode(slug: string | null, articleId: string | null, partNum?: number): Promise<Response> {
+// Convert HTML content to clean Markdown text
+function htmlToMarkdown(html: string, title: string, author: string, publishTime: string | null, sourceUrl: string | null): string {
+  let md = `# ${title}\n\n`;
+  md += `**作者：** ${author}\n`;
+  if (publishTime) md += `**发布时间：** ${publishTime}\n`;
+  md += `\n---\n\n`;
+
+  // Strip all HTML tags, convert common ones to Markdown
+  let text = html;
+  // Headers
+  text = text.replace(/<h1[^>]*>([\s\S]*?)<\/h1>/gi, (_, c) => `# ${c.trim()}\n\n`);
+  text = text.replace(/<h2[^>]*>([\s\S]*?)<\/h2>/gi, (_, c) => `## ${c.trim()}\n\n`);
+  text = text.replace(/<h3[^>]*>([\s\S]*?)<\/h3>/gi, (_, c) => `### ${c.trim()}\n\n`);
+  text = text.replace(/<h[4-6][^>]*>([\s\S]*?)<\/h[4-6]>/gi, (_, c) => `#### ${c.trim()}\n\n`);
+  // Bold/italic
+  text = text.replace(/<(strong|b)[^>]*>([\s\S]*?)<\/\1>/gi, (_, _t, c) => `**${c.trim()}**`);
+  text = text.replace(/<(em|i)[^>]*>([\s\S]*?)<\/\1>/gi, (_, _t, c) => `*${c.trim()}*`);
+  // Links
+  text = text.replace(/<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (_, href, c) => `[${c.trim()}](${href})`);
+  // Images → placeholder
+  text = text.replace(/<img[^>]*alt="([^"]*)"[^>]*\/?>/gi, (_, alt) => `[图片${alt ? ': ' + alt : ''}]`);
+  text = text.replace(/<img[^>]*\/?>/gi, '[图片]');
+  // Figures
+  text = text.replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, '[图片]');
+  // Line breaks / paragraphs
+  text = text.replace(/<br\s*\/?>/gi, '\n');
+  text = text.replace(/<\/p>/gi, '\n\n');
+  text = text.replace(/<\/div>/gi, '\n');
+  text = text.replace(/<\/li>/gi, '\n');
+  text = text.replace(/<li[^>]*>/gi, '- ');
+  text = text.replace(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/gi, (_, c) => c.trim().split('\n').map((l: string) => `> ${l}`).join('\n') + '\n\n');
+  text = text.replace(/<hr\s*\/?>/gi, '\n---\n');
+  // Strip remaining tags
+  text = text.replace(/<[^>]+>/g, '');
+  // Decode entities
+  text = text.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+  // Normalize whitespace
+  text = text.replace(/\n{3,}/g, '\n\n').trim();
+
+  md += text;
+  if (sourceUrl) md += `\n\n---\n**原文链接：** ${sourceUrl}`;
+  md += `\n\n---\n*Powered by [ReadGZH](https://readgzh.site)*`;
+  return md;
+}
+
+async function handleReadMode(slug: string | null, articleId: string | null, partNum?: number, formatText?: boolean): Promise<Response> {
   if (!slug && !articleId) {
     return new Response("Missing article identifier. Use ?s=slug or ?id=uuid", {
       status: 400,
@@ -496,6 +543,26 @@ async function handleReadMode(slug: string | null, articleId: string | null, par
     contentBody = sanitized;
   } else {
     contentBody = formatContentToHtml(article.content);
+  }
+
+  // format=text: return pure Markdown
+  if (formatText) {
+    const mdContent = htmlToMarkdown(contentBody, article.title, article.author || '未知作者', article.publish_time, article.source_url);
+    const mdParts = splitIntoParts(mdContent);
+    const totalParts = mdParts.length;
+    const currentPart = partNum && partNum >= 1 && partNum <= totalParts ? partNum : 1;
+    let body = mdParts[currentPart - 1];
+    if (totalParts > 1) {
+      body = `> 📄 第 ${currentPart} / ${totalParts} 部分\n\n` + body;
+    }
+    return new Response(body, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "public, max-age=3600",
+        ...(totalParts > 1 ? { "X-Total-Parts": String(totalParts), "X-Current-Part": String(currentPart) } : {}),
+      },
+    });
   }
 
   // Handle ?part=N pagination for long articles
@@ -918,16 +985,45 @@ Deno.serve(async (req) => {
             );
           }
           if (apiAuth.tier !== "pro") {
-            return new Response(
-              JSON.stringify({
-                success: false,
-                error: "pro_required",
-                message: "AI 智能摘要是 Pro 专属功能，请升级到 Pro 套餐",
-                pricing_url: "https://readgzh.site/pricing",
-                dashboard_url: "https://readgzh.site/dashboard",
-              }),
-              { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
+            // Stripe Pro sync fallback: check if user actually paid but tier not yet synced
+            console.log("Tier is not pro, checking Stripe for recent payment...");
+            let stripeUpgraded = false;
+            try {
+              const supabaseService = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+              // Get user_id from api_keys via keyHash
+              const { data: keyData } = await supabaseService.from("api_keys").select("user_id").eq("key_hash", apiAuth.keyHash!).single();
+              if (keyData) {
+                const { data: profile } = await supabaseService.from("profiles").select("email").eq("id", keyData.user_id).single();
+                if (profile?.email) {
+                  const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2025-08-27.basil" });
+                  const customers = await stripe.customers.list({ email: profile.email, limit: 1 });
+                  if (customers.data.length > 0) {
+                    const sessions = await stripe.checkout.sessions.list({ customer: customers.data[0].id, limit: 20 });
+                    const hasPro = sessions.data.some(s => s.payment_status === "paid" && s.status === "complete" && (!s.metadata?.type || s.metadata?.type === "pro"));
+                    if (hasPro) {
+                      // Upgrade all user's keys
+                      await supabaseService.from("api_keys").update({ tier: "pro", daily_limit: 2000 }).eq("user_id", keyData.user_id).eq("is_active", true);
+                      stripeUpgraded = true;
+                      console.log("Stripe fallback: upgraded user to Pro", keyData.user_id);
+                    }
+                  }
+                }
+              }
+            } catch (e) {
+              console.error("Stripe fallback check error:", e);
+            }
+            if (!stripeUpgraded) {
+              return new Response(
+                JSON.stringify({
+                  success: false,
+                  error: "pro_required",
+                  message: "AI 智能摘要是 Pro 专属功能，请升级到 Pro 套餐",
+                  pricing_url: "https://readgzh.site/pricing",
+                  dashboard_url: "https://readgzh.site/dashboard",
+                }),
+                { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+              );
+            }
           }
           
           return await handleSummaryMode(slug, articleId);
@@ -935,8 +1031,9 @@ Deno.serve(async (req) => {
         
         const partParam = params.get("part");
         const partNum = partParam ? parseInt(partParam, 10) : undefined;
-        console.log("Read mode: slug=", slug, "id=", articleId, "part=", partNum);
-        const response = await handleReadMode(slug, articleId, partNum);
+        const formatText = params.get("format") === "text";
+        console.log("Read mode: slug=", slug, "id=", articleId, "part=", partNum, "format=", formatText ? "text" : "html");
+        const response = await handleReadMode(slug, articleId, partNum, formatText);
         // For HEAD requests, return headers only (no body)
         if (req.method === "HEAD") {
           return new Response(null, { status: response.status, headers: response.headers });
