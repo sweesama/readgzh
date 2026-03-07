@@ -15,6 +15,13 @@ const Index = () => {
   const [isPro, setIsPro] = useState(false);
 
   useEffect(() => {
+    // Check Pro status
+    supabase.functions.invoke("check-payment").then(({ data }) => {
+      if (data?.is_pro) setIsPro(true);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const autoUrl = params.get("url");
     if (autoUrl && autoUrl.includes("weixin.qq.com")) {
