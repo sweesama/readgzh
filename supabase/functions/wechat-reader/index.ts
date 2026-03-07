@@ -985,16 +985,45 @@ Deno.serve(async (req) => {
             );
           }
           if (apiAuth.tier !== "pro") {
-            return new Response(
-              JSON.stringify({
-                success: false,
-                error: "pro_required",
-                message: "AI 智能摘要是 Pro 专属功能，请升级到 Pro 套餐",
-                pricing_url: "https://readgzh.site/pricing",
-                dashboard_url: "https://readgzh.site/dashboard",
-              }),
-              { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
+            // Stripe Pro sync fallback: check if user actually paid but tier not yet synced
+            console.log("Tier is not pro, checking Stripe for recent payment...");
+            let stripeUpgraded = false;
+            try {
+              const supabaseService = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+              // Get user_id from api_keys via keyHash
+              const { data: keyData } = await supabaseService.from("api_keys").select("user_id").eq("key_hash", apiAuth.keyHash!).single();
+              if (keyData) {
+                const { data: profile } = await supabaseService.from("profiles").select("email").eq("id", keyData.user_id).single();
+                if (profile?.email) {
+                  const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2025-08-27.basil" });
+                  const customers = await stripe.customers.list({ email: profile.email, limit: 1 });
+                  if (customers.data.length > 0) {
+                    const sessions = await stripe.checkout.sessions.list({ customer: customers.data[0].id, limit: 20 });
+                    const hasPro = sessions.data.some(s => s.payment_status === "paid" && s.status === "complete" && (!s.metadata?.type || s.metadata?.type === "pro"));
+                    if (hasPro) {
+                      // Upgrade all user's keys
+                      await supabaseService.from("api_keys").update({ tier: "pro", daily_limit: 2000 }).eq("user_id", keyData.user_id).eq("is_active", true);
+                      stripeUpgraded = true;
+                      console.log("Stripe fallback: upgraded user to Pro", keyData.user_id);
+                    }
+                  }
+                }
+              }
+            } catch (e) {
+              console.error("Stripe fallback check error:", e);
+            }
+            if (!stripeUpgraded) {
+              return new Response(
+                JSON.stringify({
+                  success: false,
+                  error: "pro_required",
+                  message: "AI 智能摘要是 Pro 专属功能，请升级到 Pro 套餐",
+                  pricing_url: "https://readgzh.site/pricing",
+                  dashboard_url: "https://readgzh.site/dashboard",
+                }),
+                { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+              );
+            }
           }
           
           return await handleSummaryMode(slug, articleId);
