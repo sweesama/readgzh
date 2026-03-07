@@ -1031,8 +1031,9 @@ Deno.serve(async (req) => {
         
         const partParam = params.get("part");
         const partNum = partParam ? parseInt(partParam, 10) : undefined;
-        console.log("Read mode: slug=", slug, "id=", articleId, "part=", partNum);
-        const response = await handleReadMode(slug, articleId, partNum);
+        const formatText = params.get("format") === "text";
+        console.log("Read mode: slug=", slug, "id=", articleId, "part=", partNum, "format=", formatText ? "text" : "html");
+        const response = await handleReadMode(slug, articleId, partNum, formatText);
         // For HEAD requests, return headers only (no body)
         if (req.method === "HEAD") {
           return new Response(null, { status: response.status, headers: response.headers });
