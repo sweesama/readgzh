@@ -9,73 +9,13 @@ import { Check, ArrowLeft, Zap, Building2, Gift, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import Footer from "@/components/home/Footer";
 
-const tiers = [
-  {
-    name: "Free",
-    price: "¥0",
-    period: "永久免费",
-    description: "每天到网站领取 50 积分免费额度",
-    icon: Gift,
-    highlight: false,
-    features: [
-      "每日 50 积分（简单文章 1 积分，复杂文章 2 积分）",
-      "需每日到网站领取积分",
-      "完整的文章解析能力",
-      "缓存文章免费读取",
-      "WebMCP 协议支持",
-      "社区支持",
-    ],
-    cta: "免费开始",
-    ctaLink: "/dashboard",
-  },
-  {
-    name: "Pro",
-    price: "¥39",
-    period: "/月",
-    description: "面向个人开发者和小型 AI 应用",
-    icon: Zap,
-    highlight: true,
-    features: [
-      "每日 2,000 积分（每天自动重置）",
-      "无需每日领取，自动刷新",
-      "完整的文章解析能力",
-      "缓存文章免费读取",
-      "AI 智能摘要（?mode=summary）",
-      "优先抓取队列",
-      "用量统计面板",
-      "可购买加量包扩展额度",
-      "邮件支持",
-    ],
-    cta: "立即购买",
-    ctaLink: "checkout",
-  },
-  {
-    name: "Enterprise",
-    price: "定制",
-    period: "",
-    description: "面向企业级 AI 产品和大规模集成",
-    icon: Building2,
-    highlight: false,
-    features: [
-      "不限量积分",
-      "私有部署选项",
-      "专属抓取通道",
-      "SLA 保障 99.9%",
-      "实时监控面板",
-      "专属技术支持",
-      "自定义功能开发",
-    ],
-    cta: "联系我们",
-    ctaLink: "mailto:hi@readgzh.site",
-  },
-];
-
 const PricingPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [billingInterval, setBillingInterval] = useState<"monthly" | "annual">("monthly");
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (type: "pro" | "pro_annual") => {
     if (!user) {
       navigate("/dashboard");
       return;
@@ -83,7 +23,7 @@ const PricingPage = () => {
     setCheckoutLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("create-payment", {
-        body: { type: "pro" },
+        body: { type },
       });
       if (error) throw error;
       if (data?.url) {
@@ -97,6 +37,73 @@ const PricingPage = () => {
     setCheckoutLoading(false);
   };
 
+  const proPrice = billingInterval === "monthly" ? "¥39" : "¥299";
+  const proPeriod = billingInterval === "monthly" ? "/月" : "/年";
+  const proSaving = billingInterval === "annual" ? "省 ¥169，约 7.7 折" : null;
+
+  const tiers = [
+    {
+      name: "Free",
+      price: "¥0",
+      period: "永久免费",
+      description: "每天到网站领取 50 积分免费额度",
+      icon: Gift,
+      highlight: false,
+      features: [
+        "每日 50 积分（简单文章 1 积分，复杂文章 2 积分）",
+        "需每日到网站领取积分",
+        "完整的文章解析能力",
+        "缓存文章免费读取",
+        "WebMCP 协议支持",
+        "社区支持",
+      ],
+      cta: "免费开始",
+      action: () => navigate("/dashboard"),
+    },
+    {
+      name: "Pro",
+      price: proPrice,
+      period: proPeriod,
+      description: "面向个人开发者和小型 AI 应用",
+      icon: Zap,
+      highlight: true,
+      saving: proSaving,
+      features: [
+        "每日 2,000 积分（每天自动重置）",
+        "无需每日领取，自动刷新",
+        "完整的文章解析能力",
+        "缓存文章免费读取",
+        "AI 智能摘要（?mode=summary）",
+        "优先抓取队列",
+        "用量统计面板",
+        "可购买加量包扩展额度",
+        "随时取消订阅",
+        "邮件支持",
+      ],
+      cta: checkoutLoading ? "处理中..." : "立即订阅",
+      action: () => handleCheckout(billingInterval === "monthly" ? "pro" : "pro_annual"),
+    },
+    {
+      name: "Enterprise",
+      price: "定制",
+      period: "",
+      description: "面向企业级 AI 产品和大规模集成",
+      icon: Building2,
+      highlight: false,
+      features: [
+        "不限量积分",
+        "私有部署选项",
+        "专属抓取通道",
+        "SLA 保障 99.9%",
+        "实时监控面板",
+        "专属技术支持",
+        "自定义功能开发",
+      ],
+      cta: "联系我们",
+      action: () => { window.location.href = "mailto:hi@readgzh.site"; },
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
@@ -109,7 +116,32 @@ const PricingPage = () => {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             免费开始使用，随业务增长升级。缓存文章免费读取，新文章按复杂度消耗 1-2 积分。
           </p>
-          <p className="text-sm text-muted-foreground mt-2">支持信用卡、支付宝等多种支付方式</p>
+          <p className="text-sm text-muted-foreground mt-2">支持信用卡、支付宝等多种支付方式 · 随时取消</p>
+
+          {/* Billing interval toggle */}
+          <div className="flex items-center justify-center gap-2 mt-6">
+            <button
+              onClick={() => setBillingInterval("monthly")}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                billingInterval === "monthly"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              月付
+            </button>
+            <button
+              onClick={() => setBillingInterval("annual")}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                billingInterval === "annual"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              年付
+              <Badge variant="secondary" className="ml-1.5 text-xs">省 ¥169</Badge>
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-16">
@@ -130,6 +162,11 @@ const PricingPage = () => {
                   <span className="text-4xl font-bold">{tier.price}</span>
                   <span className="text-muted-foreground">{tier.period}</span>
                 </div>
+                {"saving" in tier && tier.saving && (
+                  <Badge variant="secondary" className="mt-2 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                    {tier.saving}
+                  </Badge>
+                )}
                 <CardDescription className="mt-2">{tier.description}</CardDescription>
               </CardHeader>
               <CardContent className="flex-1 flex flex-col">
@@ -144,18 +181,10 @@ const PricingPage = () => {
                 <Button
                   className="w-full mt-6"
                   variant={tier.highlight ? "default" : "outline"}
-                  onClick={() => {
-                    if (tier.ctaLink === "checkout") {
-                      handleCheckout();
-                    } else if (tier.ctaLink?.startsWith("mailto:")) {
-                      window.location.href = tier.ctaLink;
-                    } else if (tier.ctaLink) {
-                      navigate(tier.ctaLink);
-                    }
-                  }}
-                  disabled={!tier.ctaLink || (tier.ctaLink === "checkout" && checkoutLoading)}
+                  onClick={tier.action}
+                  disabled={tier.highlight && checkoutLoading}
                 >
-                  {tier.ctaLink === "checkout" && checkoutLoading ? (
+                  {tier.highlight && checkoutLoading ? (
                     <><Loader2 className="mr-2 h-4 w-4 animate-spin" />处理中...</>
                   ) : (
                     tier.cta
@@ -179,8 +208,12 @@ const PricingPage = () => {
               a: "免费用户每天需要到 ReadGZH 网站点击「领取积分」按钮，即可获得当日 50 积分。简单文章消耗 1 积分，含大量图片的复杂文章消耗 2 积分。",
             },
             {
-              q: "Pro 用户的积分是自动重置的吗？",
-              a: "是的！Pro 用户每天自动获得 2,000 积分，无需手动领取。每天零点自动重置，完全无感。",
+              q: "订阅后可以取消吗？",
+              a: "可以！你可以随时在控制台取消订阅，取消后在当前计费周期结束前仍可使用 Pro 功能。不会产生额外费用。",
+            },
+            {
+              q: "月付和年付有什么区别？",
+              a: "功能完全一样！年付 ¥299 相当于月均 ¥24.9，比月付 ¥39 节省约 ¥169（7.7 折）。",
             },
             {
               q: "如果 2000 积分用完了怎么办？",
@@ -189,10 +222,6 @@ const PricingPage = () => {
             {
               q: "支持哪些支付方式？",
               a: "我们通过 Stripe 支持信用卡（Visa/Mastercard）和支付宝。如需微信支付或其他方式，请联系我们。",
-            },
-            {
-              q: "API Key 安全吗？",
-              a: "我们只存储 Key 的哈希值，即使数据库泄漏也无法还原你的 Key。请妥善保管你的 Key，不要在客户端代码中暴露。",
             },
           ].map(({ q, a }) => (
             <div key={q} className="border rounded-lg p-4">
