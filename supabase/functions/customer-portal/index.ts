@@ -23,8 +23,8 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false } }
     );
 
     const token = authHeader.replace("Bearer ", "");
@@ -36,61 +36,33 @@ Deno.serve(async (req) => {
       });
     }
 
-    const user = userData.user;
-    const body = await req.json().catch(() => ({}));
-    const type = body.type || "pro"; // "pro", "pro_annual", or "credits"
-
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
       apiVersion: "2025-08-27.basil",
     });
 
-    // Ensure Stripe customer exists
-    const customers = await stripe.customers.list({ email: user.email!, limit: 1 });
-    let customerId: string;
-    if (customers.data.length > 0) {
-      customerId = customers.data[0].id;
-    } else {
-      const newCustomer = await stripe.customers.create({
-        email: user.email!,
-        metadata: { supabase_user_id: user.id },
+    const customers = await stripe.customers.list({
+      email: userData.user.email!,
+      limit: 1,
+    });
+
+    if (customers.data.length === 0) {
+      return new Response(JSON.stringify({ error: "No billing account found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-      customerId = newCustomer.id;
     }
 
     const origin = req.headers.get("origin") || "https://readgzh.lovable.app";
-
-    let priceId: string;
-    let successUrl: string;
-    let mode: "payment" | "subscription";
-
-    if (type === "credits") {
-      priceId = "price_1T7tEZB04cx1cwwsvtQBDXY5"; // 500 credits ¥9 one-time
-      successUrl = `${origin}/dashboard?credits_purchased=500`;
-      mode = "payment";
-    } else if (type === "pro_annual") {
-      priceId = "price_1T8HM0B04cx1cwwsLAt6soQv"; // Pro annual ¥299/year
-      successUrl = `${origin}/payment-success`;
-      mode = "subscription";
-    } else {
-      priceId = "price_1T8HLSB04cx1cwwsbsxlb9JG"; // Pro monthly ¥39/month
-      successUrl = `${origin}/payment-success`;
-      mode = "subscription";
-    }
-
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      line_items: [{ price: priceId, quantity: 1 }],
-      mode,
-      success_url: successUrl,
-      cancel_url: `${origin}/pricing`,
-      metadata: { user_id: user.id, type },
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: customers.data[0].id,
+      return_url: `${origin}/dashboard`,
     });
 
-    return new Response(JSON.stringify({ url: session.url }), {
+    return new Response(JSON.stringify({ url: portalSession.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Payment error:", error);
+    console.error("Customer portal error:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Internal error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

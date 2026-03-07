@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Copy, Key, Plus, Trash2, Gift, LogOut, ArrowLeft, Eye, EyeOff, BarChart3, Coins, Zap, Loader2, Crown, Mail } from "lucide-react";
+import { Copy, Key, Plus, Trash2, Gift, LogOut, ArrowLeft, Eye, EyeOff, BarChart3, Coins, Zap, Loader2, Crown, Mail, Pencil, CreditCard, CalendarClock } from "lucide-react";
 import Footer from "@/components/home/Footer";
 
 interface ApiKey {
@@ -59,12 +59,24 @@ const DashboardPage = () => {
   const [otpCode, setOtpCode] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
+  // Subscription info
+  const [subscriptionInfo, setSubscriptionInfo] = useState<{
+    status: string | null;
+    interval: string | null;
+    current_period_end: string | null;
+  } | null>(null);
+  const [isLegacyPro, setIsLegacyPro] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+  // Nickname editing
+  const [displayName, setDisplayName] = useState("");
+  const [editingName, setEditingName] = useState(false);
+  const [nameLoading, setNameLoading] = useState(false);
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = async (type: "pro" | "pro_annual" = "pro") => {
     setUpgradeLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("create-payment", {
-        body: { type: "pro" },
+        body: { type },
       });
       if (error) throw error;
       if (data?.url) {
@@ -120,15 +132,53 @@ const DashboardPage = () => {
       const { data } = await supabase.functions.invoke("check-payment");
       if (data?.is_pro) {
         setIsPro(true);
-        // Pro status synced to DB by check-payment, refresh keys and balance
         fetchKeys();
         fetchBalance();
+      }
+      if (data?.subscription) {
+        setSubscriptionInfo(data.subscription);
+      }
+      if (data?.legacy) {
+        setIsLegacyPro(true);
       }
     } catch {
       // ignore
     }
     setProLoading(false);
   }, [fetchKeys, fetchBalance]);
+
+  // Fetch display name from profile
+  const fetchProfile = useCallback(async () => {
+    const { data } = await supabase.from("profiles").select("display_name").eq("id", user?.id || "").single();
+    if (data?.display_name) setDisplayName(data.display_name);
+  }, [user?.id]);
+
+  const handleSaveName = async () => {
+    if (!displayName.trim()) return;
+    setNameLoading(true);
+    const { error } = await supabase.from("profiles").update({ display_name: displayName.trim() }).eq("id", user!.id);
+    if (error) {
+      toast({ title: "保存失败", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "昵称已更新" });
+      setEditingName(false);
+    }
+    setNameLoading(false);
+  };
+
+  const handleManageSubscription = async () => {
+    setPortalLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("customer-portal");
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+      }
+    } catch (err) {
+      toast({ title: "无法打开订阅管理", description: String(err), variant: "destructive" });
+    }
+    setPortalLoading(false);
+  };
 
   useEffect(() => {
     if (!loading && !user) return;
@@ -137,18 +187,17 @@ const DashboardPage = () => {
       fetchUsage();
       fetchBalance();
       checkProStatus();
+      fetchProfile();
 
       // Handle return from credit pack purchase
       const params = new URLSearchParams(window.location.search);
       if (params.get("credits_purchased")) {
         toast({ title: "🎉 积分购买成功", description: `${params.get("credits_purchased")} 积分已到账` });
-        // Clean URL
         window.history.replaceState({}, "", "/dashboard");
-        // Re-check payment to process the credit pack
         checkProStatus();
       }
     }
-  }, [user, loading, fetchKeys, fetchUsage, fetchBalance, checkProStatus]);
+  }, [user, loading, fetchKeys, fetchUsage, fetchBalance, checkProStatus, fetchProfile]);
 
   const handleGoogleLogin = async () => {
     const { error } = await lovable.auth.signInWithOAuth("google", {
@@ -384,7 +433,29 @@ const DashboardPage = () => {
             )}
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">{user.email}</span>
+            {editingName ? (
+              <div className="flex items-center gap-1.5">
+                <Input
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="h-8 w-40 text-sm"
+                  placeholder="设置昵称"
+                  onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
+                />
+                <Button size="sm" variant="ghost" onClick={handleSaveName} disabled={nameLoading}>
+                  {nameLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "保存"}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditingName(false)}>取消</Button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setEditingName(true)}
+                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {displayName || user.email}
+                <Pencil className="h-3 w-3" />
+              </button>
+            )}
             <Button variant="outline" size="sm" onClick={signOut}>
               <LogOut className="mr-2 h-4 w-4" />退出
             </Button>
@@ -396,7 +467,7 @@ const DashboardPage = () => {
         {/* Upgrade Banner - only show for free users */}
         {!isPro && !proLoading && (
           <Card className="border-primary/40 bg-gradient-to-r from-primary/10 to-primary/5">
-            <CardContent className="pt-6 flex items-center justify-between">
+            <CardContent className="pt-6 flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-3">
                 <Zap className="h-8 w-8 text-primary" />
                 <div>
@@ -404,10 +475,15 @@ const DashboardPage = () => {
                   <p className="text-sm text-muted-foreground">每日 2,000 积分 · 无需每日领取 · 优先抓取队列</p>
                 </div>
               </div>
-              <Button onClick={handleUpgrade} disabled={upgradeLoading}>
-                {upgradeLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
-                {upgradeLoading ? "处理中..." : "¥39 立即升级"}
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={() => handleUpgrade("pro")} disabled={upgradeLoading} size="sm">
+                  {upgradeLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+                  ¥39/月
+                </Button>
+                <Button onClick={() => handleUpgrade("pro_annual")} disabled={upgradeLoading} variant="outline" size="sm">
+                  ¥299/年 <Badge variant="secondary" className="ml-1 text-xs">省¥169</Badge>
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -415,12 +491,35 @@ const DashboardPage = () => {
         {/* Pro Status Banner */}
         {isPro && (
           <Card className="border-amber-500/40 bg-gradient-to-r from-amber-500/10 to-orange-500/5">
-            <CardContent className="pt-6 flex items-center gap-3">
-              <Crown className="h-8 w-8 text-amber-500" />
-              <div>
-                <p className="font-semibold">Pro 会员</p>
-                <p className="text-sm text-muted-foreground">每日 2,000 积分 · 优先抓取队列 · 感谢支持 ❤️</p>
+            <CardContent className="pt-6 flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <Crown className="h-8 w-8 text-amber-500" />
+                <div>
+                  <p className="font-semibold">Pro 会员</p>
+                  {subscriptionInfo ? (
+                    <p className="text-sm text-muted-foreground">
+                      {subscriptionInfo.interval === "year" ? "年付订阅" : "月付订阅"}
+                      {subscriptionInfo.status === "canceling" && " · 已取消，"}
+                      {subscriptionInfo.current_period_end && (
+                        <>
+                          {subscriptionInfo.status === "canceling" ? "有效至 " : " · 下次续费 "}
+                          {new Date(subscriptionInfo.current_period_end).toLocaleDateString("zh-CN")}
+                        </>
+                      )}
+                    </p>
+                  ) : isLegacyPro ? (
+                    <p className="text-sm text-muted-foreground">永久会员 · 感谢早期支持 ❤️</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">每日 2,000 积分 · 感谢支持 ❤️</p>
+                  )}
+                </div>
               </div>
+              {subscriptionInfo && (
+                <Button onClick={handleManageSubscription} disabled={portalLoading} variant="outline" size="sm">
+                  {portalLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
+                  管理订阅
+                </Button>
+              )}
             </CardContent>
           </Card>
         )}
