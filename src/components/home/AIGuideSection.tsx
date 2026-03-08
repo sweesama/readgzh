@@ -9,7 +9,7 @@ const API_BASE = "https://api.readgzh.site";
 const AI_GUIDE_TEMPLATE = `请帮我阅读这篇微信公众号文章，你可以通过访问以下链接获取文章全文：
 ${API_BASE}/rd?url=（把微信文章链接粘贴在这里）
 
-例如：${API_BASE}/rd?url=https://mp.weixin.qq.com/s/1KRk1ahr1t5w_d_WkiKH7A
+例如：${API_BASE}/rd?url=https://mp.weixin.qq.com/s/xxxxx
 
 请直接访问上面的链接，返回的就是文章的完整内容。`;
 
