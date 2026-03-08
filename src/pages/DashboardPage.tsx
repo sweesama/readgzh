@@ -95,8 +95,9 @@ const DashboardPage = () => {
   const handleBuyCredits = async () => {
     setUpgradeLoading(true);
     try {
+      const creditType = isPro ? "credits" : "credits_free";
       const { data, error } = await supabase.functions.invoke("create-payment", {
-        body: { type: "credits" },
+        body: { type: creditType },
       });
       if (error) throw error;
       if (data?.url) {
