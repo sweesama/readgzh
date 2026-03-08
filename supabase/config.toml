@@ -17,3 +17,5 @@ project_id = "jhnnmmwgdrquwjytvvwu"
     verify_jwt = false
   [functions.wechat-reader]
     verify_jwt = false
+  [functions.articles-api]
+    verify_jwt = false
