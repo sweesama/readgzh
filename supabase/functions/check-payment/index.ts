@@ -151,12 +151,12 @@ Deno.serve(async (req) => {
         if (!allRefunded) {
           hasLegacyPro = true;
           log("Legacy one-time Pro purchase found");
-          await serviceClient
-            .from("api_keys")
-            .update({ tier: "pro", daily_limit: 2000 })
-            .eq("user_id", userId)
-            .eq("is_active", true)
-            .neq("tier", "pro");
+            await serviceClient
+              .from("api_keys")
+              .update({ tier: "pro", daily_limit: 2000 })
+              .eq("user_id", userId)
+              .eq("is_active", true)
+              .eq("tier", "free");
         }
       }
 
