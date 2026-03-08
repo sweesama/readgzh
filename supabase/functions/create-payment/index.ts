@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
 
     const user = userData.user;
     const body = await req.json().catch(() => ({}));
-    const type = body.type || "pro"; // "pro", "pro_annual", or "credits"
+    const type = body.type || "pro"; // "pro", "pro_annual", "credits", or "credits_free"
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
       apiVersion: "2025-08-27.basil",
@@ -64,7 +64,11 @@ Deno.serve(async (req) => {
     let mode: "payment" | "subscription";
 
     if (type === "credits") {
-      priceId = "price_1T7tEZB04cx1cwwsvtQBDXY5"; // 500 credits ¥9 one-time
+      priceId = "price_1T7tEZB04cx1cwwsvtQBDXY5"; // 500 credits ¥9 one-time (Pro users)
+      successUrl = `${origin}/dashboard?credits_purchased=500`;
+      mode = "payment";
+    } else if (type === "credits_free") {
+      priceId = "price_1T8d04B04cx1cwwsvwrVBAfC"; // 500 credits ¥15 one-time (Free users)
       successUrl = `${origin}/dashboard?credits_purchased=500`;
       mode = "payment";
     } else if (type === "pro_annual") {

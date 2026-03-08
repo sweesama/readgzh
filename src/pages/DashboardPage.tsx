@@ -74,6 +74,7 @@ const DashboardPage = () => {
   const [editingName, setEditingName] = useState(false);
   const [nameLoading, setNameLoading] = useState(false);
   const [revealedKeys, setRevealedKeys] = useState<Set<string>>(new Set());
+  const [showRevokedKeys, setShowRevokedKeys] = useState(false);
 
   const handleUpgrade = async (type: "pro" | "pro_annual" = "pro") => {
     setUpgradeLoading(true);
@@ -94,8 +95,9 @@ const DashboardPage = () => {
   const handleBuyCredits = async () => {
     setUpgradeLoading(true);
     try {
+      const creditType = isPro ? "credits" : "credits_free";
       const { data, error } = await supabase.functions.invoke("create-payment", {
-        body: { type: "credits" },
+        body: { type: creditType },
       });
       if (error) throw error;
       if (data?.url) {
@@ -598,7 +600,7 @@ const DashboardPage = () => {
                     className="w-full"
                   >
                     <Plus className="mr-2 h-4 w-4" />
-                    {upgradeLoading ? "处理中..." : "购买加量包 (500积分 / ¥9)"}
+                    {upgradeLoading ? "处理中..." : "购买加量包 (500积分 / ¥15)"}
                   </Button>
                 </div>
               ) : (
@@ -649,7 +651,17 @@ const DashboardPage = () => {
             <CardTitle className="flex items-center gap-2">
               <Key className="h-5 w-5" />API Keys
             </CardTitle>
-            <CardDescription>管理你的 API Key，每个账号最多 3 个活跃 Key</CardDescription>
+            <div className="flex items-center justify-between">
+              <CardDescription>管理你的 API Key，每个账号最多 3 个活跃 Key</CardDescription>
+              {keys.some(k => !k.is_active) && (
+                <button
+                  onClick={() => setShowRevokedKeys(!showRevokedKeys)}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showRevokedKeys ? "隐藏已撤销" : `显示已撤销 (${keys.filter(k => !k.is_active).length})`}
+                </button>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-3">
@@ -671,7 +683,7 @@ const DashboardPage = () => {
               <div className="text-muted-foreground text-sm py-4">还没有 API Key，点击上方创建一个</div>
             ) : (
               <div className="space-y-3">
-                {keys.map((key) => (
+                {keys.filter(k => k.is_active || showRevokedKeys).map((key) => (
                   <div
                     key={key.id}
                     className={`flex items-center justify-between p-4 rounded-lg border ${
