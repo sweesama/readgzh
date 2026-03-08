@@ -194,7 +194,7 @@ Deno.serve(async (req) => {
         .select("id")
         .eq("user_id", user.id)
         .eq("is_active", true)
-        .eq("tier", "pro")
+        .in("tier", ["pro", "pro_lifetime"])
         .limit(1);
 
       const isPro = (proKeys && proKeys.length > 0);
