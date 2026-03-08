@@ -1004,7 +1004,7 @@ Deno.serve(async (req) => {
                     const hasPro = sessions.data.some(s => s.payment_status === "paid" && s.status === "complete" && (!s.metadata?.type || s.metadata?.type === "pro"));
                     if (hasPro) {
                       // Upgrade all user's keys
-                      await supabaseService.from("api_keys").update({ tier: "pro", daily_limit: 2000 }).eq("user_id", keyData.user_id).eq("is_active", true);
+                      await supabaseService.from("api_keys").update({ tier: "pro", daily_limit: 2000 }).eq("user_id", keyData.user_id).eq("is_active", true).eq("tier", "free");
                       stripeUpgraded = true;
                       console.log("Stripe fallback: upgraded user to Pro", keyData.user_id);
                     }
