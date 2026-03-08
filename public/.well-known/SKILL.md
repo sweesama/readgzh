@@ -68,7 +68,7 @@ config:
 
 # ReadGZH — WeChat Article AI Reader
 
-Let AI seamlessly read the full text of WeChat Official Account (微信公众号) articles.
+Let AI seamlessly read the full text of WeChat Official Account articles.
 
 ## How It Works
 
