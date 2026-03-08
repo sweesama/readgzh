@@ -2,18 +2,19 @@ openapi: 3.1.0
 info:
   title: ReadGZH API
   description: |
-    读取微信公众号文章的 API。提供文章抓取、缓存读取和搜索功能。
+    API for reading WeChat Official Account (微信公众号) articles.
+    Provides article scraping, cached reading, search, and listing.
     
-    ## 认证方式
-    使用 API Key 认证，在请求头中添加 `Authorization: Bearer sk_live_your_key`。
-    前往 https://readgzh.site/dashboard 注册并获取免费 API Key。
+    ## Authentication
+    Use API Key authentication: add `Authorization: Bearer sk_live_your_key` to request headers.
+    Register and get a free API Key at https://readgzh.site/dashboard.
     
-    ## 积分计费
-    - 简单文章（纯文字，< 5 张图）：1 积分
-    - 复杂文章（≥ 5 张图或图片模板）：2 积分
-    - 已缓存文章的读取：免费
-    - 免费用户每日可领取 50 积分
-  version: 1.0.0
+    ## Credits
+    - Simple article (text only, < 5 images): 1 credit
+    - Complex article (≥ 5 images or image template): 2 credits
+    - Cached article read: Free
+    - Free tier: 50 credits/day
+  version: 1.3.0
   contact:
     url: https://readgzh.site
 servers:
@@ -23,133 +24,209 @@ paths:
   /rd:
     get:
       operationId: readgzh.read
-      summary: 通过 ReadGZH 抓取并读取微信公众号文章
+      summary: Read a WeChat article by URL
       description: |
-        提供微信文章 URL，返回提取的文章内容（HTML 格式）。
-        如果文章已缓存，自动重定向到缓存版本（不消耗积分）。
-        如果是新文章，会先抓取并缓存，然后返回内容。
+        Provide a WeChat article URL to scrape and extract the full content.
+        If the article is already cached, it redirects to the cached version (no credits consumed).
+        New articles are scraped, cached, and returned.
       parameters:
         - name: url
           in: query
-          required: true
-          description: 微信公众号文章链接（mp.weixin.qq.com）
+          required: false
+          description: WeChat article URL (mp.weixin.qq.com)
           schema:
             type: string
             example: https://mp.weixin.qq.com/s/example
-        - name: key
-          in: query
-          required: false
-          description: API Key（sk_live_...），适用于无法发送 Authorization Header 的 AI Agent 环境
-          schema:
-            type: string
-            example: sk_live_your_key
-      responses:
-        '200':
-          description: 成功返回文章内容（HTML 格式）
-          headers:
-            X-Credit-Cost:
-              description: 本次请求消耗的积分数
-              schema:
-                type: integer
-            X-Credits-Remaining:
-              description: 今日剩余积分数
-              schema:
-                type: integer
-            X-Total-Parts:
-              description: 文章总分块数（长文时返回）
-              schema:
-                type: integer
-            X-Current-Part:
-              description: 当前分块编号（长文时返回）
-              schema:
-                type: integer
-          content:
-            text/html:
-              schema:
-                type: string
-                description: 包含文章标题、作者、正文的完整 HTML 页面
-        '402':
-          description: 积分不足
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InsufficientCreditsError'
-        '429':
-          description: 请求频率过高
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-    head:
-      operationId: readgzh.check
-      summary: 检查 ReadGZH API 可用性
-      description: 返回 200 OK，用于 AI Agent 预检链接
-      responses:
-        '200':
-          description: API 在线
-  /rd?s={slug}:
-    get:
-      operationId: readgzh.get
-      summary: 通过 ReadGZH 按 slug 读取已缓存的文章
-      description: |
-        读取已缓存文章的内容，不消耗积分。
-        长文章会自动分块（每块约 40KB），可通过 part 参数指定读取的分块。
-        响应头 X-Total-Parts 和 X-Current-Part 指示总块数和当前块。
-        添加 mode=summary 参数可获取 AI 生成的结构化摘要（JSON 格式）。
-      parameters:
         - name: s
           in: query
-          required: true
-          description: 文章的短标识符（slug）
+          required: false
+          description: Article slug for reading a cached article
           schema:
             type: string
             example: minicpm-o-4-5
         - name: part
           in: query
           required: false
-          description: 分块编号（从 1 开始），用于分段读取长文章
+          description: Chunk number (from 1) for paginated reading of long articles
           schema:
             type: integer
             minimum: 1
-            example: 1
         - name: mode
           in: query
           required: false
-          description: 设为 summary 时返回 AI 生成的结构化摘要（JSON），而非完整 HTML
+          description: Set to 'summary' for AI-generated structured summary (JSON) instead of full content
           schema:
             type: string
             enum: [summary]
+        - name: format
+          in: query
+          required: false
+          description: Set to 'text' for plain Markdown (recommended for AI); omit for HTML
+          schema:
+            type: string
+            enum: [text, html]
+        - name: key
+          in: query
+          required: false
+          description: API Key (sk_live_...) as URL parameter, for environments where Authorization header is unavailable
+          schema:
+            type: string
       responses:
         '200':
-          description: 文章 HTML 内容或 JSON 摘要（取决于 mode 参数）
+          description: Article content (HTML or Markdown depending on format parameter)
           headers:
+            X-Powered-By:
+              description: Fixed value "ReadGZH (readgzh.site)"
+              schema:
+                type: string
+            X-Cache:
+              description: "HIT if served from cache (no credits consumed)"
+              schema:
+                type: string
+            X-Credit-Cost:
+              description: Credits consumed by this request
+              schema:
+                type: integer
+            X-Credits-Remaining:
+              description: Credits remaining today
+              schema:
+                type: integer
             X-Total-Parts:
-              description: 文章总分块数
+              description: Total chunks for long articles
               schema:
                 type: integer
             X-Current-Part:
-              description: 当前分块编号
+              description: Current chunk number
               schema:
                 type: integer
           content:
             text/html:
               schema:
                 type: string
+            text/plain:
+              schema:
+                type: string
             application/json:
               schema:
                 $ref: '#/components/schemas/SummaryResponse'
-        '404':
-          description: 文章未找到
+        '401':
+          description: Missing API Key (required for summary)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '402':
+          description: Insufficient credits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InsufficientCreditsError'
+        '403':
+          description: Pro feature required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    head:
+      operationId: readgzh.check
+      summary: Check API availability
+      description: Returns 200 OK for health checks and AI Agent pre-flight
+      responses:
+        '200':
+          description: API is online
+  /api/articles/search:
+    get:
+      operationId: readgzh.search
+      summary: Search cached WeChat articles by keyword
+      description: |
+        Search previously cached articles by keyword. Searches in article titles and content.
+        Returns matching articles with metadata. Does not consume credits.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search keyword
+          schema:
+            type: string
+            example: AI
+        - name: limit
+          in: query
+          required: false
+          description: Max results to return (default 5, max 20)
+          schema:
+            type: integer
+            default: 5
+            maximum: 20
+        - name: key
+          in: query
+          required: false
+          description: API Key (sk_live_...)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleListResponse'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/articles/recent:
+    get:
+      operationId: readgzh.list
+      summary: List recently cached WeChat articles
+      description: |
+        Returns a list of recently cached articles, sorted by creation date (newest first).
+        Useful for browsing available content. Does not consume credits.
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Number of articles to return (default 10, max 50)
+          schema:
+            type: integer
+            default: 10
+            maximum: 50
+        - name: key
+          in: query
+          required: false
+          description: API Key (sk_live_...)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of recent articles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleListResponse'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   securitySchemes:
     BearerAuth:
       type: http
       scheme: bearer
       description: |
-        API Key 认证。前往 https://readgzh.site/dashboard 获取免费 Key。
-        格式：`Authorization: Bearer sk_live_your_key`
+        API Key authentication. Get a free key at https://readgzh.site/dashboard.
+        Format: `Authorization: Bearer sk_live_your_key`
         
-        **备选方案**：如果 HTTP Header 被代理剥离，可使用 URL 参数：`?key=sk_live_your_key`
+        **Fallback**: If HTTP headers are stripped by proxy, use URL parameter: `?key=sk_live_your_key`
   schemas:
     Error:
       type: object
@@ -159,17 +236,10 @@ components:
           example: false
         error:
           type: string
-          example: rate_limit_exceeded
         message:
           type: string
-          example: 请求过于频繁，每天限制 10 次调用
         hint:
           type: string
-          example: 立即注册：readgzh.site/dashboard — 免费创建 API Key，每日 50 积分
-        current:
-          type: integer
-        limit:
-          type: integer
     InsufficientCreditsError:
       type: object
       properties:
@@ -181,10 +251,8 @@ components:
           example: insufficient_credits
         message:
           type: string
-          example: API Key 积分已用完，今日限制 50 积分
         hint:
           type: string
-          example: 请到 readgzh.site/dashboard 领取免费积分或升级套餐
         pricing_url:
           type: string
           example: https://readgzh.site/pricing
@@ -209,15 +277,43 @@ components:
           type: string
         summary:
           type: string
-          description: AI 生成的 300-500 字结构化摘要
+          description: AI-generated 300-500 word structured summary
         content_url:
           type: string
-          description: 完整文章的阅读链接
+          description: Full article reading link
         total_parts:
           type: integer
-          description: 完整文章的分块数（用于 ?part=N 分段读取）
+          description: Number of chunks for the full article
         content_length:
           type: integer
-          description: 原文内容长度（字符数）
+          description: Original content length (characters)
+    ArticleListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        articles:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArticleSummary'
+        total:
+          type: integer
+    ArticleSummary:
+      type: object
+      properties:
+        title:
+          type: string
+        author:
+          type: string
+        publish_time:
+          type: string
+        slug:
+          type: string
+        url:
+          type: string
+          description: Readable link on readgzh.site
+        view_count:
+          type: integer
 security:
   - BearerAuth: []
