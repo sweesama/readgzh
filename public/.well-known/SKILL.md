@@ -1,6 +1,6 @@
 ---
 name: readgzh
-description: "ReadGZH — Let AI read full-text WeChat Official Account articles. Supports standard articles and image-post (小绿书) formats."
+description: "ReadGZH — Let AI read full-text WeChat Official Account articles. Supports standard articles and image-post formats."
 version: 1.3.0
 author: readgzh
 triggers:
