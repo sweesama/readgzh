@@ -12,7 +12,7 @@ triggers:
   - "read article"
   - "readgzh"
 tools:
-  - name: read_wechat_article
+  - name: readgzh.read
     description: "通过 ReadGZH 读取微信公众号文章全文，返回标题、作者、发布时间和正文内容"
     parameters:
       url:
@@ -23,21 +23,21 @@ tools:
         type: string
         description: "返回格式：省略或 'html' 返回 HTML，'text' 返回纯 Markdown（推荐 AI 使用，大幅节省 Token）"
         required: false
-  - name: search_articles
+  - name: readgzh.search
     description: "通过 ReadGZH 搜索已缓存的微信公众号文章"
     parameters:
       query:
         type: string
         description: "搜索关键词"
         required: true
-  - name: list_recent_articles
+  - name: readgzh.list
     description: "通过 ReadGZH 列出最近缓存的微信公众号文章"
     parameters:
       limit:
         type: number
         description: "返回数量（默认 10）"
         required: false
-  - name: get_article_by_slug
+  - name: readgzh.get
     description: "通过 ReadGZH 按 slug 获取已缓存的文章。长文自动分块（~40KB/块），用 part 参数分段读取"
     parameters:
       slug:
