@@ -11,6 +11,82 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+// Extract API key from request (header or query param)
+function extractApiKey(req: Request, url: URL): string | null {
+  const authHeader = req.headers.get("authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    return authHeader.slice(7);
+  }
+  return url.searchParams.get("key") || null;
+}
+
+// Hash API key (same logic as other functions)
+async function hashKey(key: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(key);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+// Check IP rate limit for anonymous users
+async function checkAnonymousRateLimit(req: Request): Promise<{ allowed: boolean; current: number; limit: number }> {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("cf-connecting-ip") ||
+    "unknown";
+
+  const dailyLimit = 20;
+  const { data } = await supabase.rpc("check_rate_limit", { p_ip: ip, p_daily_limit: dailyLimit });
+
+  if (data) {
+    return { allowed: data.allowed, current: data.current, limit: data.limit };
+  }
+  return { allowed: true, current: 0, limit: dailyLimit };
+}
+
+// Rate limit exceeded response with compelling registration CTA
+function rateLimitResponse(current: number, limit: number) {
+  return new Response(
+    JSON.stringify({
+      success: false,
+      error: "rate_limit_exceeded",
+      message: `Anonymous API access limit reached (${current}/${limit} requests today).`,
+      hint: "🔑 Get your FREE API Key for unlimited metadata queries — takes 30 seconds with Google sign-in.",
+      benefits: [
+        "✅ Unlimited search & list queries (no daily cap)",
+        "✅ 50 free credits/day for full article reading",
+        "✅ Priority response times",
+        "✅ Usage analytics dashboard",
+      ],
+      register_url: "https://readgzh.site/dashboard",
+      docs_url: "https://readgzh.site/docs",
+      pricing_url: "https://readgzh.site/pricing",
+    }),
+    {
+      status: 429,
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/json",
+        "X-Credit-Cost": "0",
+        "X-RateLimit-Limit": String(limit),
+        "X-RateLimit-Remaining": String(Math.max(0, limit - current)),
+      },
+    }
+  );
+}
+
+// Format article list response
+function formatArticles(articles: any[]) {
+  return (articles || []).map((a) => ({
+    title: a.title,
+    author: a.author,
+    publish_time: a.publish_time,
+    slug: a.slug,
+    url: a.slug ? `https://readgzh.site/${a.slug}` : null,
+    view_count: a.view_count,
+  }));
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -20,7 +96,24 @@ Deno.serve(async (req) => {
   const path = url.pathname.replace(/^\/articles-api\/?/, "");
 
   try {
-    // GET /articles-api/search?q=keyword&limit=5
+    // --- Auth & Rate Limiting ---
+    const apiKey = extractApiKey(req, url);
+    let isAuthenticated = false;
+
+    if (apiKey) {
+      const keyHash = await hashKey(apiKey);
+      const { data } = await supabase.rpc("validate_api_key", { p_key_hash: keyHash, p_credit_cost: 0 });
+      isAuthenticated = data?.valid === true;
+    }
+
+    if (!isAuthenticated) {
+      const rateCheck = await checkAnonymousRateLimit(req);
+      if (!rateCheck.allowed) {
+        return rateLimitResponse(rateCheck.current, rateCheck.limit);
+      }
+    }
+
+    // --- Search endpoint ---
     if (path === "search" || path === "search/") {
       const query = url.searchParams.get("q") || "";
       const limit = Math.min(Number(url.searchParams.get("limit")) || 5, 20);
@@ -47,23 +140,12 @@ Deno.serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({
-          success: true,
-          articles: (articles || []).map((a) => ({
-            title: a.title,
-            author: a.author,
-            publish_time: a.publish_time,
-            slug: a.slug,
-            url: a.slug ? `https://readgzh.site/${a.slug}` : null,
-            view_count: a.view_count,
-          })),
-          total: (articles || []).length,
-        }),
+        JSON.stringify({ success: true, articles: formatArticles(articles || []), total: (articles || []).length }),
         { headers: { ...corsHeaders, "Content-Type": "application/json", "X-Credit-Cost": "0" } }
       );
     }
 
-    // GET /articles-api/recent?limit=10
+    // --- Recent/List endpoint ---
     if (path === "recent" || path === "recent/" || path === "" || path === "/") {
       const limit = Math.min(Number(url.searchParams.get("limit")) || 10, 50);
 
@@ -81,18 +163,7 @@ Deno.serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({
-          success: true,
-          articles: (articles || []).map((a) => ({
-            title: a.title,
-            author: a.author,
-            publish_time: a.publish_time,
-            slug: a.slug,
-            url: a.slug ? `https://readgzh.site/${a.slug}` : null,
-            view_count: a.view_count,
-          })),
-          total: (articles || []).length,
-        }),
+        JSON.stringify({ success: true, articles: formatArticles(articles || []), total: (articles || []).length }),
         { headers: { ...corsHeaders, "Content-Type": "application/json", "X-Credit-Cost": "0" } }
       );
     }
