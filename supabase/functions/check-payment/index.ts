@@ -207,7 +207,17 @@ Deno.serve(async (req) => {
       }
     }
 
-    const isPro = hasActiveSubscription || hasLegacyPro;
+    // Check for lifetime pro users (manually granted, never downgraded)
+    const { data: lifetimeKeys } = await serviceClient
+      .from("api_keys")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("is_active", true)
+      .eq("tier", "pro_lifetime")
+      .limit(1);
+    const hasLifetimePro = (lifetimeKeys && lifetimeKeys.length > 0);
+
+    const isPro = hasActiveSubscription || hasLegacyPro || hasLifetimePro;
 
     return new Response(JSON.stringify({
       is_pro: isPro,
