@@ -167,7 +167,7 @@ mcp.tool("readgzh.list", {
 });
 
 // Tool 3: Search articles by keyword
-mcp.tool("search_articles", {
+mcp.tool("readgzh.search", {
   description:
     "Search cached WeChat articles by keyword via ReadGZH. Searches in article titles and content. Returns matching articles with snippets.",
   inputSchema: {
