@@ -73,20 +73,16 @@ const Index = () => {
               定价
             </Button>
           </Link>
-          <Link to="/dashboard">
-            <Button 
-              size="sm" 
-              variant="ghost" 
-              className={`gap-1.5 rounded-full backdrop-blur-md shadow-sm text-xs ${
-                isPro 
-                  ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600" 
-                  : "bg-card/80"
-              }`}
-            >
-              {isPro ? <Crown className="h-3.5 w-3.5" /> : <Key className="h-3.5 w-3.5" />}
-              {isPro ? "Pro 控制台" : "控制台"}
-            </Button>
-          </Link>
+           <Link to="/dashboard">
+             <Button 
+               size="sm" 
+               variant="ghost" 
+               className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs"
+             >
+               <Key className={`h-3.5 w-3.5 ${isPro ? "text-amber-500" : ""}`} />
+               控制台
+             </Button>
+           </Link>
         </div>
       </div>
 
