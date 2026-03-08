@@ -69,7 +69,7 @@ config:
 
 ## 工作原理
 
-当用户分享微信文章链接（`mp.weixin.qq.com`）时，使用 `read_wechat_article` 工具调用 ReadGZH 服务。ReadGZH 会自动：
+当用户分享微信文章链接（`mp.weixin.qq.com`）时，使用 `readgzh.read` 工具调用 ReadGZH 服务。ReadGZH 会自动：
 
 1. 抓取并解析文章内容
 2. 提取标题、作者、发布时间和正文
@@ -80,7 +80,7 @@ config:
 
 ### 读取文章
 用户："帮我读一下这篇文章 https://mp.weixin.qq.com/s/xxxxx"
-→ 调用 `read_wechat_article`，传入链接
+→ 调用 `readgzh.read`，传入链接
 
 ### 读取文章（纯文本模式，推荐）
 用户："帮我读一下这篇文章 https://mp.weixin.qq.com/s/xxxxx"
@@ -88,11 +88,11 @@ config:
 
 ### 搜索文章
 用户："搜索关于 AI 的微信文章"
-→ 调用 `search_articles`，query 为 "AI"
+→ 调用 `readgzh.search`，query 为 "AI"
 
 ### 查看最近文章
 用户："最近有什么文章？"
-→ 调用 `list_recent_articles`
+→ 调用 `readgzh.list`
 
 ## API 端点
 
