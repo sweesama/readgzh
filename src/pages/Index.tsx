@@ -176,7 +176,7 @@ const MatrixView = ({ onExit }: { onExit: () => void }) => {
     "> TARGET: mp.weixin.qq.com/*",
     "",
     "┌─────────────────────────────────────────┐",
-    "│  SYSTEM: 微信文章 AI 阅读器              │",
+    "│  SYSTEM: ReadGZH — 微信文章 AI 阅读器    │",
     "│  STATUS: ONLINE                         │",
     "│  UPTIME: 99.97%                         │",
     "└─────────────────────────────────────────┘",
