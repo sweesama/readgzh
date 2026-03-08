@@ -81,15 +81,16 @@ Deno.serve(async (req) => {
       const keyHash = await hashKey(rawKey);
       const keyPrefix = rawKey.substring(0, 12) + "..." + rawKey.substring(rawKey.length - 4);
 
-      // Check if user has any existing Pro keys (inherited from payment)
+      // Check if user has any Pro keys (active or revoked - to preserve tier on new keys)
       const { data: proKeys } = await serviceClient
         .from("api_keys")
-        .select("id")
+        .select("id, tier")
         .eq("user_id", user.id)
-        .eq("is_active", true)
         .in("tier", ["pro", "pro_lifetime"])
         .limit(1);
-      const isPro = (proKeys && proKeys.length > 0);
+      const hasPro = (proKeys && proKeys.length > 0);
+      const isLifetime = proKeys?.some(k => k.tier === "pro_lifetime");
+      const newTier = isLifetime ? "pro_lifetime" : (hasPro ? "pro" : "free");
 
       const { data, error } = await serviceClient.from("api_keys").insert({
         user_id: user.id,
