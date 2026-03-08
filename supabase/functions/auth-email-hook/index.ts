@@ -16,12 +16,12 @@ const corsHeaders = {
 }
 
 const EMAIL_SUBJECTS: Record<string, string> = {
-  signup: 'Confirm your email',
-  invite: "You've been invited",
-  magiclink: 'Your login link',
-  recovery: 'Reset your password',
-  email_change: 'Confirm your new email',
-  reauthentication: 'Your verification code',
+  signup: '验证你的 ReadGZH 邮箱',
+  invite: '你被邀请加入 ReadGZH',
+  magiclink: '你的 ReadGZH 登录验证',
+  recovery: '重置你的 ReadGZH 密码',
+  email_change: '确认你的 ReadGZH 邮箱变更',
+  reauthentication: '你的 ReadGZH 验证码',
 }
 
 // Template mapping
