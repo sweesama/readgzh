@@ -600,7 +600,7 @@ const DashboardPage = () => {
                     className="w-full"
                   >
                     <Plus className="mr-2 h-4 w-4" />
-                    {upgradeLoading ? "处理中..." : "购买加量包 (500积分 / ¥9)"}
+                    {upgradeLoading ? "处理中..." : "购买加量包 (500积分 / ¥15)"}
                   </Button>
                 </div>
               ) : (
