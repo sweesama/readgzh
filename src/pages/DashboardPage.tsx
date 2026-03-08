@@ -683,17 +683,17 @@ const DashboardPage = () => {
                           {key.is_active ? (key.tier === "pro_lifetime" ? "永久Pro" : key.tier) : "已撤销"}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <code className="text-sm text-muted-foreground font-mono">{key.key_prefix}</code>
+                      <div className="flex items-center gap-2">
+                        <code className="text-sm text-muted-foreground font-mono bg-muted px-2 py-0.5 rounded">{key.key_prefix}</code>
                         {key.is_active && (
                           <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
+                            variant="outline"
+                            size="sm"
+                            className="h-7 px-2 text-xs gap-1"
                             onClick={() => copyToClipboard(key.key_prefix)}
-                            title="复制 Key 前缀"
                           >
                             <Copy className="h-3 w-3" />
+                            复制
                           </Button>
                         )}
                       </div>
