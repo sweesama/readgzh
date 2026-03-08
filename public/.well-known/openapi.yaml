@@ -22,8 +22,8 @@ servers:
 paths:
   /rd:
     get:
-      operationId: readWeChatArticle
-      summary: 抓取并读取微信公众号文章
+      operationId: readgzh.read
+      summary: 通过 ReadGZH 抓取并读取微信公众号文章
       description: |
         提供微信文章 URL，返回提取的文章内容（HTML 格式）。
         如果文章已缓存，自动重定向到缓存版本（不消耗积分）。
