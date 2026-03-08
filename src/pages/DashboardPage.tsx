@@ -66,6 +66,7 @@ const DashboardPage = () => {
     current_period_end: string | null;
   } | null>(null);
   const [isLegacyPro, setIsLegacyPro] = useState(false);
+  const [isLifetimePro, setIsLifetimePro] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   // Nickname editing
   const [displayName, setDisplayName] = useState("");
