@@ -163,9 +163,9 @@ components:
         message:
           type: string
           example: 请求过于频繁，每天限制 10 次调用
-166:         hint:
-167:           type: string
-168:           example: 立即注册：readgzh.site/dashboard — 免费创建 API Key，每日 50 积分
+        hint:
+          type: string
+          example: 立即注册：readgzh.site/dashboard — 免费创建 API Key，每日 50 积分
         current:
           type: integer
         limit:
