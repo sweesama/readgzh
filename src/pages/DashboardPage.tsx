@@ -239,7 +239,7 @@ const DashboardPage = () => {
       toast({ title: "发送验证码失败", description: error.message, variant: "destructive" });
     } else {
       setOtpSent(true);
-      toast({ title: "验证码已发送", description: "请查收邮件，输入 6 位验证码" });
+      toast({ title: "验证码已发送", description: "请查收邮件，输入验证码" });
     }
     setOtpLoading(false);
   };
