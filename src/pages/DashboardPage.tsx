@@ -432,7 +432,7 @@ const DashboardPage = () => {
             <h1 className="text-xl font-bold">开发者控制台</h1>
             {!proLoading && (
               <Badge variant={isPro ? "default" : "secondary"} className={isPro ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0" : ""}>
-                {isPro ? <><Crown className="h-3 w-3 mr-1" />Pro</> : "Free"}
+                {isPro ? <><Crown className="h-3 w-3 mr-1" />{isLifetimePro ? "永久Pro" : "Pro"}</> : "Free"}
               </Badge>
             )}
           </div>
