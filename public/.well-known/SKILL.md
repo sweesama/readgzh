@@ -4,13 +4,12 @@ description: "ReadGZH — Let AI read full-text WeChat Official Account articles
 version: 1.3.0
 author: readgzh
 triggers:
-  - "微信"
-  - "公众号"
   - "wechat"
+  - "weixin"
   - "mp.weixin"
-  - "读文章"
   - "read article"
   - "readgzh"
+  - "gongzhonghao"
 tools:
   - name: readgzh.read
     description: "Read the full text of a WeChat Official Account article via ReadGZH, returning title, author, publish time, and content"
