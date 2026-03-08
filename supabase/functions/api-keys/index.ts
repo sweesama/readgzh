@@ -98,8 +98,8 @@ Deno.serve(async (req) => {
         key_prefix: keyPrefix,
         key_value: rawKey,
         name: keyName,
-        tier: isPro ? "pro" : "free",
-        daily_limit: isPro ? 2000 : 50,
+        tier: newTier,
+        daily_limit: newTier === "free" ? 50 : 2000,
       }).select().single();
 
       if (error) throw error;
