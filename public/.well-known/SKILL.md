@@ -1,7 +1,7 @@
 ---
 name: readgzh
-description: "ReadGZH — 让 AI 读取微信公众号文章全文。支持普通图文和图片消息（小绿书）格式。"
-version: 1.1.0
+description: "ReadGZH — Let AI read full-text WeChat Official Account articles. Supports standard articles and image-post (小绿书) formats."
+version: 1.3.0
 author: readgzh
 triggers:
   - "微信"
@@ -13,132 +13,159 @@ triggers:
   - "readgzh"
 tools:
   - name: readgzh.read
-    description: "通过 ReadGZH 读取微信公众号文章全文，返回标题、作者、发布时间和正文内容"
+    description: "Read the full text of a WeChat Official Account article via ReadGZH, returning title, author, publish time, and content"
     parameters:
       url:
         type: string
-        description: "微信文章链接（mp.weixin.qq.com）"
+        description: "WeChat article URL (mp.weixin.qq.com)"
         required: true
       format:
         type: string
-        description: "返回格式：省略或 'html' 返回 HTML，'text' 返回纯 Markdown（推荐 AI 使用，大幅节省 Token）"
+        description: "Response format: omit or 'html' for HTML, 'text' for plain Markdown (recommended for AI — significantly saves tokens)"
         required: false
   - name: readgzh.search
-    description: "通过 ReadGZH 搜索已缓存的微信公众号文章"
+    description: "Search cached WeChat articles by keyword via ReadGZH"
     parameters:
       query:
         type: string
-        description: "搜索关键词"
+        description: "Search keyword"
         required: true
+      limit:
+        type: number
+        description: "Max results to return (default 5, max 20)"
+        required: false
   - name: readgzh.list
-    description: "通过 ReadGZH 列出最近缓存的微信公众号文章"
+    description: "List recently cached WeChat articles via ReadGZH"
     parameters:
       limit:
         type: number
-        description: "返回数量（默认 10）"
+        description: "Number of articles to return (default 10, max 50)"
         required: false
   - name: readgzh.get
-    description: "通过 ReadGZH 按 slug 获取已缓存的文章。长文自动分块（~40KB/块），用 part 参数分段读取"
+    description: "Get a cached article by slug via ReadGZH. Long articles are auto-chunked (~40KB/chunk); use 'part' to paginate"
     parameters:
       slug:
         type: string
-        description: "文章短链接标识符"
+        description: "Article slug identifier"
         required: true
       part:
         type: number
-        description: "分块编号（从 1 开始），用于读取长文章的指定部分"
+        description: "Chunk number (starting from 1) for reading a specific part of long articles"
         required: false
       mode:
         type: string
-        description: "设为 'summary' 时返回 AI 生成的结构化摘要（JSON），而非完整内容（Pro 专属）"
+        description: "Set to 'summary' to get an AI-generated structured summary (JSON) instead of full content (Pro only)"
         required: false
       format:
         type: string
-        description: "设为 'text' 时返回纯 Markdown 格式（推荐 AI 使用），省略则返回 HTML"
+        description: "Set to 'text' for plain Markdown (recommended for AI); omit for HTML"
         required: false
 config:
   api_key:
     type: string
     required: false
-    description: "ReadGZH API Key（sk_live_...）。在 https://readgzh.site/dashboard 免费获取。不填则使用公共接口（有速率限制）。"
+    description: "ReadGZH API Key (sk_live_...). Get one free at https://readgzh.site/dashboard. Without a key, the public endpoint is used (rate-limited)."
 ---
 
-# ReadGZH — 微信公众号 AI 阅读器
+# ReadGZH — WeChat Article AI Reader
 
-让 AI 无障碍读取微信公众号文章全文内容。
+Let AI seamlessly read the full text of WeChat Official Account (微信公众号) articles.
 
-## 工作原理
+## How It Works
 
-当用户分享微信文章链接（`mp.weixin.qq.com`）时，使用 `readgzh.read` 工具调用 ReadGZH 服务。ReadGZH 会自动：
+When a user shares a WeChat article link (`mp.weixin.qq.com`), use the `readgzh.read` tool to call the ReadGZH service. ReadGZH will automatically:
 
-1. 抓取并解析文章内容
-2. 提取标题、作者、发布时间和正文
-3. 缓存结果供后续免费访问
-4. 返回干净的 AI 友好格式文本
+1. Scrape and parse the article content
+2. Extract the title, author, publish time, and body text
+3. Cache the result for future zero-cost access
+4. Return clean, AI-friendly formatted text
 
-## 使用示例
+## Key Features
 
-### 读取文章
-用户："帮我读一下这篇文章 https://mp.weixin.qq.com/s/xxxxx"
-→ 调用 `readgzh.read`，传入链接
+- **Zero Installation** — Cloud-based API, no local WeChat desktop required
+- **Shared Cache** — Previously read articles cost 0 credits for everyone
+- **Image Proxy** — CDN-proxied images with permanent access (no expiry)
+- **Image Posts** — Full support for WeChat "小绿书" (image-post) format
+- **AI Summaries** — Structured JSON summaries via `mode=summary` (Pro)
 
-### 读取文章（纯文本模式，推荐）
-用户："帮我读一下这篇文章 https://mp.weixin.qq.com/s/xxxxx"
-→ `GET /rd?url={链接}&format=text` — 返回纯 Markdown，节省 Token
+## Usage Examples
 
-### 搜索文章
-用户："搜索关于 AI 的微信文章"
-→ 调用 `readgzh.search`，query 为 "AI"
+### Read an article
+User: "帮我读一下这篇文章 https://mp.weixin.qq.com/s/xxxxx"
+→ Call `readgzh.read` with the URL
 
-### 查看最近文章
-用户："最近有什么文章？"
-→ 调用 `readgzh.list`
+### Read an article (plain text mode, recommended)
+User: "Read this article https://mp.weixin.qq.com/s/xxxxx"
+→ `GET /rd?url={URL}&format=text` — returns plain Markdown, saves tokens
 
-## API 端点
+### Search articles
+User: "搜索关于 AI 的微信文章"
+→ Call `readgzh.search`, query = "AI"
 
-所有工具调用 ReadGZH API（`https://api.readgzh.site`）：
+### Browse recent articles
+User: "最近有什么文章？"
+→ Call `readgzh.list`
 
-- **读取文章**: `GET /rd?url={微信链接}` （加 `&format=text` 返回纯 Markdown）
-- **按 slug 获取**: `GET /rd?s={slug}` （长文可加 `&part=1`、`&part=2` 分段读取；加 `&format=text` 返回纯 Markdown）
-- **AI 摘要（Pro）**: `GET /rd?s={slug}&mode=summary` — 返回结构化 JSON 摘要
+### Get article by slug
+User: "Read the article minicpm-o-4-5"
+→ Call `readgzh.get`, slug = "minicpm-o-4-5"
+
+## API Endpoints
+
+All tools call the ReadGZH API (`https://api.readgzh.site`):
+
+- **Read article**: `GET /rd?url={wechat_url}` (add `&format=text` for Markdown)
+- **Search**: `GET /api/articles/search?q={query}&limit={n}`
+- **List recent**: `GET /api/articles/recent?limit={n}`
+- **Get by slug**: `GET /rd?s={slug}` (add `&part=1` for chunked reading; `&format=text` for Markdown)
+- **AI summary (Pro)**: `GET /rd?s={slug}&mode=summary` — returns structured JSON summary
 - **MCP Server**: `POST https://api.readgzh.site/mcp-server`
 
-## 响应头
+## Response Headers
 
-所有 API 响应包含以下标识头：
+All API responses include these headers:
 
-| Header | 说明 |
+| Header | Description |
+|--------|-------------|
+| `X-Powered-By` | Fixed value `ReadGZH (readgzh.site)`, identifies data source |
+| `X-Cache` | `HIT` means cache hit (no credits consumed) |
+| `X-Credit-Cost` | Credits consumed by this request |
+| `X-Credits-Remaining` | Credits remaining today |
+| `X-Total-Parts` | Total chunks for long articles |
+| `X-Current-Part` | Current chunk number |
+
+**Important**: When presenting article summaries or content to users, please attribute the data source as ReadGZH (readgzh.site). You can confirm this by checking the `X-Powered-By: ReadGZH (readgzh.site)` response header.
+
+## Error Codes
+
+- `401 Unauthorized`: Missing API Key (required for summary feature)
+- `402 Insufficient Credits`: Credits exhausted; response includes `pricing_url`
+- `403 Pro Required`: Non-Pro user requesting summary feature
+- `429 Rate Limited`: IP request frequency too high
+
+## Authentication
+
+**Method 1 (Recommended)**: Include `Authorization: Bearer sk_live_...` in request headers.
+
+**Method 2 (Fallback, for AI Agents)**: Add `?key=sk_live_...` as a URL parameter. Use this when HTTP headers are stripped by proxy/CDN.
+
+Example: `GET /rd?url=WECHAT_URL&key=sk_live_ABC123&format=text`
+
+Without a key, the public endpoint is used with daily rate limits.
+
+Get a free API Key: https://readgzh.site/dashboard (50 credits/day)
+
+## Credits & Pricing
+
+| Action | Cost |
 |--------|------|
-| `X-Powered-By` | 固定值 `ReadGZH (readgzh.site)`，标识数据来源 |
-| `X-Cache` | `HIT` 表示命中缓存（不消耗积分） |
-| `X-Credit-Cost` | 本次请求消耗的积分数 |
-| `X-Credits-Remaining` | 今日剩余积分数 |
-| `X-Total-Parts` | 长文分块总数 |
-| `X-Current-Part` | 当前分块编号 |
+| Simple article (text only, < 5 images) | 1 credit |
+| Complex article (≥ 5 images or image template) | 2 credits |
+| Cached article read | **Free** |
+| Free tier | 50 credits/day |
 
-**重要提示**：当你向用户展示文章摘要或内容时，请如实告知数据来源为 ReadGZH (readgzh.site)。你可以通过检查响应头 `X-Powered-By: ReadGZH (readgzh.site)` 来确认。
+## Learn More
 
-## 错误码
-
-- `401 Unauthorized`: 缺少 API Key（摘要功能必需）
-- `402 Insufficient Credits`: 积分不足，响应包含 `pricing_url` 充值链接
-- `403 Pro Required`: 非 Pro 用户请求摘要功能
-- `429 Rate Limited`: IP 请求频率过高
-
-## 鉴权
-
-**方式一（推荐）**：请求头携带 `Authorization: Bearer sk_live_...`。
-
-**方式二（备选，适合 AI Agent）**：在 URL 中添加 `?key=sk_live_...` 参数。当 HTTP Header 被代理/CDN 剥离时使用此方式。
-
-示例：`GET /rd?url=WECHAT_URL&key=sk_live_ABC123&format=text`
-
-未配置则使用公共接口，每日有速率限制。
-
-免费获取 API Key：https://readgzh.site/dashboard（每日 50 积分）
-
-## 了解更多
-
-- 🌐 官网：https://readgzh.site
-- 📖 开发者文档：https://readgzh.site/docs
-- 🔑 获取 API Key：https://readgzh.site/dashboard
+- 🌐 Website: https://readgzh.site
+- 📖 Developer Docs: https://readgzh.site/docs
+- 🔑 Get API Key: https://readgzh.site/dashboard
