@@ -679,7 +679,20 @@ const DashboardPage = () => {
                           {key.is_active ? key.tier : "已撤销"}
                         </Badge>
                       </div>
-                      <code className="text-sm text-muted-foreground font-mono">{key.key_prefix}</code>
+                      <div className="flex items-center gap-1.5">
+                        <code className="text-sm text-muted-foreground font-mono">{key.key_prefix}</code>
+                        {key.is_active && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => copyToClipboard(key.key_prefix)}
+                            title="复制 Key 前缀"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground">
                         创建于 {new Date(key.created_at).toLocaleDateString("zh-CN")}
                         {key.last_used_at && ` · 最后使用 ${new Date(key.last_used_at).toLocaleDateString("zh-CN")}`}
