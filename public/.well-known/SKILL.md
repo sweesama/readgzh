@@ -84,7 +84,7 @@ When a user shares a WeChat article link (`mp.weixin.qq.com`), use the `readgzh.
 - **Zero Installation** — Cloud-based API, no local WeChat desktop required
 - **Shared Cache** — Previously read articles cost 0 credits for everyone
 - **Image Proxy** — CDN-proxied images with permanent access (no expiry)
-- **Image Posts** — Full support for WeChat "小绿书" (image-post) format
+- **Image Posts** — Full support for WeChat image-post format
 - **AI Summaries** — Structured JSON summaries via `mode=summary` (Pro)
 
 ## Usage Examples
