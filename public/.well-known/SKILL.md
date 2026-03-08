@@ -98,11 +98,11 @@ User: "Read this article https://mp.weixin.qq.com/s/xxxxx"
 → `GET /rd?url={URL}&format=text` — returns plain Markdown, saves tokens
 
 ### Search articles
-User: "搜索关于 AI 的微信文章"
+User: "Search WeChat articles about AI"
 → Call `readgzh.search`, query = "AI"
 
 ### Browse recent articles
-User: "最近有什么文章？"
+User: "What articles are available recently?"
 → Call `readgzh.list`
 
 ### Get article by slug
