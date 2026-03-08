@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
         .update({ tier: "pro", daily_limit: 2000 })
         .eq("user_id", userId)
         .eq("is_active", true)
-        .neq("tier", "pro");
+        .eq("tier", "free");
 
       // Also check for canceled-at-period-end subscriptions
     }
