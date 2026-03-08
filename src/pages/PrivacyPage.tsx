@@ -14,10 +14,11 @@ const PrivacyPage = () => (
       <div className="prose prose-sm max-w-none text-muted-foreground space-y-4">
         <p><strong>最后更新：</strong>2026 年 2 月 28 日</p>
         <h2 className="text-xl font-semibold text-foreground mt-6">1. 信息收集</h2>
-        <p>ReadGZH 不要求用户注册或登录。我们仅收集以下信息：</p>
+        <p>ReadGZH 支持匿名使用（无需注册），也提供可选的账户注册以获取更多功能。我们收集以下信息：</p>
         <ul className="list-disc pl-6 space-y-1">
           <li>您提交的微信文章链接</li>
           <li>基本访问日志（IP 地址、访问时间），用于速率限制和服务稳定性</li>
+          <li>注册用户的邮箱地址，用于账户管理和 API Key 发放</li>
           <li>通过 Google Analytics 收集的匿名使用数据</li>
         </ul>
         <h2 className="text-xl font-semibold text-foreground mt-6">2. 信息使用</h2>
