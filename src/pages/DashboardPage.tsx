@@ -66,6 +66,7 @@ const DashboardPage = () => {
     current_period_end: string | null;
   } | null>(null);
   const [isLegacyPro, setIsLegacyPro] = useState(false);
+  const [isLifetimePro, setIsLifetimePro] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   // Nickname editing
   const [displayName, setDisplayName] = useState("");
@@ -140,6 +141,9 @@ const DashboardPage = () => {
       }
       if (data?.legacy) {
         setIsLegacyPro(true);
+      }
+      if (data?.lifetime) {
+        setIsLifetimePro(true);
       }
     } catch {
       // ignore
@@ -428,7 +432,7 @@ const DashboardPage = () => {
             <h1 className="text-xl font-bold">开发者控制台</h1>
             {!proLoading && (
               <Badge variant={isPro ? "default" : "secondary"} className={isPro ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0" : ""}>
-                {isPro ? <><Crown className="h-3 w-3 mr-1" />Pro</> : "Free"}
+                {isPro ? <><Crown className="h-3 w-3 mr-1" />{isLifetimePro ? "永久Pro" : "Pro"}</> : "Free"}
               </Badge>
             )}
           </div>
@@ -676,7 +680,7 @@ const DashboardPage = () => {
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{key.name}</span>
                         <Badge variant={key.is_active ? "default" : "secondary"}>
-                          {key.is_active ? key.tier : "已撤销"}
+                          {key.is_active ? (key.tier === "pro_lifetime" ? "永久Pro" : key.tier) : "已撤销"}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-1.5">
