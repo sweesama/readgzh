@@ -379,11 +379,11 @@ const DashboardPage = () => {
                     <div className="flex gap-2">
                       <Input
                         type="text"
-                        placeholder="输入 6 位验证码"
+                        placeholder="输入 8 位验证码"
                         value={otpCode}
                         onChange={(e) => setOtpCode(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleVerifyOtp()}
-                        maxLength={6}
+                        maxLength={8}
                         className="text-center tracking-widest text-lg"
                       />
                       <Button onClick={handleVerifyOtp} disabled={otpLoading} className="shrink-0">
