@@ -651,7 +651,17 @@ const DashboardPage = () => {
             <CardTitle className="flex items-center gap-2">
               <Key className="h-5 w-5" />API Keys
             </CardTitle>
-            <CardDescription>管理你的 API Key，每个账号最多 3 个活跃 Key</CardDescription>
+            <div className="flex items-center justify-between">
+              <CardDescription>管理你的 API Key，每个账号最多 3 个活跃 Key</CardDescription>
+              {keys.some(k => !k.is_active) && (
+                <button
+                  onClick={() => setShowRevokedKeys(!showRevokedKeys)}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showRevokedKeys ? "隐藏已撤销" : `显示已撤销 (${keys.filter(k => !k.is_active).length})`}
+                </button>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-3">
