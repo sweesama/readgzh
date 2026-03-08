@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
 
     const user = userData.user;
     const body = await req.json().catch(() => ({}));
-    const type = body.type || "pro"; // "pro", "pro_annual", or "credits"
+    const type = body.type || "pro"; // "pro", "pro_annual", "credits", or "credits_free"
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
       apiVersion: "2025-08-27.basil",
