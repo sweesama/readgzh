@@ -14,6 +14,7 @@ import Footer from "@/components/home/Footer";
 interface ApiKey {
   id: string;
   key_prefix: string;
+  key_value?: string | null;
   name: string;
   tier: string;
   daily_limit: number;
