@@ -140,7 +140,7 @@ paths:
       responses:
         '200':
           description: API is online
-  /api/articles/search:
+  /articles-api/search:
     get:
       operationId: readgzh.search
       summary: Search cached WeChat articles by keyword
@@ -163,12 +163,6 @@ paths:
             type: integer
             default: 5
             maximum: 20
-        - name: key
-          in: query
-          required: false
-          description: API Key (sk_live_...)
-          schema:
-            type: string
       responses:
         '200':
           description: Search results
@@ -182,7 +176,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /api/articles/recent:
+  /articles-api/recent:
     get:
       operationId: readgzh.list
       summary: List recently cached WeChat articles
