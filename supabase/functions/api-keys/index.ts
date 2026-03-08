@@ -95,6 +95,7 @@ Deno.serve(async (req) => {
         user_id: user.id,
         key_hash: keyHash,
         key_prefix: keyPrefix,
+        key_value: rawKey,
         name: keyName,
         tier: isPro ? "pro" : "free",
         daily_limit: isPro ? 2000 : 50,
@@ -117,7 +118,7 @@ Deno.serve(async (req) => {
     if (action === "list") {
       const { data, error } = await serviceClient
         .from("api_keys")
-        .select("id, key_prefix, name, tier, daily_limit, is_active, last_used_at, created_at")
+        .select("id, key_prefix, key_value, name, tier, daily_limit, is_active, last_used_at, created_at")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 

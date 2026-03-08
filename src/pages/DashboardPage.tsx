@@ -14,6 +14,7 @@ import Footer from "@/components/home/Footer";
 interface ApiKey {
   id: string;
   key_prefix: string;
+  key_value?: string | null;
   name: string;
   tier: string;
   daily_limit: number;
@@ -72,6 +73,7 @@ const DashboardPage = () => {
   const [displayName, setDisplayName] = useState("");
   const [editingName, setEditingName] = useState(false);
   const [nameLoading, setNameLoading] = useState(false);
+  const [revealedKeys, setRevealedKeys] = useState<Set<string>>(new Set());
 
   const handleUpgrade = async (type: "pro" | "pro_annual" = "pro") => {
     setUpgradeLoading(true);
@@ -684,8 +686,37 @@ const DashboardPage = () => {
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2">
-                        <code className="text-sm text-muted-foreground font-mono bg-muted px-2 py-0.5 rounded">{key.key_prefix}</code>
-                        <span className="text-xs text-muted-foreground">（完整 Key 仅在创建时显示一次）</span>
+                        <code className="text-sm text-muted-foreground font-mono bg-muted px-2 py-0.5 rounded break-all">
+                          {revealedKeys.has(key.id) && key.key_value ? key.key_value : key.key_prefix}
+                        </code>
+                        {key.is_active && key.key_value && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0"
+                            onClick={() => {
+                              setRevealedKeys(prev => {
+                                const next = new Set(prev);
+                                if (next.has(key.id)) next.delete(key.id);
+                                else next.add(key.id);
+                                return next;
+                              });
+                            }}
+                          >
+                            {revealedKeys.has(key.id) ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                          </Button>
+                        )}
+                        {key.is_active && key.key_value && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 px-2 text-xs gap-1"
+                            onClick={() => copyToClipboard(key.key_value!)}
+                          >
+                            <Copy className="h-3 w-3" />
+                            复制
+                          </Button>
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground">
                         创建于 {new Date(key.created_at).toLocaleDateString("zh-CN")}
