@@ -192,12 +192,6 @@ paths:
             type: integer
             default: 10
             maximum: 50
-        - name: key
-          in: query
-          required: false
-          description: API Key (sk_live_...)
-          schema:
-            type: string
       responses:
         '200':
           description: List of recent articles
