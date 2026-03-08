@@ -10,11 +10,11 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 // Create MCP server
 const mcp = new McpServer({
   name: "readgzh",
-  version: "1.2.0",
+  version: "1.3.0",
 });
 
 // Tool 1: Read a WeChat article by URL
-mcp.tool("read_wechat_article", {
+mcp.tool("readgzh.read", {
   description:
     "Read and extract the full text content of a WeChat Official Account (微信公众号) article via ReadGZH (readgzh.site). Provide a WeChat article URL and get back the title, author, publish time, and full article text in Markdown format. The article will be automatically cached for future reads.",
   inputSchema: {
@@ -108,7 +108,7 @@ mcp.tool("read_wechat_article", {
 });
 
 // Tool 2: List recent articles
-mcp.tool("list_recent_articles", {
+mcp.tool("readgzh.list", {
   description:
     "List recently cached WeChat articles via ReadGZH. Returns titles, authors, and links. Useful for browsing what articles have been previously read and cached.",
   inputSchema: {
@@ -167,7 +167,7 @@ mcp.tool("list_recent_articles", {
 });
 
 // Tool 3: Search articles by keyword
-mcp.tool("search_articles", {
+mcp.tool("readgzh.search", {
   description:
     "Search cached WeChat articles by keyword via ReadGZH. Searches in article titles and content. Returns matching articles with snippets.",
   inputSchema: {
@@ -241,7 +241,7 @@ mcp.tool("search_articles", {
 });
 
 // Tool 4: Get article by slug
-mcp.tool("get_article_by_slug", {
+mcp.tool("readgzh.get", {
   description:
     "Get a cached WeChat article by its short slug/URL path via ReadGZH. Use when you have a slug like 'minicpm-o-4-5' from a previous read.",
   inputSchema: {

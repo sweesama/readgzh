@@ -1,4 +1,4 @@
-// ReadGZH short URL proxy → wechat-reader edge function
+// ReadGZH short URL proxy → backend edge function
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":

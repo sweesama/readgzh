@@ -171,12 +171,12 @@ const MatrixView = ({ onExit }: { onExit: () => void }) => {
   const [lines, setLines] = useState<string[]>([]);
 
   const contentLines = [
-    "> INITIALIZING AI READER INTERFACE...",
-    "> PROTOCOL: WeChat Article Extraction v2.1",
+    "> INITIALIZING ReadGZH AI READER...",
+    "> PROTOCOL: ReadGZH Article Extraction v2.1",
     "> TARGET: mp.weixin.qq.com/*",
     "",
     "┌─────────────────────────────────────────┐",
-    "│  SYSTEM: 微信文章 AI 阅读器              │",
+    "│  SYSTEM: ReadGZH — 微信文章 AI 阅读器    │",
     "│  STATUS: ONLINE                         │",
     "│  UPTIME: 99.97%                         │",
     "└─────────────────────────────────────────┘",
@@ -244,7 +244,7 @@ const MatrixView = ({ onExit }: { onExit: () => void }) => {
             <div className="w-3 h-3 rounded-full bg-red-500/80" />
             <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
             <div className="w-3 h-3 rounded-full bg-green-500/80" />
-            <span className="ml-3 text-green-600 text-xs">ai-reader@wechat-proxy ~ $</span>
+            <span className="ml-3 text-green-600 text-xs">readgzh@api ~ $</span>
           </div>
           <div className="space-y-0.5 text-sm leading-relaxed">
             {lines.map((line, i) => (

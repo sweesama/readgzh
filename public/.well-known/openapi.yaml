@@ -22,8 +22,8 @@ servers:
 paths:
   /rd:
     get:
-      operationId: readWeChatArticle
-      summary: 抓取并读取微信公众号文章
+      operationId: readgzh.read
+      summary: 通过 ReadGZH 抓取并读取微信公众号文章
       description: |
         提供微信文章 URL，返回提取的文章内容（HTML 格式）。
         如果文章已缓存，自动重定向到缓存版本（不消耗积分）。
@@ -81,16 +81,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
     head:
-      operationId: checkArticleAvailability
-      summary: 检查 API 可用性
+      operationId: readgzh.check
+      summary: 检查 ReadGZH API 可用性
       description: 返回 200 OK，用于 AI Agent 预检链接
       responses:
         '200':
           description: API 在线
   /rd?s={slug}:
     get:
-      operationId: getArticleBySlug
-      summary: 通过 slug 读取已缓存的文章
+      operationId: readgzh.get
+      summary: 通过 ReadGZH 按 slug 读取已缓存的文章
       description: |
         读取已缓存文章的内容，不消耗积分。
         长文章会自动分块（每块约 40KB），可通过 part 参数指定读取的分块。
