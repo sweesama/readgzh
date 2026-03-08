@@ -81,8 +81,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
     head:
-      operationId: checkArticleAvailability
-      summary: 检查 API 可用性
+      operationId: readgzh.check
+      summary: 检查 ReadGZH API 可用性
       description: 返回 200 OK，用于 AI Agent 预检链接
       responses:
         '200':
