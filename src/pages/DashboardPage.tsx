@@ -685,17 +685,7 @@ const DashboardPage = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <code className="text-sm text-muted-foreground font-mono bg-muted px-2 py-0.5 rounded">{key.key_prefix}</code>
-                        {key.is_active && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 px-2 text-xs gap-1"
-                            onClick={() => copyToClipboard(key.key_prefix)}
-                          >
-                            <Copy className="h-3 w-3" />
-                            复制
-                          </Button>
-                        )}
+                        <span className="text-xs text-muted-foreground">（完整 Key 仅在创建时显示一次）</span>
                       </div>
                       <p className="text-xs text-muted-foreground">
                         创建于 {new Date(key.created_at).toLocaleDateString("zh-CN")}
