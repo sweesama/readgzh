@@ -171,8 +171,8 @@ const MatrixView = ({ onExit }: { onExit: () => void }) => {
   const [lines, setLines] = useState<string[]>([]);
 
   const contentLines = [
-    "> INITIALIZING AI READER INTERFACE...",
-    "> PROTOCOL: WeChat Article Extraction v2.1",
+    "> INITIALIZING ReadGZH AI READER...",
+    "> PROTOCOL: ReadGZH Article Extraction v2.1",
     "> TARGET: mp.weixin.qq.com/*",
     "",
     "┌─────────────────────────────────────────┐",
