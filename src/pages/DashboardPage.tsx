@@ -680,7 +680,7 @@ const DashboardPage = () => {
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{key.name}</span>
                         <Badge variant={key.is_active ? "default" : "secondary"}>
-                          {key.is_active ? key.tier : "已撤销"}
+                          {key.is_active ? (key.tier === "pro_lifetime" ? "永久Pro" : key.tier) : "已撤销"}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-1.5">
