@@ -89,8 +89,8 @@ paths:
           description: API 在线
   /rd?s={slug}:
     get:
-      operationId: getArticleBySlug
-      summary: 通过 slug 读取已缓存的文章
+      operationId: readgzh.get
+      summary: 通过 ReadGZH 按 slug 读取已缓存的文章
       description: |
         读取已缓存文章的内容，不消耗积分。
         长文章会自动分块（每块约 40KB），可通过 part 参数指定读取的分块。
