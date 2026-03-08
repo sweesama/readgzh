@@ -74,6 +74,7 @@ const DashboardPage = () => {
   const [editingName, setEditingName] = useState(false);
   const [nameLoading, setNameLoading] = useState(false);
   const [revealedKeys, setRevealedKeys] = useState<Set<string>>(new Set());
+  const [showRevokedKeys, setShowRevokedKeys] = useState(false);
 
   const handleUpgrade = async (type: "pro" | "pro_annual" = "pro") => {
     setUpgradeLoading(true);
