@@ -23,6 +23,7 @@ export type Database = {
           is_active: boolean
           key_hash: string
           key_prefix: string
+          key_value: string | null
           last_used_at: string | null
           name: string
           tier: string
@@ -36,6 +37,7 @@ export type Database = {
           is_active?: boolean
           key_hash: string
           key_prefix: string
+          key_value?: string | null
           last_used_at?: string | null
           name?: string
           tier?: string
@@ -49,6 +51,7 @@ export type Database = {
           is_active?: boolean
           key_hash?: string
           key_prefix?: string
+          key_value?: string | null
           last_used_at?: string | null
           name?: string
           tier?: string
