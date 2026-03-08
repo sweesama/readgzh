@@ -1,22 +1,19 @@
 project_id = "jhnnmmwgdrquwjytvvwu"
 
-[functions.wechat-reader]
-verify_jwt = false
-
-[functions.rd]
-verify_jwt = false
-
-[functions.image-proxy]
-verify_jwt = false
-
-[functions.mcp-server]
-verify_jwt = false
-
-[functions.create-payment]
-verify_jwt = false
-
-[functions.check-payment]
-verify_jwt = false
-
-[functions.customer-portal]
-verify_jwt = false
+[functions]
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.check-payment]
+    verify_jwt = false
+  [functions.create-payment]
+    verify_jwt = false
+  [functions.customer-portal]
+    verify_jwt = false
+  [functions.image-proxy]
+    verify_jwt = false
+  [functions.mcp-server]
+    verify_jwt = false
+  [functions.rd]
+    verify_jwt = false
+  [functions.wechat-reader]
+    verify_jwt = false
