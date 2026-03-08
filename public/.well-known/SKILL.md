@@ -90,7 +90,7 @@ When a user shares a WeChat article link (`mp.weixin.qq.com`), use the `readgzh.
 ## Usage Examples
 
 ### Read an article
-User: "帮我读一下这篇文章 https://mp.weixin.qq.com/s/xxxxx"
+User: "Read this article for me https://mp.weixin.qq.com/s/xxxxx"
 → Call `readgzh.read` with the URL
 
 ### Read an article (plain text mode, recommended)
