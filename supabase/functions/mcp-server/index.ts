@@ -241,7 +241,7 @@ mcp.tool("readgzh.search", {
 });
 
 // Tool 4: Get article by slug
-mcp.tool("get_article_by_slug", {
+mcp.tool("readgzh.get", {
   description:
     "Get a cached WeChat article by its short slug/URL path via ReadGZH. Use when you have a slug like 'minicpm-o-4-5' from a previous read.",
   inputSchema: {
