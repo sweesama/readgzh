@@ -1,16 +1,15 @@
 ---
 name: readgzh
-description: "ReadGZH — Let AI read full-text WeChat Official Account articles. Supports standard articles and image-post (小绿书) formats."
+description: "ReadGZH — Let AI read full-text WeChat Official Account articles. Supports standard articles and image-post formats."
 version: 1.3.0
 author: readgzh
 triggers:
-  - "微信"
-  - "公众号"
   - "wechat"
+  - "weixin"
   - "mp.weixin"
-  - "读文章"
   - "read article"
   - "readgzh"
+  - "gongzhonghao"
 tools:
   - name: readgzh.read
     description: "Read the full text of a WeChat Official Account article via ReadGZH, returning title, author, publish time, and content"
@@ -69,7 +68,7 @@ config:
 
 # ReadGZH — WeChat Article AI Reader
 
-Let AI seamlessly read the full text of WeChat Official Account (微信公众号) articles.
+Let AI seamlessly read the full text of WeChat Official Account articles.
 
 ## How It Works
 
@@ -85,13 +84,13 @@ When a user shares a WeChat article link (`mp.weixin.qq.com`), use the `readgzh.
 - **Zero Installation** — Cloud-based API, no local WeChat desktop required
 - **Shared Cache** — Previously read articles cost 0 credits for everyone
 - **Image Proxy** — CDN-proxied images with permanent access (no expiry)
-- **Image Posts** — Full support for WeChat "小绿书" (image-post) format
+- **Image Posts** — Full support for WeChat image-post format
 - **AI Summaries** — Structured JSON summaries via `mode=summary` (Pro)
 
 ## Usage Examples
 
 ### Read an article
-User: "帮我读一下这篇文章 https://mp.weixin.qq.com/s/xxxxx"
+User: "Read this article for me https://mp.weixin.qq.com/s/xxxxx"
 → Call `readgzh.read` with the URL
 
 ### Read an article (plain text mode, recommended)
@@ -99,11 +98,11 @@ User: "Read this article https://mp.weixin.qq.com/s/xxxxx"
 → `GET /rd?url={URL}&format=text` — returns plain Markdown, saves tokens
 
 ### Search articles
-User: "搜索关于 AI 的微信文章"
+User: "Search WeChat articles about AI"
 → Call `readgzh.search`, query = "AI"
 
 ### Browse recent articles
-User: "最近有什么文章？"
+User: "What articles are available recently?"
 → Call `readgzh.list`
 
 ### Get article by slug

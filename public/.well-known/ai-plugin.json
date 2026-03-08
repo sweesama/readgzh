@@ -1,8 +1,8 @@
 {
   "schema_version": "v1",
-  "name_for_human": "ReadGZH - 微信文章阅读器",
+  "name_for_human": "ReadGZH - WeChat Article Reader",
   "name_for_model": "readgzh",
-  "description_for_human": "ReadGZH — 让 AI 读取微信公众号文章全文内容，支持标题、作者、正文提取",
+  "description_for_human": "ReadGZH — Let AI read full-text WeChat Official Account articles, extracting title, author, and content",
   "description_for_model": "Use ReadGZH to read and extract the full text content of WeChat Official Account (微信公众号) articles. Given a WeChat article URL (mp.weixin.qq.com), it returns the article title, author, publish time, and full text content in clean format. Useful when users share WeChat article links and want AI to read, summarize, or analyze the content. More info at https://readgzh.site/docs",
   "auth": {
     "type": "service_http",

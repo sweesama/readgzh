@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: ReadGZH API
   description: |
-    API for reading WeChat Official Account (微信公众号) articles.
+    API for reading WeChat Official Account articles.
     Provides article scraping, cached reading, search, and listing.
     
     ## Authentication
