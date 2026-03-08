@@ -108,7 +108,7 @@ mcp.tool("readgzh.read", {
 });
 
 // Tool 2: List recent articles
-mcp.tool("list_recent_articles", {
+mcp.tool("readgzh.list", {
   description:
     "List recently cached WeChat articles via ReadGZH. Returns titles, authors, and links. Useful for browsing what articles have been previously read and cached.",
   inputSchema: {
