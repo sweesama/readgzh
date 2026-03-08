@@ -227,6 +227,7 @@ Deno.serve(async (req) => {
         current_period_end: subscriptionEnd,
       } : null,
       legacy: hasLegacyPro,
+      lifetime: hasLifetimePro,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
