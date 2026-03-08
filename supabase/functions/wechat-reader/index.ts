@@ -986,7 +986,7 @@ Deno.serve(async (req) => {
               { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
           }
-          if (apiAuth.tier !== "pro") {
+          if (apiAuth.tier !== "pro" && apiAuth.tier !== "pro_lifetime") {
             // Stripe Pro sync fallback: check if user actually paid but tier not yet synced
             console.log("Tier is not pro, checking Stripe for recent payment...");
             let stripeUpgraded = false;
