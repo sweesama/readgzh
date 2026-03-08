@@ -142,6 +142,9 @@ const DashboardPage = () => {
       if (data?.legacy) {
         setIsLegacyPro(true);
       }
+      if (data?.lifetime) {
+        setIsLifetimePro(true);
+      }
     } catch {
       // ignore
     }
