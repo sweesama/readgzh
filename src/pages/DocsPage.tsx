@@ -242,7 +242,7 @@ GET ${API_URL}/rd?s=article-title&part=2`}
               </p>
               <CodeBlock label="GPTs Instructions 示例">
 {`当用户分享微信公众号文章链接（mp.weixin.qq.com）时，
-使用 readWeChatArticle action 读取文章全文内容，
+使用 readgzh.read action 读取文章全文内容，
 然后根据用户需求进行总结、翻译或分析。`}
               </CodeBlock>
             </div>
