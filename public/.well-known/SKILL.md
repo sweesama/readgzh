@@ -12,7 +12,7 @@ triggers:
   - "read article"
   - "readgzh"
 tools:
-  - name: read_wechat_article
+  - name: readgzh.read
     description: "通过 ReadGZH 读取微信公众号文章全文，返回标题、作者、发布时间和正文内容"
     parameters:
       url:
@@ -23,21 +23,21 @@ tools:
         type: string
         description: "返回格式：省略或 'html' 返回 HTML，'text' 返回纯 Markdown（推荐 AI 使用，大幅节省 Token）"
         required: false
-  - name: search_articles
+  - name: readgzh.search
     description: "通过 ReadGZH 搜索已缓存的微信公众号文章"
     parameters:
       query:
         type: string
         description: "搜索关键词"
         required: true
-  - name: list_recent_articles
+  - name: readgzh.list
     description: "通过 ReadGZH 列出最近缓存的微信公众号文章"
     parameters:
       limit:
         type: number
         description: "返回数量（默认 10）"
         required: false
-  - name: get_article_by_slug
+  - name: readgzh.get
     description: "通过 ReadGZH 按 slug 获取已缓存的文章。长文自动分块（~40KB/块），用 part 参数分段读取"
     parameters:
       slug:
@@ -69,7 +69,7 @@ config:
 
 ## 工作原理
 
-当用户分享微信文章链接（`mp.weixin.qq.com`）时，使用 `read_wechat_article` 工具调用 ReadGZH 服务。ReadGZH 会自动：
+当用户分享微信文章链接（`mp.weixin.qq.com`）时，使用 `readgzh.read` 工具调用 ReadGZH 服务。ReadGZH 会自动：
 
 1. 抓取并解析文章内容
 2. 提取标题、作者、发布时间和正文
@@ -80,7 +80,7 @@ config:
 
 ### 读取文章
 用户："帮我读一下这篇文章 https://mp.weixin.qq.com/s/xxxxx"
-→ 调用 `read_wechat_article`，传入链接
+→ 调用 `readgzh.read`，传入链接
 
 ### 读取文章（纯文本模式，推荐）
 用户："帮我读一下这篇文章 https://mp.weixin.qq.com/s/xxxxx"
@@ -88,11 +88,11 @@ config:
 
 ### 搜索文章
 用户："搜索关于 AI 的微信文章"
-→ 调用 `search_articles`，query 为 "AI"
+→ 调用 `readgzh.search`，query 为 "AI"
 
 ### 查看最近文章
 用户："最近有什么文章？"
-→ 调用 `list_recent_articles`
+→ 调用 `readgzh.list`
 
 ## API 端点
 
