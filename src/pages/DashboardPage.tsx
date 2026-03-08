@@ -683,7 +683,7 @@ const DashboardPage = () => {
               <div className="text-muted-foreground text-sm py-4">还没有 API Key，点击上方创建一个</div>
             ) : (
               <div className="space-y-3">
-                {keys.map((key) => (
+                {keys.filter(k => k.is_active || showRevokedKeys).map((key) => (
                   <div
                     key={key.id}
                     className={`flex items-center justify-between p-4 rounded-lg border ${
