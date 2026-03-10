@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, Users, FileText, Key, Activity, TrendingUp, Crown, Zap } from "lucide-react";
+import { lovable } from "@/integrations/lovable/index";
+import { Shield, Users, FileText, Key, Activity, TrendingUp, Crown, Zap, LogIn } from "lucide-react";
 
 interface AdminStats {
   total_users: number;
@@ -26,24 +27,84 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
   const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [needsLogin, setNeedsLogin] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
+
+  const fetchStats = async () => {
+    setLoading(true);
+    setError("");
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      setNeedsLogin(true);
+      setLoading(false);
+      return;
+    }
+    setNeedsLogin(false);
+    const { data, error: fnErr } = await supabase.functions.invoke("admin-stats");
+    if (fnErr || !data?.success) {
+      setError(data?.error || fnErr?.message || "无权访问");
+    } else {
+      setStats(data.stats);
+      setRecentUsers(data.recent_users);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    (async () => {
-      const { data, error: fnErr } = await supabase.functions.invoke("admin-stats");
-      if (fnErr || !data?.success) {
-        setError(data?.error || fnErr?.message || "无权访问");
-      } else {
-        setStats(data.stats);
-        setRecentUsers(data.recent_users);
+    fetchStats();
+
+    // Listen for auth changes (e.g., after Google login redirect)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session) {
+        fetchStats();
       }
-      setLoading(false);
-    })();
+    });
+    return () => subscription.unsubscribe();
   }, []);
+
+  const handleGoogleLogin = async () => {
+    setSigningIn(true);
+    try {
+      const { error } = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (error) {
+        setError("登录失败: " + (error as any)?.message || "未知错误");
+        setSigningIn(false);
+      }
+    } catch (e) {
+      setError("登录失败");
+      setSigningIn(false);
+    }
+  };
 
   if (loading) {
     return (
       <div className="text-green-400 font-mono p-6">
         <span className="animate-pulse">{">"} LOADING ADMIN MATRIX...</span>
+      </div>
+    );
+  }
+
+  if (needsLogin) {
+    return (
+      <div className="font-mono text-sm p-6">
+        <div className="flex items-center gap-2 text-amber-400 mb-4">
+          <Shield className="h-4 w-4" />
+          <span>ADMIN AUTHENTICATION REQUIRED</span>
+        </div>
+        <p className="text-green-600 mb-4">{">"} 需要管理员身份验证才能访问系统控制台。</p>
+        <button
+          onClick={handleGoogleLogin}
+          disabled={signingIn}
+          className="flex items-center gap-2 px-4 py-2 border border-green-700 rounded bg-green-950/50 text-green-400 hover:bg-green-900/50 transition-colors text-sm disabled:opacity-50"
+        >
+          <LogIn className="h-4 w-4" />
+          {signingIn ? "正在跳转..." : "使用 Google 账号登录"}
+        </button>
+        <button onClick={onBack} className="mt-4 block text-green-700 hover:text-green-400 text-xs">
+          [ESC] 返回终端
+        </button>
       </div>
     );
   }

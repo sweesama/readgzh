@@ -248,7 +248,7 @@ const MatrixView = ({ onExit }: { onExit: () => void }) => {
               onClick={() => {
                 const next = clickCount + 1;
                 setClickCount(next);
-                if (next >= 5) {
+                if (next >= 6) {
                   setShowAdmin(true);
                   setClickCount(0);
                 }
