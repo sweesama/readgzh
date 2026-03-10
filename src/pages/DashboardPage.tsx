@@ -253,21 +253,36 @@ const DashboardPage = () => {
   };
 
   useEffect(() => {
-    if (!loading && !user) return;
-    if (user) {
-      fetchKeys();
-      fetchUsage();
-      fetchBalance();
-      checkProStatus();
-      fetchProfile();
+    if (loading) return;
 
-      // Handle return from credit pack purchase
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("credits_purchased")) {
-        toast({ title: "🎉 积分购买成功", description: `${params.get("credits_purchased")} 积分已到账` });
-        window.history.replaceState({}, "", "/dashboard");
-        checkProStatus();
-      }
+    if (!user) {
+      setKeys([]);
+      setUsage([]);
+      setBalance(null);
+      setDisplayName("");
+      setNewKey(null);
+      setShowNewKey(false);
+      setRevealedKeys(new Set());
+      setIsPro(false);
+      setIsLegacyPro(false);
+      setIsLifetimePro(false);
+      setSubscriptionInfo(null);
+      setKeysLoading(false);
+      setProLoading(false);
+      return;
+    }
+
+    void fetchKeys();
+    void fetchUsage();
+    void fetchBalance();
+    void checkProStatus();
+    void fetchProfile();
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("credits_purchased")) {
+      toast({ title: "🎉 积分购买成功", description: `${params.get("credits_purchased")} 积分已到账` });
+      window.history.replaceState({}, "", "/dashboard");
+      void checkProStatus();
     }
   }, [user, loading, fetchKeys, fetchUsage, fetchBalance, checkProStatus, fetchProfile]);
 
