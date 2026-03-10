@@ -110,61 +110,119 @@ const DashboardPage = () => {
   };
 
   const fetchKeys = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { setKeysLoading(false); return; }
-    const { data } = await supabase.functions.invoke("api-keys", {
-      body: { action: "list" },
-    });
-    if (data?.success) setKeys(data.keys);
-    setKeysLoading(false);
+    setKeysLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setKeys([]);
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("api-keys", {
+        body: { action: "list" },
+      });
+
+      if (error) throw error;
+      if (data?.success) {
+        setKeys(Array.isArray(data.keys) ? data.keys : []);
+      }
+    } catch {
+      setKeys([]);
+    } finally {
+      setKeysLoading(false);
+    }
   }, []);
 
   const fetchUsage = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    const { data } = await supabase.functions.invoke("api-keys", {
-      body: { action: "usage" },
-    });
-    if (data?.success) setUsage(data.usage);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setUsage([]);
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("api-keys", {
+        body: { action: "usage" },
+      });
+
+      if (error) throw error;
+      if (data?.success) {
+        setUsage(Array.isArray(data.usage) ? data.usage : []);
+      }
+    } catch {
+      setUsage([]);
+    }
   }, []);
 
   const fetchBalance = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    const { data } = await supabase.functions.invoke("api-keys", {
-      body: { action: "balance" },
-    });
-    if (data?.success) setBalance(data.balance);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setBalance(null);
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("api-keys", {
+        body: { action: "balance" },
+      });
+
+      if (error) throw error;
+      if (data?.success) {
+        setBalance(data.balance ?? null);
+      }
+    } catch {
+      setBalance(null);
+    }
   }, []);
 
   const checkProStatus = useCallback(async () => {
     setProLoading(true);
     try {
-      const { data } = await supabase.functions.invoke("check-payment");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setIsPro(false);
+        setSubscriptionInfo(null);
+        setIsLegacyPro(false);
+        setIsLifetimePro(false);
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("check-payment");
+      if (error) throw error;
+
       if (data?.is_pro) {
         setIsPro(true);
-        fetchKeys();
-        fetchBalance();
+        void fetchKeys();
+        void fetchBalance();
+      } else {
+        setIsPro(false);
       }
       if (data?.subscription) {
         setSubscriptionInfo(data.subscription);
+      } else {
+        setSubscriptionInfo(null);
       }
-      if (data?.legacy) {
-        setIsLegacyPro(true);
-      }
-      if (data?.lifetime) {
-        setIsLifetimePro(true);
-      }
+      setIsLegacyPro(Boolean(data?.legacy));
+      setIsLifetimePro(Boolean(data?.lifetime));
     } catch {
-      // ignore
+      setIsPro(false);
+      setSubscriptionInfo(null);
+      setIsLegacyPro(false);
+      setIsLifetimePro(false);
+    } finally {
+      setProLoading(false);
     }
-    setProLoading(false);
   }, [fetchKeys, fetchBalance]);
 
   // Fetch display name from profile
   const fetchProfile = useCallback(async () => {
-    const { data } = await supabase.from("profiles").select("display_name").eq("id", user?.id || "").single();
-    if (data?.display_name) setDisplayName(data.display_name);
+    if (!user?.id) {
+      setDisplayName("");
+      return;
+    }
+
+    const { data } = await supabase.from("profiles").select("display_name").eq("id", user.id).single();
+    setDisplayName(data?.display_name ?? "");
   }, [user?.id]);
 
   const handleSaveName = async () => {
@@ -195,21 +253,36 @@ const DashboardPage = () => {
   };
 
   useEffect(() => {
-    if (!loading && !user) return;
-    if (user) {
-      fetchKeys();
-      fetchUsage();
-      fetchBalance();
-      checkProStatus();
-      fetchProfile();
+    if (loading) return;
 
-      // Handle return from credit pack purchase
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("credits_purchased")) {
-        toast({ title: "🎉 积分购买成功", description: `${params.get("credits_purchased")} 积分已到账` });
-        window.history.replaceState({}, "", "/dashboard");
-        checkProStatus();
-      }
+    if (!user) {
+      setKeys([]);
+      setUsage([]);
+      setBalance(null);
+      setDisplayName("");
+      setNewKey(null);
+      setShowNewKey(false);
+      setRevealedKeys(new Set());
+      setIsPro(false);
+      setIsLegacyPro(false);
+      setIsLifetimePro(false);
+      setSubscriptionInfo(null);
+      setKeysLoading(false);
+      setProLoading(false);
+      return;
+    }
+
+    void fetchKeys();
+    void fetchUsage();
+    void fetchBalance();
+    void checkProStatus();
+    void fetchProfile();
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("credits_purchased")) {
+      toast({ title: "🎉 积分购买成功", description: `${params.get("credits_purchased")} 积分已到账` });
+      window.history.replaceState({}, "", "/dashboard");
+      void checkProStatus();
     }
   }, [user, loading, fetchKeys, fetchUsage, fetchBalance, checkProStatus, fetchProfile]);
 
@@ -470,7 +543,7 @@ const DashboardPage = () => {
                 <Pencil className="h-3 w-3" />
               </button>
             )}
-            <Button variant="outline" size="sm" onClick={signOut}>
+            <Button variant="outline" size="sm" onClick={() => void signOut()}>
               <LogOut className="mr-2 h-4 w-4" />退出
             </Button>
           </div>
