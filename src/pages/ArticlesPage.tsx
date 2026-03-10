@@ -17,7 +17,7 @@ interface Article {
   created_at: string;
 }
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 24;
 
 const ArticlesPage = () => {
   const [articles, setArticles] = useState<Article[]>([]);
