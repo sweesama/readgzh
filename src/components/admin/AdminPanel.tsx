@@ -173,11 +173,11 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
       <div className="border border-green-900/60 rounded bg-black/50 p-3 mb-6">
         <span className="text-green-600 text-xs">API 缓存命中率</span>
         <div className="text-green-300 mt-1">
-          {stats.total_api_requests > 0
-            ? `${((stats.total_cached / stats.total_api_requests) * 100).toFixed(1)}%`
+          {(stats.total_api_requests ?? 0) > 0
+            ? `${(((stats.total_cached ?? 0) / (stats.total_api_requests ?? 1)) * 100).toFixed(1)}%`
             : "N/A"}{" "}
           <span className="text-green-700 text-xs">
-            ({stats.total_cached.toLocaleString()} / {stats.total_api_requests.toLocaleString()})
+            ({(stats.total_cached ?? 0).toLocaleString()} / {(stats.total_api_requests ?? 0).toLocaleString()})
           </span>
         </div>
       </div>
