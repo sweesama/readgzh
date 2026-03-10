@@ -165,6 +165,8 @@ const MatrixRain = () => {
 /** Matrix-style AI perspective of the homepage */
 const MatrixView = ({ onExit }: { onExit: () => void }) => {
   const [lines, setLines] = useState<string[]>([]);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [clickCount, setClickCount] = useState(0);
 
   const contentLines = [
     "> INITIALIZING ReadGZH AI READER...",
