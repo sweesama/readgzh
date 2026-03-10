@@ -142,26 +142,83 @@ const ArticlesPage = () => {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-8">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page === 0}
-              onClick={() => setPage((p) => p - 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm text-muted-foreground px-3">
-              {page + 1} / {totalPages}
+          <div className="flex flex-col items-center gap-3 mt-10">
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === 0}
+                onClick={() => setPage(0)}
+                className="hidden sm:inline-flex"
+              >
+                首页
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === 0}
+                onClick={() => setPage((p) => p - 1)}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">上一页</span>
+              </Button>
+
+              {(() => {
+                const pages: (number | "ellipsis-start" | "ellipsis-end")[] = [];
+                const current = page;
+                const total = totalPages;
+
+                if (total <= 7) {
+                  for (let i = 0; i < total; i++) pages.push(i);
+                } else {
+                  pages.push(0);
+                  if (current > 3) pages.push("ellipsis-start");
+                  const start = Math.max(1, current - 1);
+                  const end = Math.min(total - 2, current + 1);
+                  for (let i = start; i <= end; i++) pages.push(i);
+                  if (current < total - 4) pages.push("ellipsis-end");
+                  pages.push(total - 1);
+                }
+
+                return pages.map((p, idx) =>
+                  typeof p === "string" ? (
+                    <span key={p} className="px-1 text-muted-foreground">···</span>
+                  ) : (
+                    <Button
+                      key={p}
+                      variant={p === current ? "default" : "outline"}
+                      size="sm"
+                      className="min-w-[36px]"
+                      onClick={() => setPage(p)}
+                    >
+                      {p + 1}
+                    </Button>
+                  )
+                );
+              })()}
+
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= totalPages - 1}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                <span className="hidden sm:inline">下一页</span>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= totalPages - 1}
+                onClick={() => setPage(totalPages - 1)}
+                className="hidden sm:inline-flex"
+              >
+                末页
+              </Button>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              第 {page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, totalCount)} 篇，共 {totalCount} 篇
             </span>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page >= totalPages - 1}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
           </div>
         )}
       </main>
