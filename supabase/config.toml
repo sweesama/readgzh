@@ -19,3 +19,5 @@ project_id = "jhnnmmwgdrquwjytvvwu"
     verify_jwt = false
   [functions.articles-api]
     verify_jwt = false
+  [functions.admin-stats]
+    verify_jwt = false
