@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, lazy, Suspense } from "react";
+import AdminPanel from "@/components/admin/AdminPanel";
 import { Link } from "react-router-dom";
 import HeroSection from "@/components/home/HeroSection";
 import FeaturesSection from "@/components/home/FeaturesSection";
@@ -165,6 +166,8 @@ const MatrixRain = () => {
 /** Matrix-style AI perspective of the homepage */
 const MatrixView = ({ onExit }: { onExit: () => void }) => {
   const [lines, setLines] = useState<string[]>([]);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [clickCount, setClickCount] = useState(0);
 
   const contentLines = [
     "> INITIALIZING ReadGZH AI READER...",
@@ -240,8 +243,25 @@ const MatrixView = ({ onExit }: { onExit: () => void }) => {
             <div className="w-3 h-3 rounded-full bg-red-500/80" />
             <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
             <div className="w-3 h-3 rounded-full bg-green-500/80" />
-            <span className="ml-3 text-green-600 text-xs">readgzh@api ~ $</span>
+            <span
+              className="ml-3 text-green-600 text-xs cursor-pointer select-none"
+              onClick={() => {
+                const next = clickCount + 1;
+                setClickCount(next);
+                if (next >= 5) {
+                  setShowAdmin(true);
+                  setClickCount(0);
+                }
+              }}
+            >
+              readgzh@api ~ $
+            </span>
           </div>
+          {showAdmin ? (
+            <Suspense fallback={<span className="text-green-400 animate-pulse">Loading...</span>}>
+              <AdminPanel onBack={() => setShowAdmin(false)} />
+            </Suspense>
+          ) : (
           <div className="space-y-0.5 text-sm leading-relaxed">
             {lines.map((line, i) => (
               <div key={i} className={`${line?.startsWith(">") ? "text-green-300" : line?.startsWith("  ✓") ? "text-emerald-400" : "text-green-500/80"}`}>
@@ -252,6 +272,7 @@ const MatrixView = ({ onExit }: { onExit: () => void }) => {
               <span className="inline-block w-2 h-4 bg-green-400 animate-pulse" />
             )}
           </div>
+          )}
         </div>
       </div>
     </div>
