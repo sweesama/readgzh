@@ -127,16 +127,16 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
   if (!stats) return null;
 
   const statCards = [
-    { icon: Users, label: "注册用户", value: stats.total_users, color: "text-cyan-400" },
-    { icon: Crown, label: "Pro 用户", value: stats.pro_users, color: "text-amber-400" },
-    { icon: FileText, label: "文章总数", value: stats.total_articles, color: "text-emerald-400" },
-    { icon: Key, label: "活跃 Key", value: stats.active_api_keys, color: "text-purple-400" },
-    { icon: Activity, label: "今日总请求", value: stats.today_all_requests, color: "text-green-300", sub: `API: ${stats.today_api_requests} | 匿名: ${stats.today_anon_requests}` },
-    { icon: Zap, label: "今日缓存命中", value: stats.today_cached, color: "text-yellow-400" },
-    { icon: PlusCircle, label: "今日新增文章", value: stats.today_new_articles, color: "text-orange-400" },
-    { icon: TrendingUp, label: "今日活跃用户", value: stats.today_active_users, color: "text-pink-400" },
-    { icon: Eye, label: "累计文章浏览", value: stats.total_views, color: "text-teal-400" },
-    { icon: Globe, label: "累计总请求", value: stats.total_all_requests, color: "text-blue-400", sub: `API: ${stats.total_api_requests} | 匿名: ${stats.total_anon_requests}` },
+    { icon: Users, label: "注册用户", value: stats.total_users ?? 0, color: "text-cyan-400" },
+    { icon: Crown, label: "Pro 用户", value: stats.pro_users ?? 0, color: "text-amber-400" },
+    { icon: FileText, label: "文章总数", value: stats.total_articles ?? 0, color: "text-emerald-400" },
+    { icon: Key, label: "活跃 Key", value: stats.active_api_keys ?? 0, color: "text-purple-400" },
+    { icon: Activity, label: "今日总请求", value: stats.today_all_requests ?? 0, color: "text-green-300", sub: `API: ${stats.today_api_requests ?? 0} | 匿名: ${stats.today_anon_requests ?? 0}` },
+    { icon: Zap, label: "今日缓存命中", value: stats.today_cached ?? 0, color: "text-yellow-400" },
+    { icon: PlusCircle, label: "今日新增文章", value: stats.today_new_articles ?? 0, color: "text-orange-400" },
+    { icon: TrendingUp, label: "今日活跃用户", value: stats.today_active_users ?? 0, color: "text-pink-400" },
+    { icon: Eye, label: "累计文章浏览", value: stats.total_views ?? 0, color: "text-teal-400" },
+    { icon: Globe, label: "累计总请求", value: stats.total_all_requests ?? 0, color: "text-blue-400", sub: `API: ${stats.total_api_requests ?? 0} | 匿名: ${stats.total_anon_requests ?? 0}` },
   ];
 
   return (
