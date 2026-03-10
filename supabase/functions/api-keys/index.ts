@@ -37,14 +37,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    const supabase = createClient(
+    // Use service role client to validate token (avoids stale session issues)
+    const svc = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const { data: { user }, error: authError } = await svc.auth.getUser(token);
     if (authError || !user) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),

@@ -110,6 +110,8 @@ const DashboardPage = () => {
   };
 
   const fetchKeys = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setKeysLoading(false); return; }
     const { data } = await supabase.functions.invoke("api-keys", {
       body: { action: "list" },
     });
@@ -118,6 +120,8 @@ const DashboardPage = () => {
   }, []);
 
   const fetchUsage = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
     const { data } = await supabase.functions.invoke("api-keys", {
       body: { action: "usage" },
     });
@@ -125,6 +129,8 @@ const DashboardPage = () => {
   }, []);
 
   const fetchBalance = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
     const { data } = await supabase.functions.invoke("api-keys", {
       body: { action: "balance" },
     });
