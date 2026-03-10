@@ -63,6 +63,10 @@ Deno.serve(async (req) => {
       totalUsageRes,
       todayCreditsRes,
       recentUsersRes,
+      todayAnonRes,
+      totalAnonRes,
+      todayArticlesRes,
+      totalViewsRes,
     ] = await Promise.all([
       svc.from("profiles").select("*", { count: "exact", head: true }),
       svc.from("articles").select("*", { count: "exact", head: true }),
@@ -72,12 +76,23 @@ Deno.serve(async (req) => {
       svc.from("api_usage").select("request_count, cached_count"),
       svc.from("daily_credits").select("*", { count: "exact", head: true }).eq("claim_date", today),
       svc.from("profiles").select("id, email, display_name, created_at").order("created_at", { ascending: false }).limit(20),
+      // Anonymous requests today (from rate_limits)
+      svc.from("rate_limits").select("request_count").eq("request_date", today),
+      // Total anonymous requests (all time)
+      svc.from("rate_limits").select("request_count"),
+      // Today's new articles
+      svc.from("articles").select("*", { count: "exact", head: true }).gte("created_at", today + "T00:00:00Z"),
+      // Total article views
+      svc.from("articles").select("view_count"),
     ]);
 
-    const todayRequests = (todayUsageRes.data || []).reduce((s: number, r: any) => s + r.request_count, 0);
+    const todayApiRequests = (todayUsageRes.data || []).reduce((s: number, r: any) => s + r.request_count, 0);
     const todayCached = (todayUsageRes.data || []).reduce((s: number, r: any) => s + r.cached_count, 0);
-    const totalRequests = (totalUsageRes.data || []).reduce((s: number, r: any) => s + r.request_count, 0);
+    const totalApiRequests = (totalUsageRes.data || []).reduce((s: number, r: any) => s + r.request_count, 0);
     const totalCached = (totalUsageRes.data || []).reduce((s: number, r: any) => s + r.cached_count, 0);
+    const todayAnonRequests = (todayAnonRes.data || []).reduce((s: number, r: any) => s + r.request_count, 0);
+    const totalAnonRequests = (totalAnonRes.data || []).reduce((s: number, r: any) => s + r.request_count, 0);
+    const totalViews = (totalViewsRes.data || []).reduce((s: number, r: any) => s + r.view_count, 0);
 
     return new Response(
       JSON.stringify({
@@ -87,11 +102,17 @@ Deno.serve(async (req) => {
           total_articles: articlesRes.count || 0,
           active_api_keys: apiKeysRes.count || 0,
           pro_users: proKeysRes.count || 0,
-          today_requests: todayRequests,
+          today_api_requests: todayApiRequests,
+          today_anon_requests: todayAnonRequests,
+          today_all_requests: todayApiRequests + todayAnonRequests,
           today_cached: todayCached,
           today_active_users: todayCreditsRes.count || 0,
-          total_requests: totalRequests,
+          today_new_articles: todayArticlesRes.count || 0,
+          total_api_requests: totalApiRequests,
+          total_anon_requests: totalAnonRequests,
+          total_all_requests: totalApiRequests + totalAnonRequests,
           total_cached: totalCached,
+          total_views: totalViews,
         },
         recent_users: recentUsersRes.data || [],
       }),

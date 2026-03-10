@@ -1,18 +1,24 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
-import { Shield, Users, FileText, Key, Activity, TrendingUp, Crown, Zap, LogIn } from "lucide-react";
+import { Shield, Users, FileText, Key, Activity, TrendingUp, Crown, Zap, LogIn, Globe, Eye, PlusCircle } from "lucide-react";
 
 interface AdminStats {
   total_users: number;
   total_articles: number;
   active_api_keys: number;
   pro_users: number;
-  today_requests: number;
+  today_api_requests: number;
+  today_anon_requests: number;
+  today_all_requests: number;
   today_cached: number;
   today_active_users: number;
-  total_requests: number;
+  today_new_articles: number;
+  total_api_requests: number;
+  total_anon_requests: number;
+  total_all_requests: number;
   total_cached: number;
+  total_views: number;
 }
 
 interface RecentUser {
