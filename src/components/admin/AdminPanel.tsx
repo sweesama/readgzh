@@ -160,7 +160,7 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
               <span className="text-green-600 text-xs">{card.label}</span>
             </div>
             <div className={`text-xl font-bold ${card.color}`}>
-              {card.value.toLocaleString()}
+              {(card.value ?? 0).toLocaleString()}
             </div>
             {(card as any).sub && (
               <div className="text-green-700 text-[10px] mt-0.5">{(card as any).sub}</div>
