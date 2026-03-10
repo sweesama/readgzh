@@ -543,7 +543,7 @@ const DashboardPage = () => {
                 <Pencil className="h-3 w-3" />
               </button>
             )}
-            <Button variant="outline" size="sm" onClick={signOut}>
+            <Button variant="outline" size="sm" onClick={() => void signOut()}>
               <LogOut className="mr-2 h-4 w-4" />退出
             </Button>
           </div>
