@@ -273,7 +273,6 @@ const MatrixView = ({ onExit }: { onExit: () => void }) => {
           </div>
           )}
         </div>
-        </div>
       </div>
     </div>
   );
