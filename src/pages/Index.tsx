@@ -271,6 +271,8 @@ const MatrixView = ({ onExit }: { onExit: () => void }) => {
               <span className="inline-block w-2 h-4 bg-green-400 animate-pulse" />
             )}
           </div>
+          )}
+        </div>
         </div>
       </div>
     </div>
