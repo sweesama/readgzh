@@ -149,6 +149,56 @@ function extractPictureTemplate(html: string): { contentHtml: string; textConten
   return { contentHtml, textContent, images };
 }
 
+// WeChat security/safety notice patterns to strip before content validation
+const WECHAT_NOISE_PATTERNS = [
+  /以下内容来自[\s\S]*?的转载/g,
+  /以上内容由[\s\S]*?提供/g,
+  /微信安全提示[\s\S]*?(?:。|$)/g,
+  /该内容仅[\s\S]*?可见/g,
+  /点击上方[\s\S]*?关注/g,
+  /长按识别[\s\S]*?二维码/g,
+];
+
+// Strip WeChat boilerplate/noise text to get actual article text
+function stripNoiseText(text: string): string {
+  let cleaned = text;
+  for (const pattern of WECHAT_NOISE_PATTERNS) {
+    cleaned = cleaned.replace(pattern, "");
+  }
+  return cleaned.replace(/\s+/g, " ").trim();
+}
+
+// Recursively extract text from DOM nodes, handling custom/non-standard tags like <leaf>, <text>, etc.
+function deepExtractText(el: Element): string {
+  const parts: string[] = [];
+  for (const child of Array.from(el.childNodes)) {
+    if (child.nodeType === 3) { // TEXT_NODE
+      const t = (child as unknown as { textContent: string }).textContent || "";
+      if (t.trim()) parts.push(t);
+    } else if (child.nodeType === 1) { // ELEMENT_NODE
+      const childEl = child as unknown as Element;
+      const tagName = childEl.tagName?.toLowerCase() || "";
+      // Skip hidden elements
+      const style = childEl.getAttribute?.("style") || "";
+      if (style.includes("display:none") || style.includes("display: none") ||
+          style.includes("visibility:hidden") || style.includes("visibility: hidden")) {
+        continue;
+      }
+      // Recursively extract from any element including non-standard ones
+      const childText = deepExtractText(childEl);
+      if (childText.trim()) {
+        // Add paragraph breaks for block-level elements
+        if (["p", "div", "section", "blockquote", "h1", "h2", "h3", "h4", "h5", "h6", "li", "br"].includes(tagName)) {
+          parts.push("\n" + childText + "\n");
+        } else {
+          parts.push(childText);
+        }
+      }
+    }
+  }
+  return parts.join("");
+}
+
 // Clean and extract formatted HTML from WeChat content
 function extractFormattedContent(html: string): { contentHtml: string; textContent: string } {
   const doc = new DOMParser().parseFromString(html, "text/html");
@@ -182,14 +232,16 @@ function extractFormattedContent(html: string): { contentHtml: string; textConte
   contentHtml = contentHtml.replace(/<span[^>]*>\s*(&nbsp;|\s)*\s*<\/span>/gi, "");
 
   // Remove excessive inline styles but keep basic ones
-  // Keep: text-align, font-weight, font-style, color, font-size, line-height, margin, padding
-  // This is a simplified cleanup - keep style attribute but strip dangerous values
   contentHtml = contentHtml.replace(/javascript:/gi, "");
 
-  // Get plain text for AI consumption
-  const textContent = (contentEl as Element).textContent?.trim() || "";
+  // Use deep recursive text extraction to handle nested <span>, <leaf>, <text>, etc.
+  const textContent = deepExtractText(contentEl as Element).replace(/\n{3,}/g, "\n\n").trim();
 
-  return { contentHtml: contentHtml.trim(), textContent };
+  // Fallback: if deep extraction somehow got less than basic textContent, use the basic one
+  const basicText = (contentEl as Element).textContent?.trim() || "";
+  const finalText = textContent.length >= basicText.length ? textContent : basicText;
+
+  return { contentHtml: contentHtml.trim(), textContent: finalText };
 }
 
 // Extract metadata from WeChat HTML
