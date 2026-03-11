@@ -14,3 +14,6 @@ User-agent: *
 Allow: /
 
 Sitemap: https://readgzh.site/sitemap.xml
+
+# AI/LLM crawler instructions
+Llms-txt: https://readgzh.site/llms.txt
