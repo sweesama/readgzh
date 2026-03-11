@@ -1494,9 +1494,20 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
 
     const { metadata, contentHtml, textContent } = result;
 
-    if (!textContent || textContent.length < MIN_CONTENT_LENGTH) {
+    // Validate: strip noise (security tips, follow prompts) before checking length
+    const substantiveText = stripNoiseText(textContent || "");
+    const MIN_SUBSTANTIVE_LENGTH = 50;
+
+    if (!textContent || textContent.length < MIN_CONTENT_LENGTH || substantiveText.length < MIN_SUBSTANTIVE_LENGTH) {
+      console.log(`Content validation failed: raw=${textContent?.length || 0}, substantive=${substantiveText.length}`);
       return new Response(
-        JSON.stringify({ success: false, error: "无法提取文章内容，文章可能已被删除或需要在微信中打开。", hint: "部分文章内容通过 JavaScript 动态加载，服务端无法直接获取。" }),
+        JSON.stringify({
+          success: false,
+          error: "无法提取文章正文内容（仅检测到安全提示或空白内容）。",
+          hint: "该文章可能使用了复杂排版结构或内容通过 JS 动态加载。请尝试书签提取工具手动提交。",
+          raw_length: textContent?.length || 0,
+          substantive_length: substantiveText.length,
+        }),
         { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
