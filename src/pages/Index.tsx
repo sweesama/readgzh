@@ -91,6 +91,7 @@ const Index = () => {
       <main>
         <HeroSection />
         <AIGuideSection />
+        <HowItWorksSection />
         <StatsWidget />
         <FeaturesSection />
         <AdvantagesSection />
