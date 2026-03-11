@@ -149,6 +149,56 @@ function extractPictureTemplate(html: string): { contentHtml: string; textConten
   return { contentHtml, textContent, images };
 }
 
+// WeChat security/safety notice patterns to strip before content validation
+const WECHAT_NOISE_PATTERNS = [
+  /以下内容来自[\s\S]*?的转载/g,
+  /以上内容由[\s\S]*?提供/g,
+  /微信安全提示[\s\S]*?(?:。|$)/g,
+  /该内容仅[\s\S]*?可见/g,
+  /点击上方[\s\S]*?关注/g,
+  /长按识别[\s\S]*?二维码/g,
+];
+
+// Strip WeChat boilerplate/noise text to get actual article text
+function stripNoiseText(text: string): string {
+  let cleaned = text;
+  for (const pattern of WECHAT_NOISE_PATTERNS) {
+    cleaned = cleaned.replace(pattern, "");
+  }
+  return cleaned.replace(/\s+/g, " ").trim();
+}
+
+// Recursively extract text from DOM nodes, handling custom/non-standard tags like <leaf>, <text>, etc.
+function deepExtractText(el: Element): string {
+  const parts: string[] = [];
+  for (const child of Array.from(el.childNodes)) {
+    if (child.nodeType === 3) { // TEXT_NODE
+      const t = (child as unknown as { textContent: string }).textContent || "";
+      if (t.trim()) parts.push(t);
+    } else if (child.nodeType === 1) { // ELEMENT_NODE
+      const childEl = child as unknown as Element;
+      const tagName = childEl.tagName?.toLowerCase() || "";
+      // Skip hidden elements
+      const style = childEl.getAttribute?.("style") || "";
+      if (style.includes("display:none") || style.includes("display: none") ||
+          style.includes("visibility:hidden") || style.includes("visibility: hidden")) {
+        continue;
+      }
+      // Recursively extract from any element including non-standard ones
+      const childText = deepExtractText(childEl);
+      if (childText.trim()) {
+        // Add paragraph breaks for block-level elements
+        if (["p", "div", "section", "blockquote", "h1", "h2", "h3", "h4", "h5", "h6", "li", "br"].includes(tagName)) {
+          parts.push("\n" + childText + "\n");
+        } else {
+          parts.push(childText);
+        }
+      }
+    }
+  }
+  return parts.join("");
+}
+
 // Clean and extract formatted HTML from WeChat content
 function extractFormattedContent(html: string): { contentHtml: string; textContent: string } {
   const doc = new DOMParser().parseFromString(html, "text/html");
@@ -182,14 +232,16 @@ function extractFormattedContent(html: string): { contentHtml: string; textConte
   contentHtml = contentHtml.replace(/<span[^>]*>\s*(&nbsp;|\s)*\s*<\/span>/gi, "");
 
   // Remove excessive inline styles but keep basic ones
-  // Keep: text-align, font-weight, font-style, color, font-size, line-height, margin, padding
-  // This is a simplified cleanup - keep style attribute but strip dangerous values
   contentHtml = contentHtml.replace(/javascript:/gi, "");
 
-  // Get plain text for AI consumption
-  const textContent = (contentEl as Element).textContent?.trim() || "";
+  // Use deep recursive text extraction to handle nested <span>, <leaf>, <text>, etc.
+  const textContent = deepExtractText(contentEl as Element).replace(/\n{3,}/g, "\n\n").trim();
 
-  return { contentHtml: contentHtml.trim(), textContent };
+  // Fallback: if deep extraction somehow got less than basic textContent, use the basic one
+  const basicText = (contentEl as Element).textContent?.trim() || "";
+  const finalText = textContent.length >= basicText.length ? textContent : basicText;
+
+  return { contentHtml: contentHtml.trim(), textContent: finalText };
 }
 
 // Extract metadata from WeChat HTML
@@ -1442,9 +1494,20 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
 
     const { metadata, contentHtml, textContent } = result;
 
-    if (!textContent || textContent.length < MIN_CONTENT_LENGTH) {
+    // Validate: strip noise (security tips, follow prompts) before checking length
+    const substantiveText = stripNoiseText(textContent || "");
+    const MIN_SUBSTANTIVE_LENGTH = 50;
+
+    if (!textContent || textContent.length < MIN_CONTENT_LENGTH || substantiveText.length < MIN_SUBSTANTIVE_LENGTH) {
+      console.log(`Content validation failed: raw=${textContent?.length || 0}, substantive=${substantiveText.length}`);
       return new Response(
-        JSON.stringify({ success: false, error: "无法提取文章内容，文章可能已被删除或需要在微信中打开。", hint: "部分文章内容通过 JavaScript 动态加载，服务端无法直接获取。" }),
+        JSON.stringify({
+          success: false,
+          error: "无法提取文章正文内容（仅检测到安全提示或空白内容）。",
+          hint: "该文章可能使用了复杂排版结构或内容通过 JS 动态加载。请尝试书签提取工具手动提交。",
+          raw_length: textContent?.length || 0,
+          substantive_length: substantiveText.length,
+        }),
         { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
