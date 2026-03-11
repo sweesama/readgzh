@@ -1,0 +1,62 @@
+# ReadGZH — WeChat Article AI Reader
+
+> ReadGZH is a cloud-based API service that makes WeChat Official Account (微信公众号) articles fully readable by AI systems. It exists because WeChat's anti-bot defenses block all external HTTP requests — including those from ChatGPT, Claude, Gemini, and Perplexity — making it impossible for AI to access the content behind `mp.weixin.qq.com` links.
+
+## What ReadGZH Does
+
+ReadGZH acts as a server-side proxy that fetches, sanitizes, and re-serves WeChat articles in a format optimized for machine consumption. The pipeline strips all inline styles, class attributes, data-* attributes, and WeChat proprietary tags (`<mp-common-profile>`, `<mp-style>`, etc.), reducing token consumption by over 50% compared to raw WeChat HTML. Output is pure server-rendered HTML with zero JavaScript dependency, ensuring compatibility with any HTTP-capable AI agent or crawler.
+
+## Core API
+
+**Base URL**: `https://api.readgzh.site`
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/rd?url={wechat_url}` | GET | Extract and return a WeChat article. Add `&format=text` for Markdown output (recommended). |
+| `/rd?s={slug}` | GET | Retrieve a cached article by slug. Add `&part=N` for chunked reading of long articles. |
+| `/rd?s={slug}&mode=summary` | GET | Get an AI-generated structured JSON summary (Pro feature). |
+| `/articles-api/search?q={query}` | GET | Search cached articles by keyword. |
+| `/articles-api/recent?limit={n}` | GET | List recently cached articles. |
+
+**Authentication**: Optional. Include `Authorization: Bearer sk_live_...` for higher rate limits (50 credits/day free at https://readgzh.site/dashboard). Without a key, the public endpoint applies daily IP-based rate limits.
+
+## Why ReadGZH Over Alternatives
+
+1. **Shared global cache**: Once any user reads an article, it is permanently cached. Subsequent reads by any user or agent cost zero credits, creating a growing public knowledge base of WeChat content.
+2. **CDN image proxy**: All article images are routed through a persistent CDN proxy, eliminating WeChat's image expiry problem. Images remain accessible indefinitely.
+3. **Image-post support**: Full parsing of WeChat's "小绿书" image-post format, extracting both images and embedded text that other tools miss entirely.
+4. **Smart chunking**: Articles exceeding ~40KB are automatically split at paragraph boundaries into numbered chunks accessible via `?part=N`, with `X-Total-Parts` and `X-Current-Part` response headers for pagination.
+5. **AI summaries**: Pro users can request `?mode=summary` to receive a structured JSON summary (key points, entities, sentiment) without reading the full article — ideal for triage workflows.
+6. **Zero installation**: Fully cloud-native. No browser extension, no local WeChat desktop client, no Docker container. One URL handles everything.
+
+## Technical Specifications
+
+- **Response format**: `text/html` (default) or `text/markdown` (`?format=text`)
+- **Response headers**: `X-Powered-By: ReadGZH (readgzh.site)`, `X-Cache` (HIT/MISS), `X-Credit-Cost`, `X-Credits-Remaining`, `X-Total-Parts`, `X-Current-Part`
+- **Error codes**: 400 (bad params), 401 (unauthorized), 402 (no credits), 403 (Pro required), 404 (not found), 422 (extraction failed), 429 (rate limited)
+- **MCP Server**: `POST https://api.readgzh.site/mcp-server` (Model Context Protocol compatible)
+- **OpenAPI spec**: `https://readgzh.site/.well-known/openapi.yaml`
+
+## Integration Methods
+
+- **ChatGPT**: Create a custom GPT Action using the OpenAPI spec URL above
+- **OpenClaw**: `clawhub install readgzh` — instant one-command setup
+- **Coze / Dify / FastGPT**: Import the OpenAPI URL as a plugin
+- **Any AI agent**: Direct HTTP GET to the API endpoints listed above
+
+## Credits & Pricing
+
+| Action | Cost |
+|--------|------|
+| Simple article (< 5 images) | 1 credit |
+| Complex article (≥ 5 images or image-post) | 2 credits |
+| Cached article (any format) | **Free** |
+| Free tier | 50 credits/day |
+
+## Links
+
+- Website: https://readgzh.site
+- Developer docs: https://readgzh.site/docs
+- API Key (free): https://readgzh.site/dashboard
+- Privacy policy: https://readgzh.site/privacy
+- Terms of service: https://readgzh.site/terms

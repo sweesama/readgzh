@@ -38,14 +38,30 @@
       "@type": "WebApplication",
       "name": "ReadGZH",
       "url": "https://readgzh.site",
-      "description": "微信公众号文章 AI 阅读工具。粘贴微信文章链接，一键生成 AI 可访问的页面。",
+      "description": "ReadGZH 是一款微信公众号文章 AI 阅读工具。通过服务端代理自动抓取并优化文章内容，生成 AI 可直接访问的公开链接，Token 消耗减少 50% 以上。支持 ChatGPT、Claude、Perplexity、Gemini 等所有 AI 平台。",
       "applicationCategory": "UtilityApplication",
       "operatingSystem": "Web",
+      "inLanguage": ["zh-CN", "en"],
       "offers": {
         "@type": "Offer",
         "price": "0",
-        "priceCurrency": "CNY"
-      }
+        "priceCurrency": "CNY",
+        "description": "免费套餐：每日 50 积分，缓存文章免费读取"
+      },
+      "potentialAction": {
+        "@type": "UseAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://api.readgzh.site/rd?url={wechat_url}",
+          "actionPlatform": ["http://schema.org/DesktopWebPlatform"],
+          "description": "粘贴微信公众号文章链接，获取 AI 可读的纯净内容"
+        }
+      },
+      "sameAs": [
+        "https://github.com/nicekate",
+        "https://clawhub.io/skills/readgzh"
+      ],
+      "keywords": "微信公众号,AI阅读,WeChat,ChatGPT,Claude,Perplexity,API,MCP"
     }
     </script>
     <meta property="og:title" content="ReadGZH - 微信文章 AI 阅读器 | 让 AI 读懂微信公众号">
