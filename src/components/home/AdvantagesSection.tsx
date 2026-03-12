@@ -13,7 +13,7 @@ const advantages = [
 ];
 
 const AdvantagesSection = () => (
-  <div className="container mx-auto px-4 py-16">
+  <div id="feature-advantages" className="container mx-auto px-4 py-16">
     <div className="max-w-5xl mx-auto">
       <div className="flex items-center gap-2 justify-center mb-2">
         <Sparkles className="h-5 w-5 text-primary" />

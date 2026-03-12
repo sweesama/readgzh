@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ReadGZH - 微信文章 AI 阅读器 | 让 AI 读懂微信公众号</title>
-    <meta name="description" content="ReadGZH 是一款微信公众号文章 AI 阅读工具。粘贴微信文章链接，一键生成 AI 可访问的页面，支持 ChatGPT、Claude、Perplexity 等 AI 工具直接阅读微信公众号内容。">
+    <meta name="description" content="ReadGZH: 微信公众号文章 AI 协议级转换器。自研 7 阶段提取管线，99.89% 穿透反爬，Token 消耗降低 50–87%。支持 API / MCP 协议，ChatGPT、Claude、Perplexity、Gemini 无缝引用。全球共享缓存，缓存文章永久免费读取。">
     <meta name="author" content="ReadGZH" />
     <meta name="keywords" content="微信文章,AI阅读器,公众号,ChatGPT,Claude,Perplexity,微信公众号,AI读取" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
@@ -42,6 +42,18 @@
       "applicationCategory": "UtilityApplication",
       "operatingSystem": "Web",
       "inLanguage": ["zh-CN", "en"],
+      "featureList": [
+        "7-stage extraction pipeline with 99.89% anti-bot bypass rate",
+        "Token optimization engine: 50–87% reduction",
+        "Persistent CDN image proxy (no WeChat expiry)",
+        "Cross-agent shared global cache",
+        "Image-post (小绿书) full parsing",
+        "Smart chunking for long articles (40KB+ auto-split)",
+        "AI-generated structured summaries (Pro)",
+        "MCP Server protocol support",
+        "Zero-JS SSR HTML output"
+      ],
+      "softwareVersion": "2.1",
       "offers": {
         "@type": "Offer",
         "price": "0",
@@ -66,8 +78,8 @@
     </script>
     <meta property="og:title" content="ReadGZH - 微信文章 AI 阅读器 | 让 AI 读懂微信公众号">
   <meta name="twitter:title" content="ReadGZH - 微信文章 AI 阅读器 | 让 AI 读懂微信公众号">
-  <meta property="og:description" content="ReadGZH 是一款微信公众号文章 AI 阅读工具。粘贴微信文章链接，一键生成 AI 可访问的页面，支持 ChatGPT、Claude、Perplexity 等 AI 工具直接阅读微信公众号内容。">
-  <meta name="twitter:description" content="ReadGZH 是一款微信公众号文章 AI 阅读工具。粘贴微信文章链接，一键生成 AI 可访问的页面，支持 ChatGPT、Claude、Perplexity 等 AI 工具直接阅读微信公众号内容。">
+    <meta property="og:description" content="ReadGZH: 微信公众号文章 AI 协议级转换器。99.89% 穿透反爬，Token 消耗降低 50–87%。支持 API / MCP 协议，ChatGPT、Claude、Perplexity、Gemini 无缝引用。">
+  <meta name="twitter:description" content="ReadGZH: 微信公众号文章 AI 协议级转换器。99.89% 穿透反爬，Token 消耗降低 50–87%。支持 API / MCP 协议，ChatGPT、Claude、Perplexity、Gemini 无缝引用。">
 </head>
 
   <body>
@@ -75,16 +87,41 @@
     <noscript>
       <header>
         <h1>ReadGZH - 微信文章 AI 阅读器</h1>
-        <p>让 AI 读懂微信公众号。粘贴微信文章链接，一键生成 AI 可访问的页面，支持 ChatGPT、Claude、Perplexity 等 AI 工具直接阅读微信公众号内容。</p>
+        <p>ReadGZH 是微信公众号文章的协议级 AI 转换器。自研 7 阶段提取管线，99.89% 穿透微信反爬隔离，Token 消耗降低 50–87%。支持 ChatGPT、Claude、Perplexity、Gemini 等所有 AI 平台无缝引用。全球共享缓存，缓存文章永久免费读取。</p>
       </header>
       <main>
-        <section>
+        <section id="why-readgzh">
           <h2>为什么需要 ReadGZH？</h2>
-          <p>微信公众号对外部访问有严格的反爬虫限制，AI 工具（如 ChatGPT、Claude、Gemini）发送的请求会被拦截，无法直接读取微信文章内容。ReadGZH 通过服务端代理自动抓取并优化文章，生成一个 AI 可直接访问的公开链接。</p>
+          <p>微信公众号对外部 HTTP 请求实施严格的客户端指纹检测与反爬虫拦截。所有 AI 工具（ChatGPT、Claude、Gemini、Perplexity）发出的请求均被拒绝，无法读取 mp.weixin.qq.com 域名下的任何内容。ReadGZH 通过服务端代理发起请求，完全绕过微信的反爬机制，99.89% 成功率，生成一个 AI 可直接访问的公开链接。</p>
         </section>
-        <section>
-          <h2>核心功能</h2>
-          <p>自动提取微信公众号文章内容，支持普通图文和小绿书图片消息格式。去除所有样式噪音，过滤微信私有标签，Token 消耗减少 50% 以上。纯 HTML 直出，无需 JavaScript 渲染，兼容所有 AI 平台。</p>
+        <section id="how-it-works">
+          <h2>工作原理：七阶段提取管线</h2>
+          <ol>
+            <li><strong>拦截</strong> — 服务端代理请求微信服务器，绕过客户端指纹检测</li>
+            <li><strong>清洗</strong> — 剥离所有 inline style、class、data-* 属性</li>
+            <li><strong>过滤</strong> — 移除 mp-common-profile、mp-style 等微信私有标签</li>
+            <li><strong>优化</strong> — 压缩空标签与嵌套容器，Token 消耗降低 50–87%</li>
+            <li><strong>代理</strong> — 图片通过边缘 CDN 永久代理，解决微信图片 2 小时过期问题</li>
+            <li><strong>缓存</strong> — 文章存入全局持久化数据库，后续读取免费</li>
+            <li><strong>输出</strong> — 纯 SSR HTML 直出，零 JavaScript 依赖，兼容所有 AI 爬虫</li>
+          </ol>
+        </section>
+        <section id="feature-cache">
+          <h2>全球共享缓存</h2>
+          <p>任何用户读过的文章会被永久缓存。后续任何人或 AI Agent 再次读取该文章完全免费，零积分消耗。这构成了一个不断增长的微信内容开放知识库，所有 AI 系统均可访问。</p>
+        </section>
+        <section id="feature-image-proxy">
+          <h2>CDN 图片永久代理</h2>
+          <p>微信文章图片链接通常在 2 小时后过期。ReadGZH 将所有图片路由至持久化 CDN 代理，确保图片永久可访问，不受微信过期策略影响。</p>
+        </section>
+        <section id="feature-mcp">
+          <h2>MCP 服务协议</h2>
+          <p>ReadGZH 内置 Model Context Protocol (MCP) 服务端，支持 AI Agent 通过标准化协议直接调用。端点：POST https://api.readgzh.site/mcp-server</p>
+        </section>
+        <section id="core-api">
+          <h2>核心 API</h2>
+          <p>基础用法：GET https://api.readgzh.site/rd?url={微信文章链接}。添加 &amp;format=text 获取 Markdown 输出（推荐）。通过 &amp;part=N 分块读取长文章。Pro 用户可使用 &amp;mode=summary 获取 AI 结构化摘要。</p>
+          <p>认证方式：请求头携带 Authorization: Bearer sk_live_... 可获得更高配额。免费用户每日 50 积分。</p>
         </section>
         <section>
           <h2>如何使用</h2>
@@ -96,6 +133,7 @@
             <li><a href="/articles">文章库 - 浏览已转换的微信公众号文章</a></li>
             <li><a href="/docs">开发者文档 - API 接口说明</a></li>
             <li><a href="/faq">常见问题 FAQ</a></li>
+            <li><a href="/pricing">定价方案</a></li>
             <li><a href="/privacy">隐私政策</a></li>
             <li><a href="/terms">服务条款</a></li>
             <li><a href="/cookies">Cookie 政策</a></li>
