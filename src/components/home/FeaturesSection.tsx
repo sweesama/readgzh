@@ -8,7 +8,7 @@ const features = [
 ];
 
 const FeaturesSection = () => (
-  <div className="container mx-auto px-4 py-16 bg-muted/30">
+  <div id="why-readgzh" className="container mx-auto px-4 py-16 bg-muted/30">
     <div className="max-w-5xl mx-auto">
       <h2 className="text-2xl font-bold text-center mb-8">为什么需要这个工具？</h2>
       <div className="grid md:grid-cols-3 gap-6">
