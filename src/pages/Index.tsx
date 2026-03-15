@@ -90,9 +90,9 @@ const Index = () => {
 
       <main>
         <HeroSection />
+        <StatsWidget />
         <AIGuideSection />
         <HowItWorksSection />
-        <StatsWidget />
         <FeaturesSection />
         <AdvantagesSection />
       </main>
