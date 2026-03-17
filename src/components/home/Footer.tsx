@@ -24,6 +24,7 @@ const Footer = () => {
             <h3 className="font-semibold text-foreground mb-3 text-sm">资源</h3>
             <ul className="space-y-2 text-sm">
               <li><Link to="/articles" className="text-muted-foreground hover:text-primary transition-colors">文章库</Link></li>
+              <li><Link to="/comments" className="text-muted-foreground hover:text-primary transition-colors">留言板</Link></li>
               <li><Link to="/docs" className="text-muted-foreground hover:text-primary transition-colors">开发者文档</Link></li>
               <li><Link to="/pricing" className="text-muted-foreground hover:text-primary transition-colors">定价方案</Link></li>
               <li><Link to="/dashboard" className="text-muted-foreground hover:text-primary transition-colors">开发者控制台</Link></li>

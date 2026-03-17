@@ -8,8 +8,7 @@ import AdvantagesSection from "@/components/home/AdvantagesSection";
 import AIGuideSection from "@/components/home/AIGuideSection";
 import StatsWidget from "@/components/home/StatsSection";
 import Footer from "@/components/home/Footer";
-import CommentSection from "@/components/home/CommentSection";
-import { Bot, Eye, BookOpen, Code, Zap, Key, Crown } from "lucide-react";
+import { Bot, Eye, BookOpen, Code, Zap, Key, Crown, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -58,6 +57,12 @@ const Index = () => {
         </Button>
 
         <div className="flex items-center gap-2">
+          <Link to="/comments">
+            <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs">
+              <MessageSquare className="h-3.5 w-3.5" />
+              留言板
+            </Button>
+          </Link>
           <Link to="/articles">
             <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs">
               <BookOpen className="h-3.5 w-3.5" />
@@ -96,7 +101,6 @@ const Index = () => {
         <HowItWorksSection />
         <FeaturesSection />
         <AdvantagesSection />
-        <CommentSection />
       </main>
       <Footer />
     </div>
