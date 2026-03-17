@@ -139,6 +139,76 @@ export type Database = {
         }
         Relationships: []
       }
+      comment_votes: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          vote_type: string
+          voter_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          vote_type: string
+          voter_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          vote_type?: string
+          voter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_votes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comments: {
+        Row: {
+          content: string
+          created_at: string
+          dislikes_count: number
+          id: string
+          likes_count: number
+          parent_id: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          dislikes_count?: number
+          id?: string
+          likes_count?: number
+          parent_id?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          dislikes_count?: number
+          id?: string
+          likes_count?: number
+          parent_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_credits: {
         Row: {
           claim_date: string
@@ -229,6 +299,7 @@ export type Database = {
       cleanup_old_rate_limits: { Args: never; Returns: undefined }
       get_user_balance: { Args: { p_user_id: string }; Returns: Json }
       increment_view_count: { Args: { article_id: string }; Returns: undefined }
+      is_admin: { Args: never; Returns: boolean }
       record_cache_hit: { Args: { p_key_hash: string }; Returns: undefined }
       validate_api_key:
         | { Args: { p_key_hash: string }; Returns: Json }
