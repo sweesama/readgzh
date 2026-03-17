@@ -57,6 +57,12 @@ const Index = () => {
         </Button>
 
         <div className="flex items-center gap-2">
+          <Link to="/comments">
+            <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs">
+              <MessageSquare className="h-3.5 w-3.5" />
+              留言板
+            </Button>
+          </Link>
           <Link to="/articles">
             <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs">
               <BookOpen className="h-3.5 w-3.5" />
