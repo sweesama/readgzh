@@ -96,6 +96,7 @@ const Index = () => {
         <HowItWorksSection />
         <FeaturesSection />
         <AdvantagesSection />
+        <CommentSection />
       </main>
       <Footer />
     </div>
