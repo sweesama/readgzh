@@ -129,7 +129,9 @@ const CommentSection = () => {
     if (!text) return;
 
     setLoading(true);
+    const commentId = crypto.randomUUID();
     const { error } = await supabase.from("comments").insert({
+      id: commentId,
       user_id: user.id,
       content: text,
       parent_id: parentId,
@@ -140,6 +142,22 @@ const CommentSection = () => {
       toast.error("发送失败");
       return;
     }
+
+    // Notify admin about new comment (fire-and-forget)
+    const userProfile = user.user_metadata;
+    const userName = userProfile?.full_name || userProfile?.name || user.email?.split("@")[0] || "匿名用户";
+    supabase.functions.invoke("send-transactional-email", {
+      body: {
+        templateName: "new-comment",
+        recipientEmail: "sweeyeah@hotmail.com",
+        idempotencyKey: `new-comment-${commentId}`,
+        templateData: {
+          userName,
+          commentContent: text.slice(0, 200),
+          commentUrl: "https://readgzh.site/comments",
+        },
+      },
+    }).catch(() => {}); // don't block UI on email failure
 
     if (parentId) {
       setReplyContent("");
