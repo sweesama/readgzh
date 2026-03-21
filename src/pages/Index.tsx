@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import HeroSection from "@/components/home/HeroSection";
 import FeaturesSection from "@/components/home/FeaturesSection";
 import HowItWorksSection from "@/components/home/HowItWorksSection";
+import DemoVideoSection from "@/components/home/DemoVideoSection";
 import AdvantagesSection from "@/components/home/AdvantagesSection";
 import AIGuideSection from "@/components/home/AIGuideSection";
 import StatsWidget from "@/components/home/StatsSection";
