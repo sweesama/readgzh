@@ -1,0 +1,1 @@
+UPDATE public.api_keys SET bonus_credits = bonus_credits + 500 WHERE id = 'd500074e-4ce7-46c0-af8b-21243b21f09f';

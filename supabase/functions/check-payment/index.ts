@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
 
       // Process credit packs
       const creditSessions = completedSessions.filter(
-        (s) => s.metadata?.type === "credits"
+        (s) => s.metadata?.type === "credits" || s.metadata?.type === "credits_free"
       );
       for (const session of creditSessions) {
         const sessionId = session.id;
