@@ -23,3 +23,13 @@ project_id = "jhnnmmwgdrquwjytvvwu"
     verify_jwt = false
   [functions.api-keys]
     verify_jwt = false
+  [functions.process-email-queue]
+    verify_jwt = true
+  [functions.send-transactional-email]
+    verify_jwt = true
+  [functions.preview-transactional-email]
+    verify_jwt = false
+  [functions.handle-email-unsubscribe]
+    verify_jwt = false
+  [functions.handle-email-suppression]
+    verify_jwt = false
