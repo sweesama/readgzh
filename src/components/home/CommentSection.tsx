@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageSquare, ThumbsUp, ThumbsDown, Trash2, Clock, TrendingUp, Send, Shield, Reply, ChevronDown, ChevronUp } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { MessageSquare, ThumbsUp, ThumbsDown, Trash2, Clock, TrendingUp, Send, Shield, Reply, ChevronDown, ChevronUp, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 const ADMIN_EMAIL = "sweeyeah@gmail.com";
