@@ -177,6 +177,7 @@ export type Database = {
           created_at: string
           dislikes_count: number
           id: string
+          is_anonymous: boolean
           likes_count: number
           parent_id: string | null
           user_id: string
@@ -186,6 +187,7 @@ export type Database = {
           created_at?: string
           dislikes_count?: number
           id?: string
+          is_anonymous?: boolean
           likes_count?: number
           parent_id?: string | null
           user_id: string
@@ -195,6 +197,7 @@ export type Database = {
           created_at?: string
           dislikes_count?: number
           id?: string
+          is_anonymous?: boolean
           likes_count?: number
           parent_id?: string | null
           user_id?: string
