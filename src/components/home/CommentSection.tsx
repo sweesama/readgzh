@@ -53,6 +53,8 @@ const CommentSection = () => {
   const [replyContent, setReplyContent] = useState("");
   const [sort, setSort] = useState<"newest" | "popular">("newest");
   const [loading, setLoading] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [isReplyAnonymous, setIsReplyAnonymous] = useState(false);
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
 
   const isAdmin = user?.email === ADMIN_EMAIL;
