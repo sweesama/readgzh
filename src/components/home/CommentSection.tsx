@@ -288,17 +288,26 @@ const CommentSection = () => {
 
           {/* Reply input */}
           {replyTo === comment.id && (
-            <div className="ml-8 mt-2 flex gap-2">
-              <Textarea
-                value={replyContent}
-                onChange={(e) => setReplyContent(e.target.value)}
-                placeholder="写下你的回复..."
-                className="min-h-[60px] text-sm resize-none"
-                rows={2}
-              />
-              <Button size="sm" onClick={() => handleSubmit(comment.id)} disabled={loading || !replyContent.trim()} className="shrink-0 self-end">
-                <Send className="h-3.5 w-3.5" />
-              </Button>
+            <div className="ml-8 mt-2">
+              <div className="flex gap-2">
+                <Textarea
+                  value={replyContent}
+                  onChange={(e) => setReplyContent(e.target.value)}
+                  placeholder="写下你的回复..."
+                  className="min-h-[60px] text-sm resize-none"
+                  rows={2}
+                />
+                <Button size="sm" onClick={() => handleSubmit(comment.id)} disabled={loading || !replyContent.trim()} className="shrink-0 self-end">
+                  <Send className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <label className="flex items-center gap-2 mt-1.5 ml-1 cursor-pointer select-none">
+                <Checkbox checked={isReplyAnonymous} onCheckedChange={(v) => setIsReplyAnonymous(v === true)} />
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <EyeOff className="h-3 w-3" />
+                  匿名回复
+                </span>
+              </label>
             </div>
           )}
 
