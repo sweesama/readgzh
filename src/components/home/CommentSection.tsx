@@ -373,6 +373,15 @@ const CommentSection = () => {
               发送
             </Button>
           </div>
+          {user && (
+            <label className="flex items-center gap-2 mt-2 ml-1 cursor-pointer select-none">
+              <Checkbox checked={isAnonymous} onCheckedChange={(v) => setIsAnonymous(v === true)} />
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <EyeOff className="h-3 w-3" />
+                匿名发表
+              </span>
+            </label>
+          )}
         </div>
 
         {/* Comments list */}
