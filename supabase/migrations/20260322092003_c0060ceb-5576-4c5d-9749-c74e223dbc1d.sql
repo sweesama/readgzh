@@ -1,0 +1,1 @@
+ALTER TABLE public.comments ADD COLUMN is_anonymous boolean NOT NULL DEFAULT false;

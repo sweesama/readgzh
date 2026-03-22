@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageSquare, ThumbsUp, ThumbsDown, Trash2, Clock, TrendingUp, Send, Shield, Reply, ChevronDown, ChevronUp } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { MessageSquare, ThumbsUp, ThumbsDown, Trash2, Clock, TrendingUp, Send, Shield, Reply, ChevronDown, ChevronUp, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 const ADMIN_EMAIL = "sweeyeah@gmail.com";
@@ -15,6 +16,7 @@ type Comment = {
   parent_id: string | null;
   likes_count: number;
   dislikes_count: number;
+  is_anonymous: boolean;
   created_at: string;
   profile?: { display_name: string | null; email: string | null; avatar_url: string | null };
   replies?: Comment[];
@@ -51,6 +53,8 @@ const CommentSection = () => {
   const [replyContent, setReplyContent] = useState("");
   const [sort, setSort] = useState<"newest" | "popular">("newest");
   const [loading, setLoading] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [isReplyAnonymous, setIsReplyAnonymous] = useState(false);
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
 
   const isAdmin = user?.email === ADMIN_EMAIL;
@@ -130,12 +134,14 @@ const CommentSection = () => {
 
     setLoading(true);
     const commentId = crypto.randomUUID();
+    const anonymous = parentId ? isReplyAnonymous : isAnonymous;
     const { error } = await supabase.from("comments").insert({
       id: commentId,
       user_id: user.id,
       content: text,
       parent_id: parentId,
-    });
+      is_anonymous: anonymous,
+    } as any);
     setLoading(false);
 
     if (error) {
@@ -162,9 +168,11 @@ const CommentSection = () => {
     if (parentId) {
       setReplyContent("");
       setReplyTo(null);
+      setIsReplyAnonymous(false);
       setExpandedReplies((prev) => new Set(prev).add(parentId));
     } else {
       setContent("");
+      setIsAnonymous(false);
     }
     fetchComments();
     fetchVotes();
@@ -220,16 +228,18 @@ const CommentSection = () => {
           {/* Header */}
           <div className="flex items-center gap-2 mb-1.5">
             <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground shrink-0">
-              {comment.profile?.avatar_url ? (
+              {comment.is_anonymous ? (
+                <EyeOff className="h-3 w-3" />
+              ) : comment.profile?.avatar_url ? (
                 <img src={comment.profile.avatar_url} className="h-6 w-6 rounded-full object-cover" alt="" />
               ) : (
                 (comment.profile?.display_name?.[0] || "?").toUpperCase()
               )}
             </div>
             <span className="text-sm font-medium text-foreground">
-              {comment.profile?.display_name || "匿名用户"}
+              {comment.is_anonymous ? "匿名用户" : (comment.profile?.display_name || "匿名用户")}
             </span>
-            {isCommentAdmin && (
+            {!comment.is_anonymous && isCommentAdmin && (
               <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary">
                 <Shield className="h-2.5 w-2.5" />
                 开发者
@@ -278,17 +288,26 @@ const CommentSection = () => {
 
           {/* Reply input */}
           {replyTo === comment.id && (
-            <div className="ml-8 mt-2 flex gap-2">
-              <Textarea
-                value={replyContent}
-                onChange={(e) => setReplyContent(e.target.value)}
-                placeholder="写下你的回复..."
-                className="min-h-[60px] text-sm resize-none"
-                rows={2}
-              />
-              <Button size="sm" onClick={() => handleSubmit(comment.id)} disabled={loading || !replyContent.trim()} className="shrink-0 self-end">
-                <Send className="h-3.5 w-3.5" />
-              </Button>
+            <div className="ml-8 mt-2">
+              <div className="flex gap-2">
+                <Textarea
+                  value={replyContent}
+                  onChange={(e) => setReplyContent(e.target.value)}
+                  placeholder="写下你的回复..."
+                  className="min-h-[60px] text-sm resize-none"
+                  rows={2}
+                />
+                <Button size="sm" onClick={() => handleSubmit(comment.id)} disabled={loading || !replyContent.trim()} className="shrink-0 self-end">
+                  <Send className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <label className="flex items-center gap-2 mt-1.5 ml-1 cursor-pointer select-none">
+                <Checkbox checked={isReplyAnonymous} onCheckedChange={(v) => setIsReplyAnonymous(v === true)} />
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <EyeOff className="h-3 w-3" />
+                  匿名回复
+                </span>
+              </label>
             </div>
           )}
 
@@ -363,6 +382,15 @@ const CommentSection = () => {
               发送
             </Button>
           </div>
+          {user && (
+            <label className="flex items-center gap-2 mt-2 ml-1 cursor-pointer select-none">
+              <Checkbox checked={isAnonymous} onCheckedChange={(v) => setIsAnonymous(v === true)} />
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <EyeOff className="h-3 w-3" />
+                匿名发表
+              </span>
+            </label>
+          )}
         </div>
 
         {/* Comments list */}
