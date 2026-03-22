@@ -16,6 +16,7 @@ type Comment = {
   parent_id: string | null;
   likes_count: number;
   dislikes_count: number;
+  is_anonymous: boolean;
   created_at: string;
   profile?: { display_name: string | null; email: string | null; avatar_url: string | null };
   replies?: Comment[];
