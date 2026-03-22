@@ -134,12 +134,14 @@ const CommentSection = () => {
 
     setLoading(true);
     const commentId = crypto.randomUUID();
+    const anonymous = parentId ? isReplyAnonymous : isAnonymous;
     const { error } = await supabase.from("comments").insert({
       id: commentId,
       user_id: user.id,
       content: text,
       parent_id: parentId,
-    });
+      is_anonymous: anonymous,
+    } as any);
     setLoading(false);
 
     if (error) {
