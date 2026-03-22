@@ -168,9 +168,11 @@ const CommentSection = () => {
     if (parentId) {
       setReplyContent("");
       setReplyTo(null);
+      setIsReplyAnonymous(false);
       setExpandedReplies((prev) => new Set(prev).add(parentId));
     } else {
       setContent("");
+      setIsAnonymous(false);
     }
     fetchComments();
     fetchVotes();
