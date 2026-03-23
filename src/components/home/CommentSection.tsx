@@ -18,8 +18,15 @@ type Comment = {
   dislikes_count: number;
   is_anonymous: boolean;
   created_at: string;
-  profile?: { display_name: string | null; email: string | null; avatar_url: string | null };
+  profile?: { display_name: string | null; avatar_url: string | null; is_admin: boolean };
   replies?: Comment[];
+};
+
+type CommentProfile = {
+  id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  is_admin: boolean;
 };
 
 function getVoterId(userId: string | null): string {
@@ -69,14 +76,19 @@ const CommentSection = () => {
 
     if (!commentsData) return;
 
-    // Fetch profiles for all unique user_ids
+    // Fetch safe author profile fields via backend RPC so public comments can
+    // still show the correct author after refresh/account switching.
     const userIds = [...new Set(commentsData.map((c) => c.user_id))];
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("id, display_name, email, avatar_url")
-      .in("id", userIds);
+    const { data: profiles, error: profilesError } = await supabase.rpc("get_comment_profiles", {
+      p_user_ids: userIds,
+    });
 
-    const profileMap = new Map(profiles?.map((p) => [p.id, p]) ?? []);
+    if (profilesError) {
+      toast.error("留言作者信息加载失败");
+      return;
+    }
+
+    const profileMap = new Map((profiles as CommentProfile[] | null)?.map((p) => [p.id, p]) ?? []);
 
     // Build tree
     const withProfiles = commentsData.map((c) => ({
@@ -218,7 +230,7 @@ const CommentSection = () => {
   };
 
   const renderComment = (comment: Comment, isReply = false) => {
-    const isCommentAdmin = comment.profile?.email === ADMIN_EMAIL;
+    const isCommentAdmin = comment.profile?.is_admin === true;
     const hasReplies = comment.replies && comment.replies.length > 0;
     const showReplies = expandedReplies.has(comment.id);
 
