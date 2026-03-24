@@ -428,6 +428,7 @@ export type Database = {
           is_admin: boolean
         }[]
       }
+      get_token_stats: { Args: never; Returns: Json }
       get_user_balance: { Args: { p_user_id: string }; Returns: Json }
       increment_view_count: { Args: { article_id: string }; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }

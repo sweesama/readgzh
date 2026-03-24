@@ -7,8 +7,8 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import DOMPurify from "dompurify";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const API_BASE = "https://api.readgzh.site";
+const IMAGE_PROXY_BASE = `${API_BASE}/image-proxy`;
 
 interface Article {
   id: string;
@@ -33,7 +33,7 @@ function decodeHtmlEntities(str: string): string {
 }
 
 function proxyWechatImages(html: string): string {
-  const proxyBase = `${SUPABASE_URL}/functions/v1/image-proxy?url=`;
+  const proxyBase = `${IMAGE_PROXY_BASE}?url=`;
   return html.replace(
     /src="(https?:\/\/mmbiz\.qpic\.cn[^"]*)"/g,
     (_, url) => `src="${proxyBase}${encodeURIComponent(decodeHtmlEntities(url))}"`
@@ -41,7 +41,7 @@ function proxyWechatImages(html: string): string {
 }
 
 function replaceVideoIframes(html: string, sourceUrl?: string | null): string {
-  const proxyBase = `${SUPABASE_URL}/functions/v1/image-proxy?url=`;
+  const proxyBase = `${IMAGE_PROXY_BASE}?url=`;
   let result = html.replace(
     /<iframe[^>]*class="video_iframe[^"]*"[^>]*>/gi,
     (match) => {
@@ -145,7 +145,7 @@ const ArticlePage = () => {
         setIsLoading(true);
         setError(null);
 
-        let query = supabase.from("articles").select("*");
+        let query = supabase.from("articles").select("id, title, author, content, raw_html, source_url, publish_time, created_at, view_count, slug");
         if (slug) {
           query = query.eq("slug", `s/${slug}`);
         } else if (id) {
