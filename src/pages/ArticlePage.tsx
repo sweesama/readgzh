@@ -33,7 +33,7 @@ function decodeHtmlEntities(str: string): string {
 }
 
 function proxyWechatImages(html: string): string {
-  const proxyBase = `${SUPABASE_URL}/functions/v1/image-proxy?url=`;
+  const proxyBase = `${IMAGE_PROXY_BASE}?url=`;
   return html.replace(
     /src="(https?:\/\/mmbiz\.qpic\.cn[^"]*)"/g,
     (_, url) => `src="${proxyBase}${encodeURIComponent(decodeHtmlEntities(url))}"`
