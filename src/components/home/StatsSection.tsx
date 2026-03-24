@@ -9,15 +9,13 @@ const StatsWidget = () => {
 
   useEffect(() => {
     const fetchStats = async () => {
-      const { data } = await supabase.from("articles").select("content, view_count");
-      if (data) {
-        const totalChars = data.reduce((sum, row) => sum + (row.content?.length || 0) * Math.max(row.view_count || 1, 1), 0);
-        const estimatedTokens = Math.round(totalChars * 1.2);
-        setTotalTokens(estimatedTokens);
+      const { data } = await supabase.rpc("get_token_stats");
+      if (data && typeof data === "object" && "total_tokens" in data) {
+        setTotalTokens((data as { total_tokens: number }).total_tokens);
       }
     };
     fetchStats();
-    const interval = setInterval(fetchStats, 60000);
+    const interval = setInterval(fetchStats, 300000); // 5 min instead of 1 min
     return () => clearInterval(interval);
   }, []);
 

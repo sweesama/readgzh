@@ -41,7 +41,7 @@ function proxyWechatImages(html: string): string {
 }
 
 function replaceVideoIframes(html: string, sourceUrl?: string | null): string {
-  const proxyBase = `${SUPABASE_URL}/functions/v1/image-proxy?url=`;
+  const proxyBase = `${IMAGE_PROXY_BASE}?url=`;
   let result = html.replace(
     /<iframe[^>]*class="video_iframe[^"]*"[^>]*>/gi,
     (match) => {
