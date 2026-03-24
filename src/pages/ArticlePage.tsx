@@ -7,8 +7,8 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import DOMPurify from "dompurify";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const API_BASE = "https://api.readgzh.site";
+const IMAGE_PROXY_BASE = `${API_BASE}/image-proxy`;
 
 interface Article {
   id: string;
