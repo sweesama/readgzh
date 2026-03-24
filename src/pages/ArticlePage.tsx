@@ -145,7 +145,7 @@ const ArticlePage = () => {
         setIsLoading(true);
         setError(null);
 
-        let query = supabase.from("articles").select("*");
+        let query = supabase.from("articles").select("id, title, author, content, raw_html, source_url, publish_time, created_at, view_count, slug");
         if (slug) {
           query = query.eq("slug", `s/${slug}`);
         } else if (id) {
