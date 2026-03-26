@@ -403,7 +403,42 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      articles_public: {
+        Row: {
+          author: string | null
+          created_at: string | null
+          id: string | null
+          publish_time: string | null
+          slug: string | null
+          source_url: string | null
+          summary: string | null
+          title: string | null
+          view_count: number | null
+        }
+        Insert: {
+          author?: string | null
+          created_at?: string | null
+          id?: string | null
+          publish_time?: string | null
+          slug?: string | null
+          source_url?: string | null
+          summary?: string | null
+          title?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          author?: string | null
+          created_at?: string | null
+          id?: string | null
+          publish_time?: string | null
+          slug?: string | null
+          source_url?: string | null
+          summary?: string | null
+          title?: string | null
+          view_count?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       check_rate_limit: {
@@ -429,12 +464,20 @@ export type Database = {
           is_admin: boolean
         }[]
       }
+      get_public_article_detail: {
+        Args: { p_article_id?: string; p_slug?: string }
+        Returns: Json
+      }
       get_token_stats: { Args: never; Returns: Json }
       get_total_anon_requests: { Args: { p_date?: string }; Returns: number }
       get_total_views: { Args: never; Returns: number }
       get_user_balance: { Args: { p_user_id: string }; Returns: Json }
       increment_view_count: { Args: { article_id: string }; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
+      list_public_articles: {
+        Args: { p_limit?: number; p_offset?: number; p_search?: string }
+        Returns: Json
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string

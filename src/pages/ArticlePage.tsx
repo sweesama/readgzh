@@ -23,6 +23,8 @@ interface Article {
   slug: string | null;
 }
 
+type PublicArticleDetail = Article | null;
+
 function decodeHtmlEntities(str: string): string {
   return str
     .replace(/&amp;/g, "&")
@@ -145,21 +147,24 @@ const ArticlePage = () => {
         setIsLoading(true);
         setError(null);
 
-        let query = supabase.from("articles").select("id, title, author, content, raw_html, source_url, publish_time, created_at, view_count, slug");
-        if (slug) {
-          query = query.eq("slug", `s/${slug}`);
-        } else if (id) {
-          query = query.eq("id", id);
-        }
+        const { data, error: fetchError } = await supabase.rpc("get_public_article_detail", {
+          p_slug: slug ?? null,
+          p_article_id: id ?? null,
+        });
 
-        const { data, error: fetchError } = await query.single();
         if (fetchError) {
           if (fetchError.code === "PGRST116") throw new Error("文章不存在或已被删除");
           throw fetchError;
         }
 
-        setArticle(data);
-        supabase.rpc("increment_view_count", { article_id: data.id }).then(({ error }) => {
+        const articleData = data as unknown as PublicArticleDetail;
+
+        if (!articleData) {
+          throw new Error("文章不存在或已被删除");
+        }
+
+        setArticle(articleData);
+        supabase.rpc("increment_view_count", { article_id: articleData.id }).then(({ error }) => {
           if (error) console.error("Failed to increment view count:", error);
         });
       } catch (err) {
