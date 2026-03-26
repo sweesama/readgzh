@@ -300,10 +300,52 @@ mcp.tool("readgzh.get", {
 const transport = new StreamableHttpTransport();
 const httpHandler = transport.bind(mcp);
 
+const MCP_DAILY_LIMIT = 100; // Daily limit per IP for MCP calls
+
+async function checkMcpRateLimit(ip: string): Promise<{ allowed: boolean; current: number }> {
+  try {
+    const mcpIp = `mcp:${ip}`;
+    const { data, error } = await supabase.rpc("check_rate_limit", {
+      p_ip: mcpIp,
+      p_daily_limit: MCP_DAILY_LIMIT,
+    });
+    if (error) return { allowed: true, current: 0 };
+    const result = data as { allowed: boolean; current: number };
+    return result;
+  } catch {
+    return { allowed: true, current: 0 };
+  }
+}
+
+function getClientIp(req: Request): string {
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0].trim();
+  const realIp = req.headers.get("x-real-ip");
+  if (realIp) return realIp.trim();
+  return "unknown";
+}
+
 const app = new Hono();
 
 app.all("/*", async (c) => {
   console.log(`[MCP] ${c.req.method} ${c.req.url}`);
+  
+  // Rate limit MCP requests to protect Cloud Network Egress
+  if (c.req.method === "POST") {
+    const ip = getClientIp(c.req.raw);
+    if (ip !== "unknown") {
+      const rateCheck = await checkMcpRateLimit(ip);
+      if (!rateCheck.allowed) {
+        console.log(`[MCP] Rate limit exceeded for IP: ${ip}, current: ${rateCheck.current}`);
+        return c.json({
+          jsonrpc: "2.0",
+          error: { code: -32000, message: `MCP rate limit exceeded (${MCP_DAILY_LIMIT}/day). Register at readgzh.site/dashboard for API Key access.` },
+          id: null,
+        }, 429);
+      }
+    }
+  }
+  
   const response = await httpHandler(c.req.raw);
   return response;
 });
