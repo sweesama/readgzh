@@ -72,27 +72,29 @@ Deno.serve(async (req) => {
       svc.from("articles").select("*", { count: "exact", head: true }),
       svc.from("api_keys").select("*", { count: "exact", head: true }).eq("is_active", true),
       svc.from("api_keys").select("*", { count: "exact", head: true }).eq("is_active", true).in("tier", ["pro", "pro_lifetime"]),
-      svc.from("api_usage").select("request_count, cached_count").eq("usage_date", today),
-      svc.from("api_usage").select("request_count, cached_count"),
+      // Use server-side RPC aggregation instead of fetching all rows
+      svc.rpc("get_api_usage_stats", { p_date: today }),
+      svc.rpc("get_api_usage_stats"),
       svc.from("daily_credits").select("*", { count: "exact", head: true }).eq("claim_date", today),
       svc.from("profiles").select("id, email, display_name, created_at").order("created_at", { ascending: false }).limit(20),
-      // Anonymous requests today (from rate_limits)
-      svc.from("rate_limits").select("request_count").eq("request_date", today),
-      // Total anonymous requests (all time)
-      svc.from("rate_limits").select("request_count"),
+      // Anonymous requests - use RPC aggregation
+      svc.rpc("get_total_anon_requests", { p_date: today }),
+      svc.rpc("get_total_anon_requests"),
       // Today's new articles
       svc.from("articles").select("*", { count: "exact", head: true }).gte("created_at", today + "T00:00:00Z"),
-      // Total article views
-      svc.from("articles").select("view_count"),
+      // Total article views - use RPC aggregation
+      svc.rpc("get_total_views"),
     ]);
 
-    const todayApiRequests = (todayUsageRes.data || []).reduce((s: number, r: any) => s + r.request_count, 0);
-    const todayCached = (todayUsageRes.data || []).reduce((s: number, r: any) => s + r.cached_count, 0);
-    const totalApiRequests = (totalUsageRes.data || []).reduce((s: number, r: any) => s + r.request_count, 0);
-    const totalCached = (totalUsageRes.data || []).reduce((s: number, r: any) => s + r.cached_count, 0);
-    const todayAnonRequests = (todayAnonRes.data || []).reduce((s: number, r: any) => s + r.request_count, 0);
-    const totalAnonRequests = (totalAnonRes.data || []).reduce((s: number, r: any) => s + r.request_count, 0);
-    const totalViews = (totalViewsRes.data || []).reduce((s: number, r: any) => s + r.view_count, 0);
+    const todayUsage = todayUsageRes.data || { request_count: 0, cached_count: 0 };
+    const totalUsage = totalUsageRes.data || { request_count: 0, cached_count: 0 };
+    const todayApiRequests = todayUsage.request_count || 0;
+    const todayCached = todayUsage.cached_count || 0;
+    const totalApiRequests = totalUsage.request_count || 0;
+    const totalCached = totalUsage.cached_count || 0;
+    const todayAnonRequests = todayAnonRes.data || 0;
+    const totalAnonRequests = totalAnonRes.data || 0;
+    const totalViews = totalViewsRes.data || 0;
 
     return new Response(
       JSON.stringify({
