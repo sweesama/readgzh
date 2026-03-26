@@ -545,7 +545,7 @@ async function handleReadMode(slug: string | null, articleId: string | null, par
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  let query = supabase.from("articles").select("*");
+  let query = supabase.from("articles").select("id, title, author, content, raw_html, source_url, publish_time, created_at, view_count, slug, summary");
   if (slug) {
     query = query.eq("slug", `s/${slug}`);
   } else if (articleId) {

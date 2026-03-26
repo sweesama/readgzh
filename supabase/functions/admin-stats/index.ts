@@ -82,8 +82,8 @@ Deno.serve(async (req) => {
       svc.from("rate_limits").select("request_count"),
       // Today's new articles
       svc.from("articles").select("*", { count: "exact", head: true }).gte("created_at", today + "T00:00:00Z"),
-      // Total article views
-      svc.from("articles").select("view_count"),
+      // Total article views (use count query with sum via RPC or just view_count field)
+      svc.from("articles").select("view_count").limit(1000),
     ]);
 
     const todayApiRequests = (todayUsageRes.data || []).reduce((s: number, r: any) => s + r.request_count, 0);
