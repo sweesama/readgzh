@@ -716,6 +716,41 @@ function getClientIp(req: Request): string {
 }
 
 const DAILY_LIMIT = 10;
+const READ_MODE_DAILY_LIMIT = 50; // Daily limit for anonymous read mode requests
+const READ_MODE_API_KEY_LIMIT = 500; // Daily limit for API Key read mode requests
+
+// Rate limit specifically for read mode (cached article reads)
+// This protects Cloud Network Egress from being exhausted by unlimited reads
+async function checkReadModeRateLimit(req: Request): Promise<{ allowed: boolean; current: number; remaining: number; limit: number }> {
+  // Check if request has an API Key — higher limit but still capped
+  const apiKeyResult = await checkApiKeyAuth(req, 0); // 0 cost, don't deduct credits for reads
+  const limit = apiKeyResult?.isApiKey ? READ_MODE_API_KEY_LIMIT : READ_MODE_DAILY_LIMIT;
+
+  const ip = getClientIp(req);
+  if (ip === "unknown") return { allowed: true, current: 0, remaining: limit, limit };
+
+  try {
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+    // Use a distinct IP prefix to separate read-mode counts from scrape counts
+    const readIp = `read:${ip}`;
+    const { data, error } = await supabase.rpc("check_rate_limit", {
+      p_ip: readIp,
+      p_daily_limit: limit,
+    });
+    if (error) {
+      console.error("Read mode rate limit error:", error);
+      return { allowed: true, current: 0, remaining: limit, limit };
+    }
+    const result = data as { allowed: boolean; current: number; remaining: number };
+    return { ...result, limit };
+  } catch (err) {
+    console.error("Read mode rate limit error:", err);
+    return { allowed: true, current: 0, remaining: limit, limit };
+  }
+}
 
 async function hashApiKey(key: string): Promise<string> {
   const encoder = new TextEncoder();
