@@ -23,6 +23,8 @@ interface Article {
   slug: string | null;
 }
 
+type PublicArticleDetail = Article | null;
+
 function decodeHtmlEntities(str: string): string {
   return str
     .replace(/&amp;/g, "&")
@@ -155,12 +157,14 @@ const ArticlePage = () => {
           throw fetchError;
         }
 
-        if (!data) {
+        const articleData = data as unknown as PublicArticleDetail;
+
+        if (!articleData) {
           throw new Error("文章不存在或已被删除");
         }
 
-        setArticle(data as Article);
-        supabase.rpc("increment_view_count", { article_id: data.id }).then(({ error }) => {
+        setArticle(articleData);
+        supabase.rpc("increment_view_count", { article_id: articleData.id }).then(({ error }) => {
           if (error) console.error("Failed to increment view count:", error);
         });
       } catch (err) {
