@@ -716,6 +716,41 @@ function getClientIp(req: Request): string {
 }
 
 const DAILY_LIMIT = 10;
+const READ_MODE_DAILY_LIMIT = 50; // Daily limit for anonymous read mode requests
+const READ_MODE_API_KEY_LIMIT = 500; // Daily limit for API Key read mode requests
+
+// Rate limit specifically for read mode (cached article reads)
+// This protects Cloud Network Egress from being exhausted by unlimited reads
+async function checkReadModeRateLimit(req: Request): Promise<{ allowed: boolean; current: number; remaining: number; limit: number }> {
+  // Check if request has an API Key — higher limit but still capped
+  const apiKeyResult = await checkApiKeyAuth(req, 0); // 0 cost, don't deduct credits for reads
+  const limit = apiKeyResult?.isApiKey ? READ_MODE_API_KEY_LIMIT : READ_MODE_DAILY_LIMIT;
+
+  const ip = getClientIp(req);
+  if (ip === "unknown") return { allowed: true, current: 0, remaining: limit, limit };
+
+  try {
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+    // Use a distinct IP prefix to separate read-mode counts from scrape counts
+    const readIp = `read:${ip}`;
+    const { data, error } = await supabase.rpc("check_rate_limit", {
+      p_ip: readIp,
+      p_daily_limit: limit,
+    });
+    if (error) {
+      console.error("Read mode rate limit error:", error);
+      return { allowed: true, current: 0, remaining: limit, limit };
+    }
+    const result = data as { allowed: boolean; current: number; remaining: number };
+    return { ...result, limit };
+  } catch (err) {
+    console.error("Read mode rate limit error:", err);
+    return { allowed: true, current: 0, remaining: limit, limit };
+  }
+}
 
 async function hashApiKey(key: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -1017,8 +1052,33 @@ Deno.serve(async (req) => {
       const slug = params.get("s");
       const articleId = params.get("id");
 
-      // Read mode (serving cached articles) - no rate limit needed
+      // Read mode (serving cached articles) - rate limited to protect Cloud Network Egress
       if (slug || articleId) {
+        // Check read mode rate limit FIRST
+        const readRateInfo = await checkReadModeRateLimit(req);
+        if (!readRateInfo.allowed) {
+          console.log("Read mode rate limit exceeded:", JSON.stringify(readRateInfo));
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: "read_rate_limit_exceeded",
+              message: `缓存文章读取已达每日上限（${readRateInfo.limit} 次）。如需更多读取，请使用 API Key。`,
+              hint: "注册免费获取更高读取限额：readgzh.site/dashboard",
+              current: readRateInfo.current,
+              limit: readRateInfo.limit,
+              dashboard_url: "https://readgzh.site/dashboard",
+            }),
+            {
+              status: 429,
+              headers: {
+                ...corsHeaders,
+                "Content-Type": "application/json",
+                "X-RateLimit-Limit": String(readRateInfo.limit),
+                "X-RateLimit-Remaining": "0",
+              },
+            }
+          );
+        }
         const mode = params.get("mode");
         
       // Summary mode: return AI-generated summary as JSON (Pro only)
