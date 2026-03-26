@@ -1052,8 +1052,33 @@ Deno.serve(async (req) => {
       const slug = params.get("s");
       const articleId = params.get("id");
 
-      // Read mode (serving cached articles) - no rate limit needed
+      // Read mode (serving cached articles) - rate limited to protect Cloud Network Egress
       if (slug || articleId) {
+        // Check read mode rate limit FIRST
+        const readRateInfo = await checkReadModeRateLimit(req);
+        if (!readRateInfo.allowed) {
+          console.log("Read mode rate limit exceeded:", JSON.stringify(readRateInfo));
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: "read_rate_limit_exceeded",
+              message: `缓存文章读取已达每日上限（${readRateInfo.limit} 次）。如需更多读取，请使用 API Key。`,
+              hint: "注册免费获取更高读取限额：readgzh.site/dashboard",
+              current: readRateInfo.current,
+              limit: readRateInfo.limit,
+              dashboard_url: "https://readgzh.site/dashboard",
+            }),
+            {
+              status: 429,
+              headers: {
+                ...corsHeaders,
+                "Content-Type": "application/json",
+                "X-RateLimit-Limit": String(readRateInfo.limit),
+                "X-RateLimit-Remaining": "0",
+              },
+            }
+          );
+        }
         const mode = params.get("mode");
         
       // Summary mode: return AI-generated summary as JSON (Pro only)
