@@ -403,7 +403,42 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      articles_public: {
+        Row: {
+          author: string | null
+          created_at: string | null
+          id: string | null
+          publish_time: string | null
+          slug: string | null
+          source_url: string | null
+          summary: string | null
+          title: string | null
+          view_count: number | null
+        }
+        Insert: {
+          author?: string | null
+          created_at?: string | null
+          id?: string | null
+          publish_time?: string | null
+          slug?: string | null
+          source_url?: string | null
+          summary?: string | null
+          title?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          author?: string | null
+          created_at?: string | null
+          id?: string | null
+          publish_time?: string | null
+          slug?: string | null
+          source_url?: string | null
+          summary?: string | null
+          title?: string | null
+          view_count?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       check_rate_limit: {
