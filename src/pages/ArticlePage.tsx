@@ -145,20 +145,21 @@ const ArticlePage = () => {
         setIsLoading(true);
         setError(null);
 
-        let query = supabase.from("articles").select("id, title, author, content, raw_html, source_url, publish_time, created_at, view_count, slug");
-        if (slug) {
-          query = query.eq("slug", `s/${slug}`);
-        } else if (id) {
-          query = query.eq("id", id);
-        }
+        const { data, error: fetchError } = await supabase.rpc("get_public_article_detail", {
+          p_slug: slug ?? null,
+          p_article_id: id ?? null,
+        });
 
-        const { data, error: fetchError } = await query.single();
         if (fetchError) {
           if (fetchError.code === "PGRST116") throw new Error("文章不存在或已被删除");
           throw fetchError;
         }
 
-        setArticle(data);
+        if (!data) {
+          throw new Error("文章不存在或已被删除");
+        }
+
+        setArticle(data as Article);
         supabase.rpc("increment_view_count", { article_id: data.id }).then(({ error }) => {
           if (error) console.error("Failed to increment view count:", error);
         });
