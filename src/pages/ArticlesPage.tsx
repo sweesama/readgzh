@@ -17,6 +17,11 @@ interface Article {
   created_at: string;
 }
 
+interface PublicArticlesResponse {
+  total_count: number;
+  articles: Article[];
+}
+
 const PAGE_SIZE = 24;
 
 const ArticlesPage = () => {
@@ -39,21 +44,16 @@ const ArticlesPage = () => {
   useEffect(() => {
     const fetchArticles = async () => {
       setLoading(true);
-      let query = supabase
-        .from("articles")
-        .select("id, title, author, publish_time, slug, view_count, created_at", { count: "exact" });
-
-      if (debouncedSearch) {
-        query = query.or(`title.ilike.%${debouncedSearch}%,author.ilike.%${debouncedSearch}%`);
-      }
-
-      const { data, count, error } = await query
-        .order("created_at", { ascending: false })
-        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+      const { data, error } = await supabase.rpc("list_public_articles", {
+        p_search: debouncedSearch || null,
+        p_limit: PAGE_SIZE,
+        p_offset: page * PAGE_SIZE,
+      });
 
       if (!error) {
-        setArticles(data || []);
-        setTotalCount(count || 0);
+        const payload = data as unknown as PublicArticlesResponse | null;
+        setArticles(payload?.articles || []);
+        setTotalCount(payload?.total_count || 0);
       }
       setLoading(false);
     };
