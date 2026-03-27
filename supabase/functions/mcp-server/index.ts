@@ -192,7 +192,7 @@ mcp.tool("readgzh.search", {
       // Search in title first
       const { data: articles, error } = await supabase
         .from("articles")
-        .select("id, title, author, content, publish_time, slug, source_url")
+        .select("id, title, author, publish_time, slug, source_url")
         .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
         .order("created_at", { ascending: false })
         .limit(limit);
@@ -214,16 +214,7 @@ mcp.tool("readgzh.search", {
         lines.push(`## ${i + 1}. ${a.title}`);
         if (a.author) lines.push(`- **Author:** ${a.author}`);
         if (a.slug) lines.push(`- **Link:** https://readgzh.site/${a.slug}`);
-        
-        // Extract a snippet around the keyword
-        const contentLower = a.content.toLowerCase();
-        const idx = contentLower.indexOf(query.toLowerCase());
-        if (idx !== -1) {
-          const start = Math.max(0, idx - 50);
-          const end = Math.min(a.content.length, idx + query.length + 100);
-          const snippet = (start > 0 ? "..." : "") + a.content.slice(start, end).replace(/\n/g, " ") + (end < a.content.length ? "..." : "");
-          lines.push(`- **Snippet:** ${snippet}`);
-        }
+        if (a.slug) lines.push(`  Use \`readgzh.get\` with slug "${a.slug.replace(/^s\//, "")}" to read full content.`);
         lines.push("");
       });
 
