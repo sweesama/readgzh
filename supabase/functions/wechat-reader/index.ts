@@ -130,7 +130,7 @@ function extractPictureTemplate(html: string): { contentHtml: string; textConten
   if (!textContent && images.length === 0) return null;
 
   // Build HTML content with images and text
-  const proxyBase = `${Deno.env.get("SUPABASE_URL")}/functions/v1/image-proxy?url=`;
+  const proxyBase = `https://api.readgzh.site/image-proxy?url=`;
   const imgHtml = images
     .map((img) => {
       const proxied = `${proxyBase}${encodeURIComponent(img.cdn_url)}`;
@@ -421,7 +421,7 @@ function formatContentToHtml(text: string): string {
 
 // Replace video iframes with accessible links for SSR output
 function replaceVideoIframesForSsr(html: string, sourceUrl?: string | null): string {
-  const proxyBase = `${Deno.env.get("SUPABASE_URL")}/functions/v1/image-proxy?url=`;
+  const proxyBase = `https://api.readgzh.site/image-proxy?url=`;
   let result = html.replace(
     /<iframe[^>]*class="video_iframe[^"]*"[^>]*>/gi,
     (match) => {
@@ -452,7 +452,7 @@ function replaceVideoIframesForSsr(html: string, sourceUrl?: string | null): str
 
 // Proxy WeChat image URLs for SSR output
 function proxyImagesForSsr(html: string): string {
-  const proxyBase = `${Deno.env.get("SUPABASE_URL")}/functions/v1/image-proxy?url=`;
+  const proxyBase = `https://api.readgzh.site/image-proxy?url=`;
   return html.replace(
     /src="(https?:\/\/mmbiz\.qpic\.cn[^"]*)"/g,
     (_, url: string) => {
@@ -545,7 +545,7 @@ async function handleReadMode(slug: string | null, articleId: string | null, par
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  let query = supabase.from("articles").select("id, title, author, content, raw_html, source_url, publish_time, created_at, view_count, slug, summary");
+  let query = supabase.from("articles").select("id, title, author, content, source_url, publish_time, created_at, view_count, slug, summary");
   if (slug) {
     query = query.eq("slug", `s/${slug}`);
   } else if (articleId) {
@@ -568,36 +568,9 @@ async function handleReadMode(slug: string | null, articleId: string | null, par
   const publishInfo = article.publish_time ? `<p><strong>发布时间：</strong>${escapeHtml(article.publish_time)}</p>` : "";
   const sourceLink = article.source_url ? `<p><strong>原文链接：</strong><a href="${escapeHtml(article.source_url)}">${escapeHtml(article.source_url)}</a></p>` : "";
 
-  // Use raw_html (with images) if available, otherwise fall back to plain text
+  // Use content (cleaned text) — raw_html no longer fetched to reduce egress
   let contentBody: string;
-  if (article.raw_html) {
-    let sanitized = article.raw_html;
-    sanitized = sanitized.replace(/data-src="([^"]+)"/g, 'src="$1"');
-    sanitized = sanitized.replace(/<script[\s\S]*?<\/script>/gi, "");
-    sanitized = sanitized.replace(/<style[\s\S]*?<\/style>/gi, "");
-    sanitized = sanitized.replace(/\s+on\w+="[^"]*"/g, "");
-    sanitized = sanitized.replace(/visibility:\s*hidden[^;]*;?/g, "");
-    sanitized = sanitized.replace(/opacity:\s*0[^;]*;?/g, "");
-    sanitized = sanitized.replace(/\s*style="[^"]*"/gi, "");
-    sanitized = sanitized.replace(/\s*style='[^']*'/gi, "");
-    sanitized = sanitized.replace(/\s*class="[^"]*"/gi, "");
-    sanitized = sanitized.replace(/\s*class='[^']*'/gi, "");
-    sanitized = sanitized.replace(/\s*data-[\w-]+="[^"]*"/gi, "");
-    sanitized = sanitized.replace(/\s*id="[^"]*"/gi, "");
-    sanitized = sanitized.replace(/<mp-[\w-]+[^>]*>[\s\S]*?<\/mp-[\w-]+>/gi, "");
-    sanitized = sanitized.replace(/<mp-[\w-]+[^>]*\/>/gi, "");
-    sanitized = sanitized.replace(/<br\s*\/?>/gi, "\n");
-    sanitized = sanitized.replace(/&nbsp;/gi, " ");
-    for (let i = 0; i < 3; i++) {
-      sanitized = sanitized.replace(/<(div|span|section|p)>\s*<\/\1>/gi, "");
-    }
-    sanitized = sanitized.replace(/\n{3,}/g, "\n\n");
-    sanitized = proxyImagesForSsr(sanitized);
-    sanitized = replaceVideoIframesForSsr(sanitized, article.source_url);
-    contentBody = sanitized;
-  } else {
-    contentBody = formatContentToHtml(article.content);
-  }
+  contentBody = formatContentToHtml(article.content);
 
   // format=text: return pure Markdown
   if (formatText) {
