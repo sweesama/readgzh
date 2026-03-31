@@ -46,7 +46,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Top bar with AI view toggle and nav links */}
-      <div className="fixed top-0 left-0 right-0 z-50 px-4 py-3 flex items-center justify-between">
+      <div className="fixed top-0 left-0 right-0 z-50 px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
         <Button
           size="sm"
           variant="outline"
@@ -54,42 +54,42 @@ const Index = () => {
           className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs"
         >
           <Bot className="h-3.5 w-3.5" />
-          AI 视角
+          <span className="hidden sm:inline">AI 视角</span>
         </Button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <Link to="/comments">
-            <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs">
+            <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs px-2 sm:px-3">
               <MessageSquare className="h-3.5 w-3.5" />
-              留言板
+              <span className="hidden sm:inline">留言板</span>
             </Button>
           </Link>
           <Link to="/articles">
-            <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs">
+            <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs px-2 sm:px-3">
               <BookOpen className="h-3.5 w-3.5" />
-              文章库
+              <span className="hidden sm:inline">文章库</span>
             </Button>
           </Link>
           <Link to="/docs">
-            <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs">
+            <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs px-2 sm:px-3">
               <Code className="h-3.5 w-3.5" />
-              文档
+              <span className="hidden sm:inline">文档</span>
             </Button>
           </Link>
           <Link to="/pricing">
-            <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs">
+            <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs px-2 sm:px-3">
               <Zap className="h-3.5 w-3.5" />
-              定价
+              <span className="hidden sm:inline">定价</span>
             </Button>
           </Link>
            <Link to="/dashboard">
              <Button 
                size="sm" 
                variant="ghost" 
-               className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs"
+               className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs px-2 sm:px-3"
              >
                <Key className={`h-3.5 w-3.5 ${isPro ? "text-amber-500" : ""}`} />
-               控制台
+               <span className="hidden sm:inline">控制台</span>
              </Button>
            </Link>
         </div>
