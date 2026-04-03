@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
-    "@lovable.dev/cloud-auth-js": "^0.0.3",
+    "@lovable.dev/cloud-auth-js": "^1.0.0",
     "@mcp-b/global": "^1.6.0",
     "@mcp-b/react-webmcp": "^1.6.0",
     "@radix-ui/react-accordion": "^1.2.11",
