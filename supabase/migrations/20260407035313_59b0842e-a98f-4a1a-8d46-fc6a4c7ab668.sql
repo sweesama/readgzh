@@ -1,0 +1,1 @@
+UPDATE api_keys SET bonus_credits = bonus_credits + 100 WHERE user_id = 'dbc9e7a4-e57f-4e3f-b21b-94ab64b5ef94' AND is_active = true;
