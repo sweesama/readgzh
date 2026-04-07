@@ -212,6 +212,30 @@ export type Database = {
           },
         ]
       }
+      credit_pack_claims: {
+        Row: {
+          created_at: string
+          credits_added: number
+          id: string
+          stripe_session_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_added?: number
+          id?: string
+          stripe_session_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_added?: number
+          id?: string
+          stripe_session_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       daily_credits: {
         Row: {
           claim_date: string

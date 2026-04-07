@@ -160,20 +160,20 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Process credit packs
+      // Process credit packs (using credit_pack_claims table for idempotency)
       const creditSessions = completedSessions.filter(
         (s) => s.metadata?.type === "credits" || s.metadata?.type === "credits_free"
       );
       for (const session of creditSessions) {
         const sessionId = session.id;
-        const { data: existingCredit } = await serviceClient
-          .from("daily_credits")
+        // Check if this session was already claimed
+        const { data: existingClaim } = await serviceClient
+          .from("credit_pack_claims")
           .select("id")
-          .eq("user_id", userId)
-          .eq("claim_date", `credit_pack_${sessionId}` as any)
+          .eq("stripe_session_id", sessionId)
           .maybeSingle();
 
-        if (!existingCredit) {
+        if (!existingClaim) {
           const { data: activeKeys } = await serviceClient
             .from("api_keys")
             .select("id, bonus_credits")
@@ -188,11 +188,12 @@ Deno.serve(async (req) => {
             log("Added 500 bonus credits", { sessionId });
           }
 
-          await serviceClient.from("daily_credits").insert({
+          // Record the claim to prevent duplicate credits
+          await serviceClient.from("credit_pack_claims").insert({
             user_id: userId,
-            claim_date: new Date().toISOString().split("T")[0],
-            credits_claimed: 0,
-          }).then(() => {});
+            stripe_session_id: sessionId,
+            credits_added: 500,
+          });
         }
       }
 
