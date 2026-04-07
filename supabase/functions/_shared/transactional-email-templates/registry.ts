@@ -10,7 +10,9 @@ export interface TemplateEntry {
 }
 
 import { template as newComment } from './new-comment.tsx'
+import { template as commentReply } from './comment-reply.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'new-comment': newComment,
+  'comment-reply': commentReply,
 }
