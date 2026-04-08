@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, ArrowLeft, Zap, Building2, Gift, Loader2, Sparkles } from "lucide-react";
+import { Check, ArrowLeft, Zap, Gift, Loader2, Sparkles } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import Footer from "@/components/home/Footer";
 
@@ -107,26 +107,6 @@ const PricingPage = () => {
       action: () => handleCheckout(billingInterval === "monthly" ? "pro" : "pro_annual"),
       checkoutType: billingInterval === "monthly" ? "pro" : "pro_annual",
     },
-    {
-      name: "Enterprise",
-      price: "定制",
-      period: "",
-      description: "面向企业级 AI 产品和大规模集成",
-      icon: Building2,
-      highlight: false,
-      features: [
-        "不限量积分",
-        "私有部署选项",
-        "专属抓取通道",
-        "SLA 保障 99.9%",
-        "实时监控面板",
-        "专属技术支持",
-        "自定义功能开发",
-      ],
-      cta: "联系我们",
-      action: () => { window.location.href = "mailto:hi@readgzh.site"; },
-      checkoutType: null,
-    },
   ];
 
   return (
@@ -169,12 +149,12 @@ const PricingPage = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto mb-16 items-stretch">
           {tiers.map((tier) => (
             <Card
               key={tier.name}
               className={`relative flex flex-col ${
-                tier.highlight ? "border-primary shadow-lg scale-105" : ""
+                tier.highlight ? "border-primary shadow-lg md:scale-105" : ""
               }`}
             >
               {tier.highlight && (
