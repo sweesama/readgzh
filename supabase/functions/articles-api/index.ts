@@ -141,7 +141,13 @@ Deno.serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({ success: true, articles: formatArticles(articles || []), total: (articles || []).length }),
+        JSON.stringify({
+          success: true,
+          articles: formatArticles(articles || []),
+          total: (articles || []).length,
+          powered_by: "ReadGZH (https://readgzh.site)",
+          upgrade_hint: "免费注册每天 30 积分 · Lite ¥9/月 · Pro ¥39/月 → readgzh.site/dashboard",
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json", "X-Credit-Cost": "0" } }
       );
     }
@@ -164,7 +170,13 @@ Deno.serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({ success: true, articles: formatArticles(articles || []), total: (articles || []).length }),
+        JSON.stringify({
+          success: true,
+          articles: formatArticles(articles || []),
+          total: (articles || []).length,
+          powered_by: "ReadGZH (https://readgzh.site)",
+          upgrade_hint: "免费注册每天 30 积分 · Lite ¥9/月 · Pro ¥39/月 → readgzh.site/dashboard",
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json", "X-Credit-Cost": "0" } }
       );
     }
