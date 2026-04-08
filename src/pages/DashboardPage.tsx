@@ -38,6 +38,7 @@ interface Balance {
   is_pro?: boolean;
   daily_limit?: number;
   bonus_credits?: number;
+  bonus_expires_at?: string | null;
 }
 
 const DashboardPage = () => {
@@ -652,7 +653,14 @@ const DashboardPage = () => {
                 <Coins className="h-8 w-8 text-primary" />
               </div>
               {bonusCredits > 0 && (
-                <p className="text-xs text-primary mt-1">🎁 含 {bonusCredits} 加量包积分</p>
+                <p className="text-xs text-primary mt-1">
+                  🎁 含 {bonusCredits} 加量包积分
+                  {balance?.bonus_expires_at && (
+                    <span className="text-muted-foreground ml-1">
+                      （{new Date(balance.bonus_expires_at).toLocaleDateString('zh-CN')} 到期）
+                    </span>
+                  )}
+                </p>
               )}
               {isPro ? (
                 <div className="mt-3 space-y-2">
