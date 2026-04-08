@@ -35,7 +35,7 @@ async function checkAnonymousRateLimit(req: Request): Promise<{ allowed: boolean
     req.headers.get("cf-connecting-ip") ||
     "unknown";
 
-  const dailyLimit = 20;
+  const dailyLimit = 10; // 10 requests/IP/day for anonymous
   const { data } = await supabase.rpc("check_rate_limit", { p_ip: ip, p_daily_limit: dailyLimit });
 
   if (data) {
@@ -51,16 +51,17 @@ function rateLimitResponse(current: number, limit: number) {
       success: false,
       error: "rate_limit_exceeded",
       message: `Anonymous API access limit reached (${current}/${limit} requests today).`,
-      hint: "🔑 Get your FREE API Key for unlimited metadata queries — takes 30 seconds with Google sign-in.",
+    hint: "🔑 免费注册获取 API Key，每天 30 积分。Lite ¥9/月 300积分，Pro ¥39/月 2000积分。",
       benefits: [
-        "✅ Unlimited search & list queries (no daily cap)",
-        "✅ 50 free credits/day for full article reading",
-        "✅ Priority response times",
-        "✅ Usage analytics dashboard",
+        "✅ 每日 30 积分免费使用",
+        "✅ 缓存文章免费读取",
+        "✅ 用量统计面板",
+        "✅ WebMCP 协议支持",
       ],
       register_url: "https://readgzh.site/dashboard",
       docs_url: "https://readgzh.site/docs",
       pricing_url: "https://readgzh.site/pricing",
+      powered_by: "ReadGZH (https://readgzh.site) - 让 AI 读懂微信公众号",
     }),
     {
       status: 429,

@@ -82,16 +82,21 @@ Deno.serve(async (req) => {
       const keyHash = await hashKey(rawKey);
       const keyPrefix = rawKey.substring(0, 12) + "..." + rawKey.substring(rawKey.length - 4);
 
-      // Check if user has any Pro keys (active or revoked - to preserve tier on new keys)
-      const { data: proKeys } = await serviceClient
+      // Check if user has any paid keys (active or revoked - to preserve tier on new keys)
+      const { data: paidKeys } = await serviceClient
         .from("api_keys")
-        .select("id, tier")
+        .select("id, tier, daily_limit")
         .eq("user_id", user.id)
-        .in("tier", ["pro", "pro_lifetime"])
+        .in("tier", ["lite", "pro", "pro_lifetime"])
         .limit(1);
-      const hasPro = (proKeys && proKeys.length > 0);
-      const isLifetime = proKeys?.some(k => k.tier === "pro_lifetime");
-      const newTier = isLifetime ? "pro_lifetime" : (hasPro ? "pro" : "free");
+      const hasPaid = (paidKeys && paidKeys.length > 0);
+      const existingTier = paidKeys?.[0]?.tier || "free";
+      const isLifetime = paidKeys?.some(k => k.tier === "pro_lifetime");
+      const newTier = isLifetime ? "pro_lifetime" : (hasPaid ? existingTier : "free");
+      
+      // Set daily_limit based on tier (monthly budget for paid tiers)
+      const tierLimits: Record<string, number> = { free: 30, lite: 300, pro: 2000, pro_lifetime: 2000 };
+      const newLimit = tierLimits[newTier] || 30;
 
       const { data, error } = await serviceClient.from("api_keys").insert({
         user_id: user.id,
@@ -100,7 +105,7 @@ Deno.serve(async (req) => {
         key_value: rawKey,
         name: keyName,
         tier: newTier,
-        daily_limit: newTier === "free" ? 50 : 2000,
+        daily_limit: newLimit,
       }).select().single();
 
       if (error) throw error;
@@ -191,17 +196,25 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Check if user is Pro (has any pro-tier active key)
-      const { data: proKeys } = await serviceClient
+      // Check if user is paid (has any paid-tier active key)
+      const { data: paidKeys } = await serviceClient
         .from("api_keys")
-        .select("id")
+        .select("id, tier")
         .eq("user_id", user.id)
         .eq("is_active", true)
-        .in("tier", ["pro", "pro_lifetime"])
+        .in("tier", ["lite", "pro", "pro_lifetime"])
         .limit(1);
 
-      const isPro = (proKeys && proKeys.length > 0);
-      const creditAmount = isPro ? 2000 : 30;
+      const isPaid = (paidKeys && paidKeys.length > 0);
+      const creditAmount = isPaid ? 0 : 30; // Paid users don't need to claim - monthly auto-grant
+
+      // Paid users don't need to manually claim
+      if (isPaid) {
+        return new Response(
+          JSON.stringify({ success: true, credits: 0, message: "订阅用户积分月初自动发放，无需手动领取", already_claimed: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
       const { error } = await serviceClient.from("daily_credits").insert({
         user_id: user.id,
@@ -212,7 +225,7 @@ Deno.serve(async (req) => {
       if (error) throw error;
 
       return new Response(
-        JSON.stringify({ success: true, credits: creditAmount, message: isPro ? "Pro 会员自动获取 2000 积分！" : "成功领取 30 积分！" }),
+        JSON.stringify({ success: true, credits: creditAmount, message: "成功领取 30 积分！" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

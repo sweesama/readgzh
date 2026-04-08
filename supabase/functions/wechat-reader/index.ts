@@ -528,7 +528,8 @@ function htmlToMarkdown(html: string, title: string, author: string, publishTime
 
   md += text;
   if (sourceUrl) md += `\n\n---\n**原文链接：** ${sourceUrl}`;
-  md += `\n\n---\n*Powered by [ReadGZH](https://readgzh.site)*`;
+  md += `\n\n---\n*Powered by [ReadGZH](https://readgzh.site) · [开发者文档](https://readgzh.site/docs) · [升级套餐](https://readgzh.site/pricing)*`;
+  md += `\n\n💡 免费注册获取每天 30 积分 · Lite ¥9/月 · Pro ¥39/月 → [readgzh.site/dashboard](https://readgzh.site/dashboard)`;
   return md;
 }
 
@@ -659,7 +660,8 @@ async function handleReadMode(slug: string | null, articleId: string | null, par
     ${paginationFooter}
     <div class="footer" style="margin-top:3em;padding-top:1em;border-top:1px solid #eee;color:#aaa;font-size:0.85em;">
       ${sourceLink}
-      <p style="margin-top:0.8em;">Powered by <a href="https://readgzh.site" style="color:#aaa;text-decoration:none;">ReadGZH</a> · <a href="https://readgzh.site/docs" style="color:#aaa;text-decoration:none;">开发者文档</a></p>
+      <p style="margin-top:0.8em;">Powered by <a href="https://readgzh.site" style="color:#aaa;text-decoration:none;">ReadGZH</a> · <a href="https://readgzh.site/docs" style="color:#aaa;text-decoration:none;">开发者文档</a> · <a href="https://readgzh.site/pricing" style="color:#aaa;text-decoration:none;">升级套餐</a></p>
+      <p style="margin-top:0.4em;font-size:0.8em;">💡 免费注册获取每天 30 积分 · Lite ¥9/月 · Pro ¥39/月 → <a href="https://readgzh.site/dashboard" style="color:#aaa;">readgzh.site/dashboard</a></p>
     </div>
   </article>
 </body>
@@ -688,7 +690,7 @@ function getClientIp(req: Request): string {
   return "unknown";
 }
 
-const DAILY_LIMIT = 10;
+const DAILY_LIMIT = 10; // 10 credits/IP/day for anonymous users (approx 3 articles at 3 credits each)
 const READ_MODE_DAILY_LIMIT = 50; // Daily limit for anonymous read mode requests
 const READ_MODE_API_KEY_LIMIT = 500; // Daily limit for API Key read mode requests
 
@@ -793,29 +795,18 @@ async function checkApiKeyAuth(req: Request, creditCost: number = 1): Promise<{
   }
 }
 
-// Calculate credit cost based on content complexity
-function calculateCreditCost(contentHtml: string, isPicture: boolean): number {
-  if (isPicture) return 2; // Picture templates (小绿书) always cost 2
-  const imgCount = (contentHtml.match(/<img\s/gi) || []).length;
-  return imgCount >= 5 ? 2 : 1;
+// Unified credit cost: all articles cost 3 credits
+function calculateCreditCost(_contentHtml: string, _isPicture: boolean): number {
+  return 3;
 }
 
-// Deduct extra credits for complex articles (called after scrape)
-async function deductExtraCredit(keyHash: string): Promise<void> {
-  try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-    // Deduct 1 additional credit (the first was already deducted during validation)
-    await supabase.rpc("validate_api_key", { p_key_hash: keyHash, p_credit_cost: 1 });
-  } catch (err) {
-    console.error("Extra credit deduction error:", err);
-  }
+// Deduct extra credits after scrape (initial validation deducted 3, no extra needed now)
+async function deductExtraCredit(_keyHash: string): Promise<void> {
+  // No-op: unified 3-credit cost is fully deducted during initial validation
 }
 
 async function checkRateLimit(req: Request): Promise<{ allowed: boolean; current: number; remaining: number; limit: number; isApiKey?: boolean; tier?: string; keyHash?: string } | null> {
-  const apiKeyResult = await checkApiKeyAuth(req);
+  const apiKeyResult = await checkApiKeyAuth(req, 3); // unified 3-credit cost
   if (apiKeyResult) {
     console.log("API Key auth result:", JSON.stringify({ allowed: apiKeyResult.allowed, current: apiKeyResult.current, remaining: apiKeyResult.remaining, tier: apiKeyResult.tier, hasKeyHash: !!apiKeyResult.keyHash }));
     return apiKeyResult;
@@ -852,11 +843,11 @@ function rateLimitResponse(rateInfo: { current: number; remaining: number; limit
   const statusCode = isCreditsExhausted ? 402 : 429;
   const errorCode = isCreditsExhausted ? "insufficient_credits" : "rate_limit_exceeded";
   const errorMsg = isCreditsExhausted
-    ? `API Key 积分已用完，今日限制 ${limit} 积分`
-    : `未授权请求已达每日上限（${DAILY_LIMIT} 次）。注册免费获取 30 积分/天，稳定无限制。`;
+    ? `API Key 积分已用完（已使用 ${rateInfo.current}/${limit} 积分）`
+    : `未授权请求已达每日上限（${DAILY_LIMIT} 积分/天）。注册免费获取每天 30 积分。`;
   const hint = isCreditsExhausted
-    ? "请到 readgzh.site/dashboard 领取免费积分或升级套餐"
-    : "立即注册：readgzh.site/dashboard — 免费创建 API Key，每日 30 积分，告别 IP 限制";
+    ? "请到 readgzh.site/dashboard 领取免费积分或升级套餐。Lite ¥9/月 300积分，Pro ¥39/月 2000积分。"
+    : "立即注册：readgzh.site/dashboard — 免费创建 API Key，每日 30 积分，告别 IP 限制。";
 
   return new Response(
     JSON.stringify({
@@ -866,8 +857,10 @@ function rateLimitResponse(rateInfo: { current: number; remaining: number; limit
       hint,
       current: rateInfo.current,
       limit,
+      upgrade_hint: "📈 升级套餐获取更多积分：Lite ¥9/月(300积分) | Pro ¥39/月(2000积分)",
       pricing_url: "https://readgzh.site/pricing",
       dashboard_url: "https://readgzh.site/dashboard",
+      powered_by: "ReadGZH (https://readgzh.site) - 让 AI 读懂微信公众号",
     }),
     {
       status: statusCode,
@@ -1179,7 +1172,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Not cached – check rate limit (deducts 1 credit for API key users)
+      // Not cached – check rate limit (deducts 3 credits for API key users)
       const rateInfo = await checkRateLimit(req);
       if (rateInfo && !rateInfo.allowed) {
         return rateLimitResponse(rateInfo);

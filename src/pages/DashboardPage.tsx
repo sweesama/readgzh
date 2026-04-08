@@ -409,7 +409,7 @@ const DashboardPage = () => {
   const remainingCredits = balance?.remaining_credits ?? 0;
   const totalCredits = balance?.total_credits ?? 0;
   const bonusCredits = balance?.bonus_credits ?? 0;
-  const dailyLimit = balance?.daily_limit ?? (isPro ? 2000 : 50);
+  const dailyLimit = balance?.daily_limit ?? (isPro ? 2000 : 30);
 
   if (loading) {
     return (
@@ -582,10 +582,10 @@ const DashboardPage = () => {
               <div className="flex items-center gap-3">
                 <Crown className="h-8 w-8 text-amber-500" />
                 <div>
-                  <p className="font-semibold">Pro 会员</p>
+                  <p className="font-semibold">{isLifetimePro ? "永久 Pro" : (subscriptionInfo ? (subscriptionInfo.interval === "year" ? "Pro 年付" : "Pro 月付") : "Pro")} 会员</p>
                   {subscriptionInfo ? (
                     <p className="text-sm text-muted-foreground">
-                      {subscriptionInfo.interval === "year" ? "年付订阅" : "月付订阅"}
+                      每月 {dailyLimit} 积分
                       {subscriptionInfo.status === "canceling" && " · 已取消，"}
                       {subscriptionInfo.current_period_end && (
                         <>
@@ -597,7 +597,7 @@ const DashboardPage = () => {
                   ) : isLegacyPro ? (
                     <p className="text-sm text-muted-foreground">永久会员 · 感谢早期支持 ❤️</p>
                   ) : (
-                    <p className="text-sm text-muted-foreground">每日 2,000 积分 · 感谢支持 ❤️</p>
+                    <p className="text-sm text-muted-foreground">每月 {dailyLimit} 积分 · 感谢支持 ❤️</p>
                   )}
                 </div>
               </div>
@@ -640,7 +640,7 @@ const DashboardPage = () => {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">今日剩余积分</p>
+                  <p className="text-sm text-muted-foreground">{isPro ? "本月剩余积分" : "今日剩余积分"}</p>
                   <p className="text-3xl font-bold">
                     {isPro || hasClaimed ? (
                       <>{remainingCredits}<span className="text-base font-normal text-muted-foreground"> / {totalCredits}</span></>
@@ -656,7 +656,7 @@ const DashboardPage = () => {
               )}
               {isPro ? (
                 <div className="mt-3 space-y-2">
-                  <p className="text-xs text-muted-foreground">✅ Pro 会员每日自动重置 {dailyLimit} 积分</p>
+                  <p className="text-xs text-muted-foreground">✅ 订阅会员每月自动获得 {dailyLimit} 积分</p>
                   <Button
                     onClick={handleBuyCredits}
                     disabled={upgradeLoading}
@@ -670,7 +670,7 @@ const DashboardPage = () => {
                 </div>
               ) : hasClaimed ? (
                 <div className="mt-3 space-y-2">
-                  <p className="text-xs text-muted-foreground">✅ 今日积分已领取 · 简单文章 1 积分，复杂文章 2 积分</p>
+                  <p className="text-xs text-muted-foreground">✅ 今日积分已领取 · 每篇文章消耗 3 积分</p>
                   <Button
                     onClick={handleBuyCredits}
                     disabled={upgradeLoading}
@@ -812,7 +812,7 @@ const DashboardPage = () => {
                       <p className="text-xs text-muted-foreground">
                         创建于 {new Date(key.created_at).toLocaleDateString("zh-CN")}
                         {key.last_used_at && ` · 最后使用 ${new Date(key.last_used_at).toLocaleDateString("zh-CN")}`}
-                        {` · 限额 ${key.daily_limit} 积分/天`}
+                        {` · 限额 ${key.daily_limit} 积分/${["lite", "pro", "pro_lifetime"].includes(key.tier) ? "月" : "天"}`}
                       </p>
                     </div>
                     {key.is_active && (
