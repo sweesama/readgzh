@@ -841,11 +841,11 @@ function rateLimitResponse(rateInfo: { current: number; remaining: number; limit
   const statusCode = isCreditsExhausted ? 402 : 429;
   const errorCode = isCreditsExhausted ? "insufficient_credits" : "rate_limit_exceeded";
   const errorMsg = isCreditsExhausted
-    ? `API Key 积分已用完，今日限制 ${limit} 积分`
-    : `未授权请求已达每日上限（${DAILY_LIMIT} 次）。注册免费获取 30 积分/天，稳定无限制。`;
+    ? `API Key 积分已用完（已使用 ${rateInfo.current}/${limit} 积分）`
+    : `未授权请求已达每日上限（${DAILY_LIMIT} 积分/天）。注册免费获取每天 30 积分。`;
   const hint = isCreditsExhausted
-    ? "请到 readgzh.site/dashboard 领取免费积分或升级套餐"
-    : "立即注册：readgzh.site/dashboard — 免费创建 API Key，每日 30 积分，告别 IP 限制";
+    ? "请到 readgzh.site/dashboard 领取免费积分或升级套餐。Lite ¥9/月 300积分，Pro ¥39/月 2000积分。"
+    : "立即注册：readgzh.site/dashboard — 免费创建 API Key，每日 30 积分，告别 IP 限制。";
 
   return new Response(
     JSON.stringify({
@@ -855,8 +855,10 @@ function rateLimitResponse(rateInfo: { current: number; remaining: number; limit
       hint,
       current: rateInfo.current,
       limit,
+      upgrade_hint: "📈 升级套餐获取更多积分：Lite ¥9/月(300积分) | Pro ¥39/月(2000积分)",
       pricing_url: "https://readgzh.site/pricing",
       dashboard_url: "https://readgzh.site/dashboard",
+      powered_by: "ReadGZH (https://readgzh.site) - 让 AI 读懂微信公众号",
     }),
     {
       status: statusCode,
@@ -1168,7 +1170,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Not cached – check rate limit (deducts 1 credit for API key users)
+      // Not cached – check rate limit (deducts 3 credits for API key users)
       const rateInfo = await checkRateLimit(req);
       if (rateInfo && !rateInfo.allowed) {
         return rateLimitResponse(rateInfo);
