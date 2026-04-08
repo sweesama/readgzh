@@ -201,11 +201,15 @@ Deno.serve(async (req) => {
             .eq("is_active", true);
 
           if (activeKeys && activeKeys.length > 0) {
+            const expiresAt = new Date(Date.now() + 30 * 86400000).toISOString();
             await serviceClient
               .from("api_keys")
-              .update({ bonus_credits: (activeKeys[0].bonus_credits || 0) + 500 })
+              .update({ 
+                bonus_credits: (activeKeys[0].bonus_credits || 0) + 500,
+                bonus_expires_at: expiresAt,
+              })
               .eq("id", activeKeys[0].id);
-            log("Added 500 bonus credits", { sessionId });
+            log("Added 500 bonus credits with 30-day expiry", { sessionId, expiresAt });
           }
 
           // Record the claim to prevent duplicate credits
