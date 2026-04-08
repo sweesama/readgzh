@@ -79,6 +79,14 @@ Deno.serve(async (req) => {
     let subscriptionEnd: string | null = null;
     let subscriptionInterval: string | null = null;
     let subscriptionStatus: string | null = null;
+    let subscriptionTier: string | null = null;
+
+    // Stripe product → tier mapping
+    const PRODUCT_TIER_MAP: Record<string, { tier: string; limit: number }> = {
+      "prod_UIWlK0eiiBL1gd": { tier: "lite", limit: 300 },    // Lite monthly
+      "prod_U6UKPXDtv2SFEP": { tier: "pro", limit: 2000 },    // Pro monthly
+      "prod_U6UKSXOZfSMSpB": { tier: "pro", limit: 2000 },    // Pro annual
+    };
 
     if (subscriptions.data.length > 0) {
       const sub = subscriptions.data[0];
@@ -86,17 +94,29 @@ Deno.serve(async (req) => {
       subscriptionEnd = new Date(sub.current_period_end * 1000).toISOString();
       subscriptionInterval = sub.items.data[0]?.price?.recurring?.interval || null;
       subscriptionStatus = sub.status;
-      log("Active subscription found", { id: sub.id, interval: subscriptionInterval, end: subscriptionEnd });
+      
+      const productId = sub.items.data[0]?.price?.product as string;
+      const tierInfo = PRODUCT_TIER_MAP[productId] || { tier: "pro", limit: 2000 };
+      subscriptionTier = tierInfo.tier;
+      log("Active subscription found", { id: sub.id, interval: subscriptionInterval, end: subscriptionEnd, tier: subscriptionTier });
 
-      // Sync Pro status
+      // Sync tier and limit
       await serviceClient
         .from("api_keys")
-        .update({ tier: "pro", daily_limit: 2000 })
+        .update({ tier: tierInfo.tier, daily_limit: tierInfo.limit })
         .eq("user_id", userId)
         .eq("is_active", true)
         .eq("tier", "free");
-
-      // Also check for canceled-at-period-end subscriptions
+      
+      // Also upgrade from lite to pro if applicable
+      if (tierInfo.tier === "pro") {
+        await serviceClient
+          .from("api_keys")
+          .update({ tier: "pro", daily_limit: 2000 })
+          .eq("user_id", userId)
+          .eq("is_active", true)
+          .eq("tier", "lite");
+      }
     }
 
     // Also check subscriptions that are active but set to cancel
@@ -197,14 +217,14 @@ Deno.serve(async (req) => {
         }
       }
 
-      // If no subscription AND no legacy pro, downgrade
+      // If no subscription AND no legacy pro, downgrade to free
       if (!hasLegacyPro) {
         await serviceClient
           .from("api_keys")
-          .update({ tier: "free", daily_limit: 50 })
+          .update({ tier: "free", daily_limit: 30 })
           .eq("user_id", userId)
           .eq("is_active", true)
-          .eq("tier", "pro");
+          .in("tier", ["pro", "lite"]);
       }
     }
 
@@ -222,6 +242,7 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({
       is_pro: isPro,
+      tier: subscriptionTier || (hasLifetimePro ? "pro_lifetime" : (hasLegacyPro ? "pro" : "free")),
       subscription: hasActiveSubscription ? {
         status: subscriptionStatus,
         interval: subscriptionInterval,
