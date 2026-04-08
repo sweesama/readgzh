@@ -17,6 +17,7 @@ export type Database = {
       api_keys: {
         Row: {
           bonus_credits: number
+          bonus_expires_at: string | null
           created_at: string
           daily_limit: number
           id: string
@@ -31,6 +32,7 @@ export type Database = {
         }
         Insert: {
           bonus_credits?: number
+          bonus_expires_at?: string | null
           created_at?: string
           daily_limit?: number
           id?: string
@@ -45,6 +47,7 @@ export type Database = {
         }
         Update: {
           bonus_credits?: number
+          bonus_expires_at?: string | null
           created_at?: string
           daily_limit?: number
           id?: string
