@@ -50,7 +50,7 @@ const PricingPage = () => {
       icon: Gift,
       highlight: false,
       features: [
-        "每日 50 积分（简单文章 1 积分，复杂文章 2 积分）",
+        "每日 50 积分（每篇文章 3 积分）",
         "需每日到网站领取积分",
         "完整的文章解析能力",
         "缓存文章免费读取",
@@ -60,6 +60,28 @@ const PricingPage = () => {
       ],
       cta: "免费开始",
       action: () => navigate("/dashboard"),
+      checkoutType: null,
+    },
+    {
+      name: "Lite",
+      price: "¥9",
+      period: "/月",
+      description: "轻量尝鲜，适合偶尔使用的个人用户",
+      icon: Sparkles,
+      highlight: false,
+      features: [
+        "每月 300 积分（约 100 篇文章）",
+        "月初自动发放，无需手动领取",
+        "完整的文章解析能力",
+        "缓存文章免费读取",
+        "用量统计面板",
+        "可购买加量包扩展额度（¥9/500积分）",
+        "随时取消订阅",
+        "邮件支持",
+      ],
+      cta: checkoutLoading === "lite" ? "处理中..." : "立即订阅",
+      action: () => handleCheckout("lite"),
+      checkoutType: "lite",
     },
     {
       name: "Pro",
@@ -70,8 +92,8 @@ const PricingPage = () => {
       highlight: true,
       saving: proSaving,
       features: [
-        "每日 2,000 积分（每天自动重置）",
-        "无需每日领取，自动刷新",
+        "每月 2,000 积分（约 666 篇文章）",
+        "月初自动发放，无需手动领取",
         "完整的文章解析能力",
         "缓存文章免费读取",
         "AI 智能摘要（?mode=summary）",
@@ -81,8 +103,9 @@ const PricingPage = () => {
         "随时取消订阅",
         "邮件支持",
       ],
-      cta: checkoutLoading ? "处理中..." : "立即订阅",
+      cta: checkoutLoading === "pro" || checkoutLoading === "pro_annual" ? "处理中..." : "立即订阅",
       action: () => handleCheckout(billingInterval === "monthly" ? "pro" : "pro_annual"),
+      checkoutType: billingInterval === "monthly" ? "pro" : "pro_annual",
     },
     {
       name: "Enterprise",
@@ -102,6 +125,7 @@ const PricingPage = () => {
       ],
       cta: "联系我们",
       action: () => { window.location.href = "mailto:hi@readgzh.site"; },
+      checkoutType: null,
     },
   ];
 
@@ -115,7 +139,7 @@ const PricingPage = () => {
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">简单透明的定价</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            免费开始使用，随业务增长升级。缓存文章免费读取，新文章按复杂度消耗 1-2 积分。
+            免费开始使用，随业务增长升级。每篇文章消耗 3 积分，缓存文章免费读取。
           </p>
           <p className="text-sm text-muted-foreground mt-2">支持信用卡、支付宝等多种支付方式 · 随时取消</p>
 
@@ -145,7 +169,7 @@ const PricingPage = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto mb-16">
           {tiers.map((tier) => (
             <Card
               key={tier.name}
@@ -183,9 +207,9 @@ const PricingPage = () => {
                   className="w-full mt-6"
                   variant={tier.highlight ? "default" : "outline"}
                   onClick={tier.action}
-                  disabled={tier.highlight && checkoutLoading}
+                  disabled={!!checkoutLoading && checkoutLoading === tier.checkoutType}
                 >
-                  {tier.highlight && checkoutLoading ? (
+                  {checkoutLoading && checkoutLoading === tier.checkoutType ? (
                     <><Loader2 className="mr-2 h-4 w-4 animate-spin" />处理中...</>
                   ) : (
                     tier.cta
@@ -202,23 +226,31 @@ const PricingPage = () => {
           {[
             {
               q: "缓存文章需要消耗额度吗？",
-              a: "不需要！已经抓取过的文章再次读取完全免费，不消耗任何积分。只有首次抓取新文章才会根据复杂度消耗 1-2 积分。",
+              a: "不需要！已经抓取过的文章再次读取完全免费，不消耗任何积分。只有首次抓取新文章才会消耗 3 积分。",
             },
             {
               q: "免费层的每日领取是什么意思？",
-              a: "免费用户每天需要到 ReadGZH 网站点击「领取积分」按钮，即可获得当日 50 积分。简单文章消耗 1 积分，含大量图片的复杂文章消耗 2 积分。",
+              a: "免费用户每天需要到 ReadGZH 网站点击「领取积分」按钮，即可获得当日 50 积分。每篇文章消耗 3 积分，约可阅读 16 篇。",
+            },
+            {
+              q: "Lite 和 Pro 有什么区别？",
+              a: "Lite（¥9/月）每月 300 积分，适合偶尔使用。Pro（¥39/月）每月 2000 积分，并额外提供 AI 智能摘要和优先抓取队列。",
             },
             {
               q: "订阅后可以取消吗？",
-              a: "可以！你可以随时在控制台取消订阅，取消后在当前计费周期结束前仍可使用 Pro 功能。不会产生额外费用。",
+              a: "可以！你可以随时在控制台取消订阅，取消后在当前计费周期结束前仍可使用已有功能。不会产生额外费用。",
             },
             {
               q: "月付和年付有什么区别？",
-              a: "功能完全一样！年付 ¥299 相当于月均 ¥24.9，比月付 ¥39 节省约 ¥169（7.7 折）。",
+              a: "仅 Pro 提供年付选项。功能完全一样！年付 ¥299 相当于月均 ¥24.9，比月付 ¥39 节省约 ¥169（7.7 折）。",
             },
             {
-              q: "如果 2000 积分用完了怎么办？",
-              a: "你可以在控制台购买「加量包」（Pro 用户 ¥9/500积分，免费用户 ¥15/500积分），加量包积分不会每日重置，用完为止，可叠加购买。",
+              q: "加量包有有效期吗？",
+              a: "新购买的加量包自购买之日起 30 天内有效。可叠加购买，每包独立计算有效期。",
+            },
+            {
+              q: "如果积分用完了怎么办？",
+              a: "你可以在控制台购买「加量包」（订阅用户 ¥9/500积分，免费用户 ¥15/500积分），也可以升级到更高级别的订阅计划。",
             },
             {
               q: "支持哪些支付方式？",
