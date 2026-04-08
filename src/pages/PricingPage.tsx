@@ -46,11 +46,11 @@ const PricingPage = () => {
       name: "Free",
       price: "¥0",
       period: "永久免费",
-      description: "每天到网站领取 50 积分免费额度",
+      description: "每天到网站领取 30 积分免费额度",
       icon: Gift,
       highlight: false,
       features: [
-        "每日 50 积分（每篇文章 3 积分）",
+        "每日 30 积分",
         "需每日到网站领取积分",
         "完整的文章解析能力",
         "缓存文章免费读取",
@@ -70,7 +70,7 @@ const PricingPage = () => {
       icon: Sparkles,
       highlight: false,
       features: [
-        "每月 300 积分（约 100 篇文章）",
+        "每月 300 积分",
         "月初自动发放，无需手动领取",
         "完整的文章解析能力",
         "缓存文章免费读取",
@@ -92,7 +92,7 @@ const PricingPage = () => {
       highlight: true,
       saving: proSaving,
       features: [
-        "每月 2,000 积分（约 666 篇文章）",
+        "每月 2,000 积分",
         "月初自动发放，无需手动领取",
         "完整的文章解析能力",
         "缓存文章免费读取",
@@ -139,7 +139,7 @@ const PricingPage = () => {
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">简单透明的定价</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            免费开始使用，随业务增长升级。每篇文章消耗 3 积分，缓存文章免费读取。
+            免费开始使用，随业务增长升级。缓存文章免费读取。
           </p>
           <p className="text-sm text-muted-foreground mt-2">支持信用卡、支付宝等多种支付方式 · 随时取消</p>
 
@@ -230,7 +230,7 @@ const PricingPage = () => {
             },
             {
               q: "免费层的每日领取是什么意思？",
-              a: "免费用户每天需要到 ReadGZH 网站点击「领取积分」按钮，即可获得当日 50 积分。每篇文章消耗 3 积分，约可阅读 16 篇。",
+              a: "免费用户每天需要到 ReadGZH 网站点击「领取积分」按钮，即可获得当日 30 积分。",
             },
             {
               q: "Lite 和 Pro 有什么区别？",
