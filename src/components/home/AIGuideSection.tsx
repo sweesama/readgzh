@@ -46,7 +46,7 @@ const AIGuideSection = () => {
           </CardContent>
         </Card>
         <p className="text-center text-xs text-muted-foreground mt-3">
-          💡 无需注册，每天可免费使用 10 次 · 注册后每天 30 积分 · <a href="/pricing" className="text-primary hover:underline">Pro 会员</a>每月 2000 积分
+          💡 无需注册，每天免费 10 积分 · 注册后每天 30 积分 · <a href="/pricing" className="text-primary hover:underline">Pro 会员</a>每月 2000 积分
         </p>
       </div>
     </div>
