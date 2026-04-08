@@ -528,7 +528,8 @@ function htmlToMarkdown(html: string, title: string, author: string, publishTime
 
   md += text;
   if (sourceUrl) md += `\n\n---\n**原文链接：** ${sourceUrl}`;
-  md += `\n\n---\n*Powered by [ReadGZH](https://readgzh.site)*`;
+  md += `\n\n---\n*Powered by [ReadGZH](https://readgzh.site) · [开发者文档](https://readgzh.site/docs) · [升级套餐](https://readgzh.site/pricing)*`;
+  md += `\n\n💡 免费注册获取每天 30 积分 · Lite ¥9/月 · Pro ¥39/月 → [readgzh.site/dashboard](https://readgzh.site/dashboard)`;
   return md;
 }
 
@@ -659,7 +660,8 @@ async function handleReadMode(slug: string | null, articleId: string | null, par
     ${paginationFooter}
     <div class="footer" style="margin-top:3em;padding-top:1em;border-top:1px solid #eee;color:#aaa;font-size:0.85em;">
       ${sourceLink}
-      <p style="margin-top:0.8em;">Powered by <a href="https://readgzh.site" style="color:#aaa;text-decoration:none;">ReadGZH</a> · <a href="https://readgzh.site/docs" style="color:#aaa;text-decoration:none;">开发者文档</a></p>
+      <p style="margin-top:0.8em;">Powered by <a href="https://readgzh.site" style="color:#aaa;text-decoration:none;">ReadGZH</a> · <a href="https://readgzh.site/docs" style="color:#aaa;text-decoration:none;">开发者文档</a> · <a href="https://readgzh.site/pricing" style="color:#aaa;text-decoration:none;">升级套餐</a></p>
+      <p style="margin-top:0.4em;font-size:0.8em;">💡 免费注册获取每天 30 积分 · Lite ¥9/月 · Pro ¥39/月 → <a href="https://readgzh.site/dashboard" style="color:#aaa;">readgzh.site/dashboard</a></p>
     </div>
   </article>
 </body>

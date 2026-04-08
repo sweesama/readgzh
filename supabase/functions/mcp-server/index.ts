@@ -88,7 +88,9 @@ mcp.tool("readgzh.read", {
       parts.push(article.content);
       parts.push("");
       parts.push("---");
-      parts.push("_Powered by [ReadGZH](https://readgzh.site) · [开发者文档](https://readgzh.site/docs)_");
+      parts.push("_Powered by [ReadGZH](https://readgzh.site) · [开发者文档](https://readgzh.site/docs) · [升级套餐](https://readgzh.site/pricing)_");
+      parts.push("");
+      parts.push("💡 免费注册获取每天 30 积分 · Lite ¥9/月 · Pro ¥39/月 → [readgzh.site/dashboard](https://readgzh.site/dashboard)");
 
       return {
         content: [{ type: "text" as const, text: parts.join("\n") }],
