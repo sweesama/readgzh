@@ -497,7 +497,7 @@ curl -o ~/.openclaw/workspace/skills/readgzh/SKILL.md \\
             <p className="text-muted-foreground">
               API 调用需持有有效授权（API Key）。未授权请求受严格 IP 频率限制（每日仅 10 次），
               且不保证服务稳定性。前往{" "}
-              <Link to="/dashboard" className="text-primary hover:underline">开发者控制台</Link> 免费创建 Key，即享每日 50 积分。
+              <Link to="/dashboard" className="text-primary hover:underline">开发者控制台</Link> 免费创建 Key，即享每日 30 积分。
             </p>
 
             <div className="space-y-3">
@@ -505,8 +505,8 @@ curl -o ~/.openclaw/workspace/skills/readgzh/SKILL.md \\
               <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground">
                 <li>前往 <Link to="/dashboard" className="text-primary hover:underline">开发者控制台</Link>，使用邮箱验证码、Google 或 Apple 登录</li>
                 <li>点击「创建 Key」生成一个 <code className="bg-muted px-1.5 py-0.5 rounded text-xs">sk_live_...</code> 格式的密钥</li>
-                <li>每天点击「领取今日积分」获取 50 积分（简单文章 1 积分，复杂文章 2 积分）</li>
-                <li>需要更多积分？<Link to="/pricing" className="text-primary hover:underline">订阅 Pro 套餐</Link>（¥39/月 或 ¥299/年），享每日 2,000 积分自动重置</li>
+                <li>每天点击「领取今日积分」获取 30 积分</li>
+                <li>需要更多积分？<Link to="/pricing" className="text-primary hover:underline">查看订阅套餐</Link>，Lite ¥9/月起</li>
               </ol>
             </div>
 
@@ -566,7 +566,7 @@ curl -o ~/.openclaw/workspace/skills/readgzh/SKILL.md \\
               <li>仅支持微信公众号链接（mp.weixin.qq.com）</li>
               <li>文章内容会自动缓存，重复请求不会重新抓取</li>
               <li>图片消息会提取所有图片和文字描述</li>
-              <li>网页版免费使用；API 调用需持有 API Key（未授权请求受严格频率限制），免费用户每日 50 积分（需领取），Pro 订阅用户每日 2,000 积分（自动重置）</li>
+              <li>网页版免费使用；API 调用需持有 API Key（未授权请求受严格频率限制），免费用户每日 30 积分（需领取），订阅用户每月最高 2,000 积分（自动发放）</li>
               <li>请遵守相关法律法规，仅用于个人学习和研究</li>
             </ul>
           </CardContent>

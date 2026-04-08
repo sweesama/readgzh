@@ -201,7 +201,7 @@ Deno.serve(async (req) => {
         .limit(1);
 
       const isPro = (proKeys && proKeys.length > 0);
-      const creditAmount = isPro ? 2000 : 50;
+      const creditAmount = isPro ? 2000 : 30;
 
       const { error } = await serviceClient.from("daily_credits").insert({
         user_id: user.id,
@@ -212,7 +212,7 @@ Deno.serve(async (req) => {
       if (error) throw error;
 
       return new Response(
-        JSON.stringify({ success: true, credits: creditAmount, message: isPro ? "Pro 会员自动获取 2000 积分！" : "成功领取 50 积分！" }),
+        JSON.stringify({ success: true, credits: creditAmount, message: isPro ? "Pro 会员自动获取 2000 积分！" : "成功领取 30 积分！" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

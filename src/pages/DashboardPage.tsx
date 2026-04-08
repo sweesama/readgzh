@@ -690,7 +690,7 @@ const DashboardPage = () => {
                   className="mt-3 w-full"
                 >
                   <Gift className="mr-2 h-4 w-4" />
-                  {isClaiming ? "领取中..." : "领取今日 50 积分"}
+                  {isClaiming ? "领取中..." : "领取今日 30 积分"}
                 </Button>
               )}
             </CardContent>
