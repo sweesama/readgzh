@@ -688,7 +688,7 @@ function getClientIp(req: Request): string {
   return "unknown";
 }
 
-const DAILY_LIMIT = 10;
+const DAILY_LIMIT = 10; // 10 credits/IP/day for anonymous users (approx 3 articles at 3 credits each)
 const READ_MODE_DAILY_LIMIT = 50; // Daily limit for anonymous read mode requests
 const READ_MODE_API_KEY_LIMIT = 500; // Daily limit for API Key read mode requests
 
@@ -793,29 +793,18 @@ async function checkApiKeyAuth(req: Request, creditCost: number = 1): Promise<{
   }
 }
 
-// Calculate credit cost based on content complexity
-function calculateCreditCost(contentHtml: string, isPicture: boolean): number {
-  if (isPicture) return 2; // Picture templates (小绿书) always cost 2
-  const imgCount = (contentHtml.match(/<img\s/gi) || []).length;
-  return imgCount >= 5 ? 2 : 1;
+// Unified credit cost: all articles cost 3 credits
+function calculateCreditCost(_contentHtml: string, _isPicture: boolean): number {
+  return 3;
 }
 
-// Deduct extra credits for complex articles (called after scrape)
-async function deductExtraCredit(keyHash: string): Promise<void> {
-  try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-    // Deduct 1 additional credit (the first was already deducted during validation)
-    await supabase.rpc("validate_api_key", { p_key_hash: keyHash, p_credit_cost: 1 });
-  } catch (err) {
-    console.error("Extra credit deduction error:", err);
-  }
+// Deduct extra credits after scrape (initial validation deducted 3, no extra needed now)
+async function deductExtraCredit(_keyHash: string): Promise<void> {
+  // No-op: unified 3-credit cost is fully deducted during initial validation
 }
 
 async function checkRateLimit(req: Request): Promise<{ allowed: boolean; current: number; remaining: number; limit: number; isApiKey?: boolean; tier?: string; keyHash?: string } | null> {
-  const apiKeyResult = await checkApiKeyAuth(req);
+  const apiKeyResult = await checkApiKeyAuth(req, 3); // unified 3-credit cost
   if (apiKeyResult) {
     console.log("API Key auth result:", JSON.stringify({ allowed: apiKeyResult.allowed, current: apiKeyResult.current, remaining: apiKeyResult.remaining, tier: apiKeyResult.tier, hasKeyHash: !!apiKeyResult.keyHash }));
     return apiKeyResult;
