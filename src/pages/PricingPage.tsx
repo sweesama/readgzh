@@ -12,15 +12,15 @@ import Footer from "@/components/home/Footer";
 const PricingPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [billingInterval, setBillingInterval] = useState<"monthly" | "annual">("monthly");
 
-  const handleCheckout = async (type: "pro" | "pro_annual") => {
+  const handleCheckout = async (type: string) => {
     if (!user) {
       navigate("/dashboard");
       return;
     }
-    setCheckoutLoading(true);
+    setCheckoutLoading(type);
     try {
       const { data, error } = await supabase.functions.invoke("create-payment", {
         body: { type },
@@ -34,7 +34,7 @@ const PricingPage = () => {
     } catch (err) {
       toast({ title: "支付创建失败", description: String(err), variant: "destructive" });
     }
-    setCheckoutLoading(false);
+    setCheckoutLoading(null);
   };
 
   const proPrice = billingInterval === "monthly" ? "¥39" : "¥299";
