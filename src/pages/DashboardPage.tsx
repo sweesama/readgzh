@@ -812,7 +812,7 @@ const DashboardPage = () => {
                       <p className="text-xs text-muted-foreground">
                         创建于 {new Date(key.created_at).toLocaleDateString("zh-CN")}
                         {key.last_used_at && ` · 最后使用 ${new Date(key.last_used_at).toLocaleDateString("zh-CN")}`}
-                        {` · 限额 ${key.daily_limit} 积分/天`}
+                        {` · 限额 ${key.daily_limit} 积分/${["lite", "pro", "pro_lifetime"].includes(key.tier) ? "月" : "天"}`}
                       </p>
                     </div>
                     {key.is_active && (
