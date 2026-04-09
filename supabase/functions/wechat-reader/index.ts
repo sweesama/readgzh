@@ -94,30 +94,46 @@ interface PicturePageInfo {
   height: number;
 }
 
+// Decode WeChat's \xNN escape sequences commonly used in picture template data
+function decodeWeChatEscapes(s: string): string {
+  return s
+    .replace(/\\x0a/g, "\n")
+    .replace(/\\x26amp;/g, "&")
+    .replace(/\\x26quot;/g, '"')
+    .replace(/\\x26gt;/g, ">")
+    .replace(/\\x26lt;/g, "<")
+    .replace(/\\x26nbsp;/g, " ")
+    .replace(/\\x26/g, "&")
+    .replace(/\\x27/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .trim();
+}
+
 function extractPictureTemplate(html: string): { contentHtml: string; textContent: string; images: PicturePageInfo[] } | null {
   if (!isPictureTemplate(html)) return null;
 
   const doc = new DOMParser().parseFromString(html, "text/html");
   if (!doc) return null;
 
-  // Extract text from og:description (contains the full text with \x0a linebreaks)
-  const ogDesc = doc.querySelector('meta[property="og:description"]');
+  // Extract text: try og:description first, then text_page_info.content (JsDecode wrapped)
   let textContent = "";
+  const ogDesc = doc.querySelector('meta[property="og:description"]');
   if (ogDesc) {
-    textContent = (ogDesc as Element).getAttribute("content") || "";
-    // Decode \x0a to newlines, \x26amp; to &
-    textContent = textContent
-      .replace(/\\x0a/g, "\n")
-      .replace(/\\x26amp;/g, "&")
-      .replace(/\\x26/g, "&")
-      .replace(/&nbsp;/g, " ")
-      .trim();
+    textContent = decodeWeChatEscapes((ogDesc as Element).getAttribute("content") || "");
   }
 
-  // Extract picture list from window.picture_page_info_list
-  // Only grab top-level entries (not watermark_info or share_cover sub-objects)
+  // If og:description is empty, try text_page_info: { content: JsDecode('...') }
+  if (!textContent) {
+    const textPageMatch = html.match(/text_page_info\s*:\s*\{[\s\S]*?content\s*:\s*JsDecode\('([\s\S]*?)'\)/);
+    if (textPageMatch) {
+      textContent = decodeWeChatEscapes(textPageMatch[1]);
+      console.log(`Extracted text from text_page_info (${textContent.length} chars)`);
+    }
+  }
+
+  // Extract picture list from picture_page_info_list (supports both window.X = [] and X: [] formats)
   const images: PicturePageInfo[] = [];
-  const listMatch = html.match(/window\.picture_page_info_list\s*=\s*\[([\s\S]*?)\];\s*\n/);
+  const listMatch = html.match(/picture_page_info_list\s*(?:=|:)\s*\[([\s\S]*?)\](?:\s*;|\s*,|\s*\n)/);
   if (listMatch) {
     // Split by top-level object boundaries: each main image starts with "{\n      width:"
     const entries = listMatch[1].split(/\},\s*\n\s*\{/);
