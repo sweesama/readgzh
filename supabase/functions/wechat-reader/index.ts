@@ -1587,7 +1587,7 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     const substantiveText = stripNoiseText(textContent || "");
     const MIN_SUBSTANTIVE_LENGTH = 50;
 
-    if (!textContent || textContent.length < MIN_CONTENT_LENGTH || substantiveText.length < MIN_SUBSTANTIVE_LENGTH) {
+    if (!result.isPictureWithImages && (!textContent || textContent.length < MIN_CONTENT_LENGTH || substantiveText.length < MIN_SUBSTANTIVE_LENGTH)) {
       console.log(`Content validation failed: raw=${textContent?.length || 0}, substantive=${substantiveText.length}`);
       return new Response(
         JSON.stringify({
