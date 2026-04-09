@@ -122,40 +122,62 @@ function extractPictureTemplate(html: string): { contentHtml: string; textConten
     textContent = decodeWeChatEscapes((ogDesc as Element).getAttribute("content") || "");
   }
 
-  // If og:description is empty, try text_page_info: { content: JsDecode('...') }
-  if (!textContent) {
-    const textPageMatch = html.match(/text_page_info\s*:\s*\{[\s\S]*?content\s*:\s*JsDecode\('([\s\S]*?)'\)/);
-    if (textPageMatch) {
-      textContent = decodeWeChatEscapes(textPageMatch[1]);
-      console.log(`Extracted text from text_page_info (${textContent.length} chars)`);
+  // If og:description is empty or very short, try text_page_info: { content: JsDecode('...') }
+  if (!textContent || textContent.length < 50) {
+    // Try multiple patterns for text_page_info extraction
+    const patterns = [
+      /text_page_info\s*:\s*\{[\s\S]*?content\s*:\s*JsDecode\('([\s\S]*?)'\)/,
+      /text_page_info\s*=\s*\{[\s\S]*?content\s*:\s*JsDecode\('([\s\S]*?)'\)/,
+      /text_page_info[\s\S]*?JsDecode\('([\s\S]*?)'\)/,
+    ];
+    for (const pattern of patterns) {
+      const textPageMatch = html.match(pattern);
+      if (textPageMatch && textPageMatch[1].length > (textContent?.length || 0)) {
+        textContent = decodeWeChatEscapes(textPageMatch[1]);
+        console.log(`Extracted text from text_page_info (${textContent.length} chars)`);
+        break;
+      }
     }
   }
+  
+  console.log(`Picture template extraction: og:description=${ogDesc ? 'found' : 'missing'}, textContent=${textContent.length} chars`);
 
   // Extract picture list from picture_page_info_list (supports both window.X = [] and X: [] formats)
+  // Use bracket-counting to handle nested arrays/objects correctly
   const images: PicturePageInfo[] = [];
-  const listMatch = html.match(/picture_page_info_list\s*(?:=|:)\s*\[([\s\S]*?)\](?:\s*;|\s*,|\s*\n)/);
-  if (listMatch) {
-    // Split by top-level object boundaries: each main image starts with "{\n      width:"
-    const entries = listMatch[1].split(/\},\s*\n\s*\{/);
-    for (const entry of entries) {
-      // Only grab the FIRST cdn_url and width/height in each entry (the main image)
-      const cdnMatch = entry.match(/^\s*(?:\{)?\s*\n?\s*width:\s*'(\d+)'[\s\S]*?height:\s*'(\d+)'[\s\S]*?cdn_url:\s*'([^']+)'/);
-      if (!cdnMatch) {
-        // Try alternate order: cdn_url before width/height
-        const altMatch = entry.match(/^\s*(?:\{)?\s*\n?\s*cdn_url:\s*'([^']+)'[\s\S]*?width:\s*'(\d+)'[\s\S]*?height:\s*'(\d+)'/);
-        if (altMatch) {
+  const listStartMatch = html.match(/picture_page_info_list\s*(?:=|:)\s*\[/);
+  if (listStartMatch) {
+    const startIdx = (listStartMatch.index ?? 0) + listStartMatch[0].length;
+    // Find the matching closing bracket using bracket counting
+    let depth = 1;
+    let endIdx = startIdx;
+    for (let i = startIdx; i < html.length && depth > 0; i++) {
+      if (html[i] === '[') depth++;
+      else if (html[i] === ']') depth--;
+      if (depth === 0) endIdx = i;
+    }
+    const listContent = html.substring(startIdx, endIdx).trim();
+    if (listContent.length > 10) {
+      // Split by top-level object boundaries
+      const entries = listContent.split(/\},\s*\n\s*\{/);
+      for (const entry of entries) {
+        const cdnMatch = entry.match(/width:\s*'(\d+)'[\s\S]*?height:\s*'(\d+)'[\s\S]*?cdn_url:\s*'([^']+)'/);
+        if (cdnMatch) {
           images.push({
-            cdn_url: altMatch[1].replace(/\\x26amp;/g, "&").replace(/\\x26/g, "&"),
-            width: parseInt(altMatch[2]),
-            height: parseInt(altMatch[3]),
+            cdn_url: cdnMatch[3].replace(/\\x26amp;/g, "&").replace(/\\x26/g, "&"),
+            width: parseInt(cdnMatch[1]),
+            height: parseInt(cdnMatch[2]),
           });
+        } else {
+          const altMatch = entry.match(/cdn_url:\s*'([^']+)'[\s\S]*?width:\s*'(\d+)'[\s\S]*?height:\s*'(\d+)'/);
+          if (altMatch) {
+            images.push({
+              cdn_url: altMatch[1].replace(/\\x26amp;/g, "&").replace(/\\x26/g, "&"),
+              width: parseInt(altMatch[2]),
+              height: parseInt(altMatch[3]),
+            });
+          }
         }
-      } else {
-        images.push({
-          cdn_url: cdnMatch[3].replace(/\\x26amp;/g, "&").replace(/\\x26/g, "&"),
-          width: parseInt(cdnMatch[1]),
-          height: parseInt(cdnMatch[2]),
-        });
       }
     }
   }
