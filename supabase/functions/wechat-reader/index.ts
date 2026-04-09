@@ -1638,4 +1638,5 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
       JSON.stringify({ success: true, cached: false, articleId: saved.id, slug: saved.slug, creditCost }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-}
+  }
+});
