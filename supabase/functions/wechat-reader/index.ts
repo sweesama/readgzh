@@ -1535,8 +1535,8 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     // First extraction attempt
     let result = tryExtractContent(html);
 
-    // If content is too short, try Firecrawl (which renders JS) as fallback
-    if (!result.textContent || result.textContent.length < MIN_CONTENT_LENGTH) {
+    // If content is too short (and not a picture template with images), try Firecrawl fallback
+    if (!result.isPictureWithImages && (!result.textContent || result.textContent.length < MIN_CONTENT_LENGTH)) {
       console.log(`Content too short (${result.textContent?.length || 0} chars), trying Firecrawl fallback`);
       const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
       if (firecrawlKey) {
