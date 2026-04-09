@@ -10,7 +10,7 @@ const corsHeaders = {
 };
 
 // Check if content indicates a verification/captcha page
-function isVerificationPage(html: string): boolean {
+function isVerificationPage(text: string): boolean {
   const patterns = [
     "环境异常",
     "完成验证",
@@ -18,9 +18,23 @@ function isVerificationPage(html: string): boolean {
     "验证码",
     "请完成安全验证",
     "访问过于频繁",
+    "拖动下方滑块完成拼图",
+    "网络确认身份",
+    "滑块验证",
+    "请拖动滑块",
+    "complete the security check",
+    "please verify",
   ];
-  const lowerHtml = html.toLowerCase();
-  return patterns.some((p) => lowerHtml.includes(p.toLowerCase()));
+  const lower = text.toLowerCase();
+  // If 2+ patterns match, it's almost certainly a verification page
+  let matchCount = 0;
+  for (const p of patterns) {
+    if (lower.includes(p.toLowerCase())) matchCount++;
+    if (matchCount >= 2) return true;
+  }
+  // Single match is enough for known strong signals
+  const strongSignals = ["环境异常", "请完成安全验证", "访问过于频繁"];
+  return strongSignals.some((p) => lower.includes(p));
 }
 
 // Check if WeChat returned an error page (deleted/invalid article)
@@ -34,16 +48,19 @@ function isWeChatErrorPage(html: string): string | null {
     ["该公众号已被封禁", "该公众号已被封禁，文章不可访问。"],
     ["此帐号已被屏蔽", "该帐号已被屏蔽，文章不可访问。"],
     ["page_rumor", "该文章已被标记为不实信息。"],
+    // English error pages (browser-rendered error or WeChat international)
+    ["This mp.weixin.qq.com page can\u2019t be found", "文章链接无效或已被删除（404）。"],
+    ["This mp.weixin.qq.com page can't be found", "文章链接无效或已被删除（404）。"],
+    ["page can not be found", "文章链接无效或已被删除（404）。"],
+    ["HTTP ERROR 404", "文章链接无效或已被删除（404）。"],
+    ["No webpage was found", "文章链接无效或已被删除（404）。"],
   ];
   for (const [pattern, message] of errorPatterns) {
     if (html.includes(pattern)) return message;
   }
 
   // Check for WeChat's actual error page structure (not just CSS class presence).
-  // The error page has a very short body with "weui-icon-warn" prominently displayed
-  // and no #js_content element. Normal articles always have #js_content.
   if (!html.includes('id="js_content"') && !html.includes("picture_page_info_list")) {
-    // No article content container at all — likely an error or non-article page
     if (html.includes("weui-msg") || html.includes("Parameter error")) {
       return "微信返回了错误页面，文章可能已被删除或链接无效。";
     }
