@@ -1514,7 +1514,7 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     }
 
     // Helper: attempt content extraction from a given HTML string
-    function tryExtractContent(srcHtml: string): { metadata: ReturnType<typeof extractMetadata>; contentHtml: string; textContent: string } {
+    function tryExtractContent(srcHtml: string): { metadata: ReturnType<typeof extractMetadata>; contentHtml: string; textContent: string; isPictureWithImages: boolean } {
       const meta = extractMetadata(srcHtml);
       // Try picture template first (小绿书 format)
       const pictureData = extractPictureTemplate(srcHtml);
@@ -1525,11 +1525,11 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
           const ogTitle = doc?.querySelector('meta[property="og:title"]');
           if (ogTitle) meta.title = (ogTitle as Element).getAttribute("content") || "无标题";
         }
-        return { metadata: meta, contentHtml: pictureData.contentHtml, textContent: pictureData.textContent };
+        return { metadata: meta, contentHtml: pictureData.contentHtml, textContent: pictureData.textContent || meta.title, isPictureWithImages: pictureData.images.length > 0 };
       }
       // Standard article extraction
       const extracted = extractFormattedContent(srcHtml);
-      return { metadata: meta, contentHtml: extracted.contentHtml, textContent: extracted.textContent };
+      return { metadata: meta, contentHtml: extracted.contentHtml, textContent: extracted.textContent, isPictureWithImages: false };
     }
 
     // First extraction attempt
