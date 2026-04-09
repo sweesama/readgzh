@@ -122,14 +122,25 @@ function extractPictureTemplate(html: string): { contentHtml: string; textConten
     textContent = decodeWeChatEscapes((ogDesc as Element).getAttribute("content") || "");
   }
 
-  // If og:description is empty, try text_page_info: { content: JsDecode('...') }
-  if (!textContent) {
-    const textPageMatch = html.match(/text_page_info\s*:\s*\{[\s\S]*?content\s*:\s*JsDecode\('([\s\S]*?)'\)/);
-    if (textPageMatch) {
-      textContent = decodeWeChatEscapes(textPageMatch[1]);
-      console.log(`Extracted text from text_page_info (${textContent.length} chars)`);
+  // If og:description is empty or very short, try text_page_info: { content: JsDecode('...') }
+  if (!textContent || textContent.length < 50) {
+    // Try multiple patterns for text_page_info extraction
+    const patterns = [
+      /text_page_info\s*:\s*\{[\s\S]*?content\s*:\s*JsDecode\('([\s\S]*?)'\)/,
+      /text_page_info\s*=\s*\{[\s\S]*?content\s*:\s*JsDecode\('([\s\S]*?)'\)/,
+      /text_page_info[\s\S]*?JsDecode\('([\s\S]*?)'\)/,
+    ];
+    for (const pattern of patterns) {
+      const textPageMatch = html.match(pattern);
+      if (textPageMatch && textPageMatch[1].length > (textContent?.length || 0)) {
+        textContent = decodeWeChatEscapes(textPageMatch[1]);
+        console.log(`Extracted text from text_page_info (${textContent.length} chars)`);
+        break;
+      }
     }
   }
+  
+  console.log(`Picture template extraction: og:description=${ogDesc ? 'found' : 'missing'}, textContent=${textContent.length} chars`);
 
   // Extract picture list from picture_page_info_list (supports both window.X = [] and X: [] formats)
   // Use bracket-counting to handle nested arrays/objects correctly
