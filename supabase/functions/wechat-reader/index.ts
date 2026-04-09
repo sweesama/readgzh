@@ -175,6 +175,7 @@ function extractPictureTemplate(html: string): { contentHtml: string; textConten
         }
       }
     }
+  }
 
   if (!textContent && images.length === 0) return null;
 
