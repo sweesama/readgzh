@@ -161,26 +161,20 @@ function extractPictureTemplate(html: string): { contentHtml: string; textConten
       // Split by top-level object boundaries
       const entries = listContent.split(/\},\s*\n\s*\{/);
       for (const entry of entries) {
-        const cdnMatch = entry.match(/width:\s*'(\d+)'[\s\S]*?height:\s*'(\d+)'[\s\S]*?cdn_url:\s*'([^']+)'/);
-        if (cdnMatch) {
+        // Support both cdn_url: 'xxx' and cdn_url: JsDecode('xxx') formats
+        // Support both width: 'N' and width: 'N' * 1 formats
+        const cdnUrlMatch = entry.match(/cdn_url:\s*(?:JsDecode\()?'([^']+)'\)?/);
+        const widthMatch = entry.match(/width:\s*'(\d+)'/);
+        const heightMatch = entry.match(/height:\s*'(\d+)'/);
+        if (cdnUrlMatch && widthMatch && heightMatch) {
           images.push({
-            cdn_url: cdnMatch[3].replace(/\\x26amp;/g, "&").replace(/\\x26/g, "&"),
-            width: parseInt(cdnMatch[1]),
-            height: parseInt(cdnMatch[2]),
+            cdn_url: decodeWeChatEscapes(cdnUrlMatch[1]),
+            width: parseInt(widthMatch[1]),
+            height: parseInt(heightMatch[1]),
           });
-        } else {
-          const altMatch = entry.match(/cdn_url:\s*'([^']+)'[\s\S]*?width:\s*'(\d+)'[\s\S]*?height:\s*'(\d+)'/);
-          if (altMatch) {
-            images.push({
-              cdn_url: altMatch[1].replace(/\\x26amp;/g, "&").replace(/\\x26/g, "&"),
-              width: parseInt(altMatch[2]),
-              height: parseInt(altMatch[3]),
-            });
-          }
         }
       }
     }
-  }
 
   if (!textContent && images.length === 0) return null;
 
