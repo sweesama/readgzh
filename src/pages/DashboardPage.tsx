@@ -890,24 +890,15 @@ const DashboardPage = () => {
             <CardTitle className="flex items-center gap-2">
               <Coins className="h-5 w-5" />积分计费规则
             </CardTitle>
-            <CardDescription>根据文章复杂度消耗不同积分</CardDescription>
+            <CardDescription>每次读取文章统一消耗积分</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div className="p-4 rounded-lg border bg-muted/30">
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="secondary">1 积分</Badge>
-                  <span className="font-medium">简单文章</span>
-                </div>
-                <p className="text-muted-foreground">纯文字为主，图片少于 5 张的普通图文</p>
+            <div className="p-4 rounded-lg border bg-muted/30 text-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="default">3 积分</Badge>
+                <span className="font-medium">每篇文章</span>
               </div>
-              <div className="p-4 rounded-lg border bg-muted/30">
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="default">2 积分</Badge>
-                  <span className="font-medium">复杂文章</span>
-                </div>
-                <p className="text-muted-foreground">包含大量图片（≥5 张）或小绿书图片模板</p>
-              </div>
+              <p className="text-muted-foreground">所有类型的文章（普通图文、图片消息等）统一消耗 3 积分</p>
             </div>
             <p className="text-xs text-muted-foreground mt-3">💡 已缓存文章的读取永远免费，不消耗积分</p>
           </CardContent>
