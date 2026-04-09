@@ -1509,9 +1509,9 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
       if (firecrawlKey) {
         const fc = await tryFirecrawl(url, firecrawlKey);
         // Try HTML extraction first
-        if (fc.html && fc.html.length > 500) {
+        if (fc.html && fc.html.length > 500 && !isVerificationPage(fc.html)) {
           const firecrawlResult = tryExtractContent(fc.html);
-          if (firecrawlResult.textContent && firecrawlResult.textContent.length > (result.textContent?.length || 0)) {
+          if (firecrawlResult.textContent && firecrawlResult.textContent.length > (result.textContent?.length || 0) && !isVerificationPage(firecrawlResult.textContent)) {
             console.log(`Firecrawl HTML got better content: ${firecrawlResult.textContent.length} chars`);
             result = firecrawlResult;
             html = fc.html;
@@ -1519,18 +1519,22 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
         }
         // If HTML extraction still failed, use markdown directly as content
         if ((!result.textContent || result.textContent.length < MIN_CONTENT_LENGTH) && fc.markdown && fc.markdown.length >= MIN_CONTENT_LENGTH) {
-          console.log(`Using Firecrawl markdown as content: ${fc.markdown.length} chars`);
-          const meta = extractMetadata(html);
-          // If markdown has a title line (# Title), extract it
-          const mdTitleMatch = fc.markdown.match(/^#\s+(.+)/m);
-          if (mdTitleMatch && meta.title === "无标题") {
-            meta.title = mdTitleMatch[1].trim();
+          // CRITICAL: check if markdown is just verification page text
+          if (isVerificationPage(fc.markdown)) {
+            console.log(`Firecrawl markdown is verification page text (${fc.markdown.length} chars), rejecting`);
+          } else {
+            console.log(`Using Firecrawl markdown as content: ${fc.markdown.length} chars`);
+            const meta = extractMetadata(html);
+            const mdTitleMatch = fc.markdown.match(/^#\s+(.+)/m);
+            if (mdTitleMatch && meta.title === "无标题") {
+              meta.title = mdTitleMatch[1].trim();
+            }
+            result = {
+              metadata: meta,
+              contentHtml: fc.markdown.split("\n").filter(l => l.trim()).map(l => `<p>${l}</p>`).join("\n"),
+              textContent: fc.markdown,
+            };
           }
-          result = {
-            metadata: meta,
-            contentHtml: fc.markdown.split("\n").filter(l => l.trim()).map(l => `<p>${l}</p>`).join("\n"),
-            textContent: fc.markdown,
-          };
         }
       }
     }
