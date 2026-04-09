@@ -1541,6 +1541,15 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
 
     const { metadata, contentHtml, textContent } = result;
 
+    // Final safety: reject if extracted content is actually a verification page
+    if (isVerificationPage(textContent || "")) {
+      console.log("Post-extraction verification check failed: content is verification page text");
+      return new Response(
+        JSON.stringify({ success: false, error: "微信需要验证，暂时无法自动抓取此文章。请稍后重试。" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Validate: strip noise (security tips, follow prompts) before checking length
     const substantiveText = stripNoiseText(textContent || "");
     const MIN_SUBSTANTIVE_LENGTH = 50;
