@@ -161,22 +161,17 @@ function extractPictureTemplate(html: string): { contentHtml: string; textConten
       // Split by top-level object boundaries
       const entries = listContent.split(/\},\s*\n\s*\{/);
       for (const entry of entries) {
-        const cdnMatch = entry.match(/width:\s*'(\d+)'[\s\S]*?height:\s*'(\d+)'[\s\S]*?cdn_url:\s*'([^']+)'/);
-        if (cdnMatch) {
+        // Support both cdn_url: 'xxx' and cdn_url: JsDecode('xxx') formats
+        // Support both width: 'N' and width: 'N' * 1 formats
+        const cdnUrlMatch = entry.match(/cdn_url:\s*(?:JsDecode\()?'([^']+)'\)?/);
+        const widthMatch = entry.match(/width:\s*'(\d+)'/);
+        const heightMatch = entry.match(/height:\s*'(\d+)'/);
+        if (cdnUrlMatch && widthMatch && heightMatch) {
           images.push({
-            cdn_url: cdnMatch[3].replace(/\\x26amp;/g, "&").replace(/\\x26/g, "&"),
-            width: parseInt(cdnMatch[1]),
-            height: parseInt(cdnMatch[2]),
+            cdn_url: decodeWeChatEscapes(cdnUrlMatch[1]),
+            width: parseInt(widthMatch[1]),
+            height: parseInt(heightMatch[1]),
           });
-        } else {
-          const altMatch = entry.match(/cdn_url:\s*'([^']+)'[\s\S]*?width:\s*'(\d+)'[\s\S]*?height:\s*'(\d+)'/);
-          if (altMatch) {
-            images.push({
-              cdn_url: altMatch[1].replace(/\\x26amp;/g, "&").replace(/\\x26/g, "&"),
-              width: parseInt(altMatch[2]),
-              height: parseInt(altMatch[3]),
-            });
-          }
         }
       }
     }
@@ -1519,7 +1514,7 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     }
 
     // Helper: attempt content extraction from a given HTML string
-    function tryExtractContent(srcHtml: string): { metadata: ReturnType<typeof extractMetadata>; contentHtml: string; textContent: string } {
+    function tryExtractContent(srcHtml: string): { metadata: ReturnType<typeof extractMetadata>; contentHtml: string; textContent: string; isPictureWithImages: boolean } {
       const meta = extractMetadata(srcHtml);
       // Try picture template first (小绿书 format)
       const pictureData = extractPictureTemplate(srcHtml);
@@ -1530,18 +1525,18 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
           const ogTitle = doc?.querySelector('meta[property="og:title"]');
           if (ogTitle) meta.title = (ogTitle as Element).getAttribute("content") || "无标题";
         }
-        return { metadata: meta, contentHtml: pictureData.contentHtml, textContent: pictureData.textContent };
+        return { metadata: meta, contentHtml: pictureData.contentHtml, textContent: pictureData.textContent || meta.title, isPictureWithImages: pictureData.images.length > 0 };
       }
       // Standard article extraction
       const extracted = extractFormattedContent(srcHtml);
-      return { metadata: meta, contentHtml: extracted.contentHtml, textContent: extracted.textContent };
+      return { metadata: meta, contentHtml: extracted.contentHtml, textContent: extracted.textContent, isPictureWithImages: false };
     }
 
     // First extraction attempt
     let result = tryExtractContent(html);
 
-    // If content is too short, try Firecrawl (which renders JS) as fallback
-    if (!result.textContent || result.textContent.length < MIN_CONTENT_LENGTH) {
+    // If content is too short (and not a picture template with images), try Firecrawl fallback
+    if (!result.isPictureWithImages && (!result.textContent || result.textContent.length < MIN_CONTENT_LENGTH)) {
       console.log(`Content too short (${result.textContent?.length || 0} chars), trying Firecrawl fallback`);
       const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
       if (firecrawlKey) {
@@ -1592,7 +1587,7 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     const substantiveText = stripNoiseText(textContent || "");
     const MIN_SUBSTANTIVE_LENGTH = 50;
 
-    if (!textContent || textContent.length < MIN_CONTENT_LENGTH || substantiveText.length < MIN_SUBSTANTIVE_LENGTH) {
+    if (!result.isPictureWithImages && (!textContent || textContent.length < MIN_CONTENT_LENGTH || substantiveText.length < MIN_SUBSTANTIVE_LENGTH)) {
       console.log(`Content validation failed: raw=${textContent?.length || 0}, substantive=${substantiveText.length}`);
       return new Response(
         JSON.stringify({
@@ -1643,4 +1638,5 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
       JSON.stringify({ success: true, cached: false, articleId: saved.id, slug: saved.slug, creditCost }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-}
+  }
+
