@@ -295,14 +295,17 @@ mcp.tool("readgzh.get", {
 const transport = new StreamableHttpTransport();
 const httpHandler = transport.bind(mcp);
 
-const MCP_DAILY_LIMIT = 100; // Daily limit per IP for MCP calls
+// Anonymous MCP shares the same IP pool as Web anon (10/IP/day) to prevent abuse.
+// Authenticated MCP (via API Key in Authorization header) bypasses IP rate limiting
+// and uses the user's credit balance instead — handled by wechat-reader downstream.
+const MCP_ANON_DAILY_LIMIT = 10;
 
 async function checkMcpRateLimit(ip: string): Promise<{ allowed: boolean; current: number }> {
   try {
-    const mcpIp = `mcp:${ip}`;
+    // Use the SAME key as Web anon (no prefix) so MCP and Web share the IP quota.
     const { data, error } = await supabase.rpc("check_rate_limit", {
-      p_ip: mcpIp,
-      p_daily_limit: MCP_DAILY_LIMIT,
+      p_ip: ip,
+      p_daily_limit: MCP_ANON_DAILY_LIMIT,
     });
     if (error) return { allowed: true, current: 0 };
     const result = data as { allowed: boolean; current: number };
@@ -320,27 +323,47 @@ function getClientIp(req: Request): string {
   return "unknown";
 }
 
+/**
+ * Detect whether this MCP request carries a valid user-issued API Key.
+ * Anonymous MCP traffic (no key, or only the anon/service key) is rate-limited.
+ * The default Authorization header injected by MCP clients usually contains
+ * the public anon key — we treat that as anonymous.
+ */
+function hasUserApiKey(req: Request): boolean {
+  const auth = req.headers.get("authorization") || "";
+  if (!auth.toLowerCase().startsWith("bearer ")) return false;
+  const token = auth.slice(7).trim();
+  if (!token) return false;
+  // Public/anon keys and service role JWTs start with "eyJ" (JWT). User API keys
+  // issued by ReadGZH use a different format (e.g. "rgz_..."). Reject JWTs.
+  if (token.startsWith("eyJ")) return false;
+  return true;
+}
+
 const app = new Hono();
 
 app.all("/*", async (c) => {
   console.log(`[MCP] ${c.req.method} ${c.req.url}`);
-  
-  // Rate limit MCP requests to protect Cloud Network Egress
-  if (c.req.method === "POST") {
+
+  // Rate limit anonymous MCP requests; authenticated requests bypass IP limit.
+  if (c.req.method === "POST" && !hasUserApiKey(c.req.raw)) {
     const ip = getClientIp(c.req.raw);
     if (ip !== "unknown") {
       const rateCheck = await checkMcpRateLimit(ip);
       if (!rateCheck.allowed) {
-        console.log(`[MCP] Rate limit exceeded for IP: ${ip}, current: ${rateCheck.current}`);
+        console.log(`[MCP] Anon rate limit exceeded for IP: ${ip}, current: ${rateCheck.current}`);
         return c.json({
           jsonrpc: "2.0",
-          error: { code: -32000, message: `MCP rate limit exceeded (${MCP_DAILY_LIMIT}/day). Register at readgzh.site/dashboard for API Key access.` },
+          error: {
+            code: -32000,
+            message: `Anonymous MCP limit reached (${MCP_ANON_DAILY_LIMIT}/IP/day). Register at https://readgzh.site/dashboard to get an API Key with daily credits, or upgrade to Lite/Pro for higher quota.`,
+          },
           id: null,
         }, 429);
       }
     }
   }
-  
+
   const response = await httpHandler(c.req.raw);
   return response;
 });
