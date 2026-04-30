@@ -44,7 +44,7 @@ export const template = {
     commentContent: '这个工具太好用了！',
     commentUrl: 'https://readgzh.site/comments',
   },
-  to: 'sweeyeah@hotmail.com',
+  to: 'sweeyeah@gmail.com',
 } satisfies TemplateEntry
 
 const main = { backgroundColor: '#ffffff', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif' }
