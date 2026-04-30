@@ -161,20 +161,9 @@ const CommentSection = () => {
       return;
     }
 
-    // Notify admin about new comment (fire-and-forget)
-    const userProfile = user.user_metadata;
-    const userName = userProfile?.full_name || userProfile?.name || user.email?.split("@")[0] || "匿名用户";
-    supabase.functions.invoke("send-transactional-email", {
-      body: {
-        templateName: "new-comment",
-        recipientEmail: "sweeyeah@hotmail.com",
-        idempotencyKey: `new-comment-${commentId}`,
-        templateData: {
-          userName,
-          commentContent: text.slice(0, 200),
-          commentUrl: "https://readgzh.site/comments",
-        },
-      },
+    // Notify admin (and parent author if reply) via service-role edge function
+    supabase.functions.invoke("notify-comment", {
+      body: { commentId },
     }).catch(() => {}); // don't block UI on email failure
 
     if (parentId) {
