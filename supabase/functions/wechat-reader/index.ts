@@ -897,7 +897,7 @@ function rateLimitResponse(rateInfo: { current: number; remaining: number; limit
     : `未授权请求已达每日上限（${DAILY_LIMIT} 积分/天）。注册免费获取每天 30 积分。`;
   const hint = isCreditsExhausted
     ? "请到 readgzh.site/dashboard 领取免费积分或升级套餐。Lite ¥9/月 300积分，Pro ¥39/月 2000积分。"
-    : "立即注册：readgzh.site/dashboard — 免费创建 API Key，每日 30 积分，告别 IP 限制。";
+    : "立即注册：readgzh.site/dashboard — 免费创建 API Key，每日 30 积分，告别 IP 限制。如果你来自 Replit / Vercel / Cloudflare Workers 等共享出口 IP，该 IP 的额度可能已被其他用户用完，请务必带上 API Key (Authorization: Bearer rgz_...) 调用。";
 
   return new Response(
     JSON.stringify({

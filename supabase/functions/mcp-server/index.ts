@@ -356,10 +356,14 @@ app.all("/*", async (c) => {
           jsonrpc: "2.0",
           error: {
             code: -32000,
-            message: `Anonymous MCP limit reached (${MCP_ANON_DAILY_LIMIT}/IP/day). Register at https://readgzh.site/dashboard to get an API Key with daily credits, or upgrade to Lite/Pro for higher quota.`,
+            message: `Anonymous MCP limit reached (${MCP_ANON_DAILY_LIMIT}/IP/day). If you are calling from shared infrastructure (Replit, Vercel, Cloudflare Workers, etc.), the IP quota may already be exhausted by other users — use an API Key in the Authorization header (Bearer rgz_...) to bypass IP limits. Get a free key at https://readgzh.site/dashboard.`,
+            data: {
+              dashboard_url: "https://readgzh.site/dashboard",
+              retry_after_seconds: 86400,
+            },
           },
           id: null,
-        }, 429);
+        }, 429, { "Retry-After": "86400" });
       }
     }
   }
