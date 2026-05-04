@@ -54,11 +54,18 @@ Deno.serve(async (req) => {
             return new Response(
               JSON.stringify({
                 error: `Anonymous limit reached (${ANON_DAILY_LIMIT}/IP/day). Register at https://readgzh.site/dashboard for daily credits, or upgrade to Lite/Pro.`,
-                hint: "Use an API Key in the Authorization header (Bearer rgz_...) to bypass IP limits.",
+                hint: "If you are calling from shared infrastructure (Replit, Vercel, Cloudflare Workers, etc.), the IP quota may already be exhausted by other users. Use an API Key in the Authorization header (Bearer rgz_...) to bypass IP limits. Get a free key at https://readgzh.site/dashboard.",
+                dashboard_url: "https://readgzh.site/dashboard",
               }),
               {
                 status: 429,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
+                headers: {
+                  ...corsHeaders,
+                  "Content-Type": "application/json",
+                  "Retry-After": "86400",
+                  "X-RateLimit-Limit": String(ANON_DAILY_LIMIT),
+                  "X-RateLimit-Remaining": "0",
+                },
               }
             );
           }

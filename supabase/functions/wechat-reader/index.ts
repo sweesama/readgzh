@@ -897,7 +897,7 @@ function rateLimitResponse(rateInfo: { current: number; remaining: number; limit
     : `未授权请求已达每日上限（${DAILY_LIMIT} 积分/天）。注册免费获取每天 30 积分。`;
   const hint = isCreditsExhausted
     ? "请到 readgzh.site/dashboard 领取免费积分或升级套餐。Lite ¥9/月 300积分，Pro ¥39/月 2000积分。"
-    : "立即注册：readgzh.site/dashboard — 免费创建 API Key，每日 30 积分，告别 IP 限制。";
+    : "立即注册：readgzh.site/dashboard — 免费创建 API Key，每日 30 积分，告别 IP 限制。如果你来自 Replit / Vercel / Cloudflare Workers 等共享出口 IP，该 IP 的额度可能已被其他用户用完，请务必带上 API Key (Authorization: Bearer rgz_...) 调用。";
 
   return new Response(
     JSON.stringify({
@@ -919,6 +919,7 @@ function rateLimitResponse(rateInfo: { current: number; remaining: number; limit
         "Content-Type": "application/json",
         "X-RateLimit-Limit": String(limit),
         "X-RateLimit-Remaining": String(rateInfo.remaining),
+        ...(statusCode === 429 ? { "Retry-After": "86400" } : {}),
       },
     }
   );
@@ -1079,7 +1080,7 @@ Deno.serve(async (req) => {
               success: false,
               error: "read_rate_limit_exceeded",
               message: `缓存文章读取已达每日上限（${readRateInfo.limit} 次）。如需更多读取，请使用 API Key。`,
-              hint: "注册免费获取更高读取限额：readgzh.site/dashboard",
+              hint: "注册免费获取更高读取限额：readgzh.site/dashboard。如果你来自 Replit / Vercel / Cloudflare Workers 等共享出口 IP，该 IP 的额度可能已被其他用户用完，请务必带上 API Key (Authorization: Bearer rgz_...) 调用。",
               current: readRateInfo.current,
               limit: readRateInfo.limit,
               dashboard_url: "https://readgzh.site/dashboard",
@@ -1091,6 +1092,7 @@ Deno.serve(async (req) => {
                 "Content-Type": "application/json",
                 "X-RateLimit-Limit": String(readRateInfo.limit),
                 "X-RateLimit-Remaining": "0",
+                "Retry-After": "86400",
               },
             }
           );
