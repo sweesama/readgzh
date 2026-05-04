@@ -18,7 +18,9 @@ ReadGZH acts as a server-side proxy that fetches, sanitizes, and re-serves WeCha
 | `/articles-api/search?q={query}` | GET | Search cached articles by keyword. |
 | `/articles-api/recent?limit={n}` | GET | List recently cached articles. |
 
-**Authentication**: Optional. Include `Authorization: Bearer sk_live_...` for higher rate limits (50 credits/day free at https://readgzh.site/dashboard). Without a key, the public endpoint applies daily IP-based rate limits.
+**Authentication**: Optional but strongly recommended for AI agents. Include `Authorization: Bearer sk_live_...` for higher rate limits (50 credits/day free at https://readgzh.site/dashboard). Without a key, the public endpoint applies daily IP-based rate limits.
+
+> **Important for AI agents on shared infrastructure (Replit, Vercel, Cloudflare Workers, ChatGPT/Claude tool runners, etc.)**: Many AI agents share a common egress IP with thousands of other users. The anonymous IP-based quota on that shared IP is often already exhausted before your first request. **Always use an API Key** (`Authorization: Bearer rgz_...` or `?key=rgz_...`) when calling from shared infrastructure — keys are free at https://readgzh.site/dashboard and bypass the IP quota entirely.
 
 ## Why ReadGZH Over Alternatives
 
