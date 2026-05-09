@@ -1,0 +1,36 @@
+version: 1
+start:
+  type: http
+  url: https://api.readgzh.site/mcp-server
+runtime: remote
+metadata:
+  name: readgzh
+  displayName: ReadGZH — WeChat Article Reader
+  description: Let AI read full-text WeChat Official Account (微信公众号) articles. Cloud-based, zero-install. Returns title, author, publish time, and clean Markdown content. Supports search, list, and AI summary.
+  version: 1.3.0
+  homepage: https://readgzh.site
+  documentation: https://readgzh.site/docs
+  icon: https://readgzh.site/logo.png
+  license: MIT
+  categories:
+    - content
+    - reading
+    - scraping
+  keywords:
+    - wechat
+    - weixin
+    - 微信
+    - 公众号
+    - chinese
+    - article
+    - reader
+configSchema:
+  type: object
+  properties:
+    apiKey:
+      type: string
+      title: ReadGZH API Key
+      description: "Optional. Get a free key at https://readgzh.site/dashboard. Without a key, the public endpoint is rate-limited (10/IP/day)."
+  required: []
+exampleConfig:
+  apiKey: ""

@@ -1,0 +1,122 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schemas/server.json",
+  "name": "readgzh",
+  "displayName": "ReadGZH — WeChat Article Reader",
+  "description": "Let AI read full-text WeChat Official Account (微信公众号) articles. Cloud-based, zero-install. Returns title, author, publish time, and clean article content. Supports standard articles and image-post formats. Includes search, list, and AI summary tools.",
+  "version": "1.3.0",
+  "homepage": "https://readgzh.site",
+  "documentation": "https://readgzh.site/docs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sweesama/readgzh"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "ReadGZH",
+    "email": "support@readgzh.site",
+    "url": "https://readgzh.site"
+  },
+  "icon": "https://readgzh.site/logo.png",
+  "categories": [
+    "content",
+    "reading",
+    "scraping",
+    "china",
+    "wechat",
+    "knowledge"
+  ],
+  "keywords": [
+    "wechat",
+    "weixin",
+    "微信",
+    "公众号",
+    "mp.weixin.qq.com",
+    "article",
+    "scraper",
+    "reader",
+    "chinese",
+    "content-extraction"
+  ],
+  "languages": ["zh", "en"],
+  "transports": {
+    "streamable-http": {
+      "url": "https://api.readgzh.site/mcp-server"
+    }
+  },
+  "remotes": [
+    {
+      "transport": "streamable-http",
+      "url": "https://api.readgzh.site/mcp-server"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "required": false,
+    "description": "Optional API Key. Public access available with daily IP rate limit (10/day). API Key bypasses IP limits and unlocks higher quotas.",
+    "key_url": "https://readgzh.site/dashboard",
+    "header": "Authorization",
+    "format": "Bearer rgz_..."
+  },
+  "pricing": {
+    "model": "freemium",
+    "free_tier": "30 credits/day for registered users, 10 reads/day for anonymous IP",
+    "paid_tiers": [
+      { "name": "Lite", "price": "¥9/month", "quota": "300 reads/month" },
+      { "name": "Pro", "price": "¥39/month", "quota": "2000 reads/month + AI summary" }
+    ],
+    "details_url": "https://readgzh.site/pricing"
+  },
+  "tools": [
+    {
+      "name": "readgzh.read",
+      "description": "Read and extract the full text of a WeChat article from its mp.weixin.qq.com URL. Returns Markdown with title, author, publish time, and content. Cached automatically."
+    },
+    {
+      "name": "readgzh.search",
+      "description": "Search cached WeChat articles by keyword in titles and content."
+    },
+    {
+      "name": "readgzh.list",
+      "description": "List recently cached WeChat articles."
+    },
+    {
+      "name": "readgzh.get",
+      "description": "Get a previously cached WeChat article by its slug. Supports paginated reading of long articles."
+    }
+  ],
+  "examples": [
+    {
+      "title": "Read a WeChat article shared by the user",
+      "prompt": "Read this for me: https://mp.weixin.qq.com/s/abc123",
+      "tool": "readgzh.read"
+    },
+    {
+      "title": "Search Chinese AI articles",
+      "prompt": "Find recent WeChat articles about DeepSeek",
+      "tool": "readgzh.search"
+    }
+  ],
+  "highlights": [
+    "Cloud-based — no local WeChat desktop installation required",
+    "Shared cache — previously read articles cost 0 credits for everyone",
+    "CDN image proxy — permanent image access, no expiry",
+    "Image-post (图文) format support",
+    "AI structured summaries via mode=summary (Pro tier)"
+  ],
+  "links": {
+    "homepage": "https://readgzh.site",
+    "docs": "https://readgzh.site/docs",
+    "pricing": "https://readgzh.site/pricing",
+    "dashboard": "https://readgzh.site/dashboard",
+    "openapi": "https://readgzh.site/.well-known/openapi.yaml",
+    "skill": "https://readgzh.site/.well-known/SKILL.md",
+    "ai_plugin": "https://readgzh.site/.well-known/ai-plugin.json",
+    "llms_txt": "https://readgzh.site/llms.txt"
+  },
+  "contact": {
+    "email": "support@readgzh.site",
+    "support": "https://readgzh.site/docs",
+    "legal": "https://readgzh.site/terms",
+    "privacy": "https://readgzh.site/privacy"
+  }
+}
