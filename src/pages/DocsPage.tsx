@@ -271,11 +271,34 @@ GET ${API_URL}/rd?s=article-title&part=2`}
             </p>
 
             <div className="space-y-3">
-              <h3 className="font-semibold text-lg">配置方法</h3>
+              <h3 className="font-semibold text-lg">一键安装</h3>
               <p className="text-sm text-muted-foreground">
-                在 Claude Desktop 或其他 MCP 客户端中添加以下配置：
+                如果你使用 Cursor，点击下面的按钮可直接添加 ReadGZH MCP：
               </p>
-              <CodeBlock label="claude_desktop_config.json">
+              <div className="flex flex-wrap gap-2">
+                <a
+                  href="cursor://anysphere.cursor-deeplink/mcp/install?name=readgzh&config=eyJ1cmwiOiJodHRwczovL2FwaS5yZWFkZ3poLnNpdGUvbWNwLXNlcnZlciJ9"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground hover:opacity-90 transition text-sm font-medium"
+                >
+                  <Bot className="h-4 w-4" /> 在 Cursor 中安装
+                </a>
+                <a
+                  href="https://smithery.ai/server/@readgzh/readgzh"
+                  target="_blank"
+                  rel="noopener"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-border hover:bg-muted transition text-sm font-medium"
+                >
+                  通过 Smithery 安装
+                </a>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">手动配置</h3>
+              <p className="text-sm text-muted-foreground">
+                Claude Desktop / Cline / Continue 等支持 MCP 的客户端，添加以下配置即可：
+              </p>
+              <CodeBlock label="claude_desktop_config.json / cline_mcp_settings.json">
 {`{
   "mcpServers": {
     "readgzh": {
@@ -284,6 +307,11 @@ GET ${API_URL}/rd?s=article-title&part=2`}
   }
 }`}
               </CodeBlock>
+              <p className="text-xs text-muted-foreground">
+                配置文件位置：Claude Desktop（macOS）<code className="bg-muted px-1 py-0.5 rounded">~/Library/Application Support/Claude/claude_desktop_config.json</code>，
+                Cursor <code className="bg-muted px-1 py-0.5 rounded">~/.cursor/mcp.json</code>，
+                Cline 在 VS Code 设置中搜索 <code className="bg-muted px-1 py-0.5 rounded">cline.mcpServers</code>。
+              </p>
             </div>
 
             <div className="space-y-3">
