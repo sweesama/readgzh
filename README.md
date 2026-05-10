@@ -1,73 +1,100 @@
-# Welcome to your Lovable project
+# ReadGZH — WeChat Article Reader for AI
 
-## Project info
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![Website](https://img.shields.io/badge/site-readgzh.site-299e7a)](https://readgzh.site)
+[![MCP](https://img.shields.io/badge/MCP-compatible-7c3aed)](https://readgzh.site/.well-known/server.json)
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+**Let AI read full-text WeChat Official Account (微信公众号) articles.** Cloud-based, zero-install. Returns title, author, publish time, and clean Markdown content. Supports standard articles and image-post (图文) formats.
 
-## How can I edit this code?
+- 🌐 Site: <https://readgzh.site>
+- 📖 Docs: <https://readgzh.site/docs>
+- 💳 Pricing: <https://readgzh.site/pricing>
+- 🔑 Dashboard / API Key: <https://readgzh.site/dashboard>
 
-There are several ways of editing your application.
+## Why ReadGZH
 
-**Use Lovable**
+WeChat articles can't be read by Claude, ChatGPT, Cursor, or other AI tools — `mp.weixin.qq.com` blocks bots. ReadGZH solves this with a cloud reader you can call from any AI client.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+- ☁️ **Cloud-based** — no WeChat desktop install, no local script
+- 💰 **Shared cache** — previously read articles cost 0 credits for everyone
+- 🖼️ **CDN image proxy** — permanent image links, no expiry
+- 📱 **Image-post (图文) support** — full coverage of WeChat's gallery format
+- 🤖 **AI summaries** — structured JSON via `?mode=summary` (Pro)
+- 🔌 **MCP, OpenAPI, REST** — works with Claude Desktop, Cursor, ChatGPT, custom agents
 
-Changes made via Lovable will be committed automatically to this repo.
+## Quick Start
 
-**Use your preferred IDE**
+### Use it from your AI client (MCP)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+ReadGZH is a remote MCP server — no install. Add to your MCP client config:
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```json
+{
+  "mcpServers": {
+    "readgzh": {
+      "url": "https://api.readgzh.site/mcp-server"
+    }
+  }
+}
 ```
 
-**Edit a file directly in GitHub**
+Then ask your AI: *"Read this for me: https://mp.weixin.qq.com/s/..."*
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Optional API key (higher quota, bypasses anonymous IP limits):
 
-**Use GitHub Codespaces**
+```json
+{
+  "mcpServers": {
+    "readgzh": {
+      "url": "https://api.readgzh.site/mcp-server",
+      "headers": { "Authorization": "Bearer rgz_..." }
+    }
+  }
+}
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Use it from code (REST)
 
-## What technologies are used for this project?
+```bash
+curl -X POST https://api.readgzh.site/rd \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer rgz_..." \
+  -d '{"url":"https://mp.weixin.qq.com/s/xxxx"}'
+```
 
-This project is built with:
+Full API spec: <https://readgzh.site/.well-known/openapi.yaml>
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Tools (MCP)
 
-## How can I deploy this project?
+| Tool | Purpose |
+| --- | --- |
+| `readgzh.read` | Read & extract a WeChat article from a URL |
+| `readgzh.search` | Search cached articles by keyword |
+| `readgzh.list` | List recently cached articles |
+| `readgzh.get` | Fetch a cached article by slug |
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## Pricing
 
-## Can I connect a custom domain to my Lovable project?
+- **Free** — 30 credits/day for registered users · 10/IP/day anonymous
+- **Lite** — ¥9/month · 300 reads/month
+- **Pro** — ¥39/month · 2000 reads/month + AI summary
 
-Yes, you can!
+Each fresh read = 3 credits. Cached re-reads = 0. Details: <https://readgzh.site/pricing>
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Tech Stack
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+- React 18 + Vite + TypeScript + Tailwind + shadcn/ui
+- Lovable Cloud (Supabase: Postgres, Auth, Edge Functions, Storage)
+- Cloudflare Worker proxy (`api.readgzh.site`)
+- Stripe subscriptions
+- MCP via [`mcp-lite`](https://www.npmjs.com/package/mcp-lite)
+
+## License
+
+[AGPL-3.0](./LICENSE). If you self-host or fork ReadGZH as a network service, you must release your modifications under the same license. For commercial licensing without AGPL obligations, contact <support@readgzh.site>.
+
+## Contact
+
+- Support: <support@readgzh.site>
+- Issues: GitHub Issues
+- Built with ❤️ on [Lovable](https://lovable.dev)

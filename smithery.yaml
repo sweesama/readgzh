@@ -11,7 +11,7 @@ metadata:
   homepage: https://readgzh.site
   documentation: https://readgzh.site/docs
   icon: https://readgzh.site/logo.png
-  license: MIT
+  license: AGPL-3.0
   categories:
     - content
     - reading
