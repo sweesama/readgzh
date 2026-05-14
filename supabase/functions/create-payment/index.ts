@@ -85,6 +85,55 @@ Deno.serve(async (req) => {
       mode = "subscription";
     }
 
+    // ===== Subscription upgrade/switch path =====
+    // If user already has an active subscription and is buying another subscription,
+    // switch the existing one in place (proration) instead of opening a new checkout.
+    // Without this, users end up with two parallel paid subscriptions.
+    if (mode === "subscription") {
+      const existing = await stripe.subscriptions.list({
+        customer: customerId,
+        status: "active",
+        limit: 10,
+      });
+
+      if (existing.data.length > 0) {
+        // Defensive: if the customer somehow already has multiple active subs,
+        // keep the newest and cancel the rest before doing anything else.
+        const sorted = [...existing.data].sort((a, b) => b.created - a.created);
+        const primary = sorted[0];
+        for (let i = 1; i < sorted.length; i++) {
+          try {
+            await stripe.subscriptions.cancel(sorted[i].id, { prorate: true });
+          } catch (e) {
+            console.error("Failed to cancel extra sub", sorted[i].id, e);
+          }
+        }
+
+        const currentPriceId = primary.items.data[0]?.price?.id;
+        if (currentPriceId === priceId) {
+          return new Response(
+            JSON.stringify({
+              error: "already_subscribed",
+              message: "你已经订阅了当前套餐，无需重复购买。",
+            }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Switch to the new price with proration (charge or credit the difference)
+        await stripe.subscriptions.update(primary.id, {
+          items: [{ id: primary.items.data[0].id, price: priceId }],
+          proration_behavior: "create_prorations",
+          metadata: { user_id: user.id, type, switched_from: currentPriceId || "" },
+        });
+
+        return new Response(
+          JSON.stringify({ url: successUrl, switched: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       line_items: [{ price: priceId, quantity: 1 }],

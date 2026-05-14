@@ -55,9 +55,25 @@ async function syncSubscriptionTier(customerId: string) {
   });
 
   if (subscriptions.data.length > 0) {
-    const sub = subscriptions.data[0];
+    // Defensive cleanup: if customer somehow has multiple active subs (e.g. legacy
+    // duplicate before upgrade flow existed), keep the newest and cancel the rest.
+    const sorted = [...subscriptions.data].sort((a, b) => b.created - a.created);
+    const sub = sorted[0];
+    for (let i = 1; i < sorted.length; i++) {
+      try {
+        log("Canceling duplicate active subscription", { id: sorted[i].id });
+        await stripe.subscriptions.cancel(sorted[i].id, { prorate: true });
+      } catch (e) {
+        log("Failed to cancel duplicate sub", { id: sorted[i].id, error: (e as Error).message });
+      }
+    }
+
     const productId = sub.items.data[0]?.price?.product as string;
-    const tierInfo = PRODUCT_TIER_MAP[productId] || { tier: "pro", limit: 2000 };
+    const tierInfo = PRODUCT_TIER_MAP[productId];
+    if (!tierInfo) {
+      log("WARNING: Unknown product, leaving tier unchanged", { productId, subId: sub.id });
+      return;
+    }
 
     log("Upgrading user", { tier: tierInfo.tier, limit: tierInfo.limit });
 
