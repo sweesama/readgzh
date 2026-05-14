@@ -89,33 +89,40 @@ Deno.serve(async (req) => {
     };
 
     if (subscriptions.data.length > 0) {
-      const sub = subscriptions.data[0];
+      // Defensive cleanup: if multiple active subs exist (legacy duplicates from
+      // before the upgrade flow), keep the newest and cancel the rest.
+      const sorted = [...subscriptions.data].sort((a, b) => b.created - a.created);
+      const sub = sorted[0];
+      for (let i = 1; i < sorted.length; i++) {
+        try {
+          log("Canceling duplicate active subscription", { id: sorted[i].id });
+          await stripe.subscriptions.cancel(sorted[i].id, { prorate: true });
+        } catch (e) {
+          log("Failed to cancel duplicate sub", { id: sorted[i].id, error: (e as Error).message });
+        }
+      }
+
       hasActiveSubscription = true;
       subscriptionEnd = new Date(sub.current_period_end * 1000).toISOString();
       subscriptionInterval = sub.items.data[0]?.price?.recurring?.interval || null;
       subscriptionStatus = sub.status;
-      
-      const productId = sub.items.data[0]?.price?.product as string;
-      const tierInfo = PRODUCT_TIER_MAP[productId] || { tier: "pro", limit: 2000 };
-      subscriptionTier = tierInfo.tier;
-      log("Active subscription found", { id: sub.id, interval: subscriptionInterval, end: subscriptionEnd, tier: subscriptionTier });
 
-      // Sync tier and limit
-      await serviceClient
-        .from("api_keys")
-        .update({ tier: tierInfo.tier, daily_limit: tierInfo.limit })
-        .eq("user_id", userId)
-        .eq("is_active", true)
-        .eq("tier", "free");
-      
-      // Also upgrade from lite to pro if applicable
-      if (tierInfo.tier === "pro") {
+      const productId = sub.items.data[0]?.price?.product as string;
+      const tierInfo = PRODUCT_TIER_MAP[productId];
+      if (!tierInfo) {
+        log("WARNING: Unknown product, leaving tier unchanged", { productId, subId: sub.id });
+        subscriptionTier = null;
+      } else {
+        subscriptionTier = tierInfo.tier;
+        log("Active subscription found", { id: sub.id, interval: subscriptionInterval, end: subscriptionEnd, tier: subscriptionTier });
+
+        // Sync tier and limit (covers free→paid AND lite→pro AND pro→lite renewals)
         await serviceClient
           .from("api_keys")
-          .update({ tier: "pro", daily_limit: 2000 })
+          .update({ tier: tierInfo.tier, daily_limit: tierInfo.limit })
           .eq("user_id", userId)
           .eq("is_active", true)
-          .eq("tier", "lite");
+          .in("tier", ["free", "lite", "pro"]);
       }
     }
 
