@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
         // Switch to the new price with proration (charge or credit the difference)
         await stripe.subscriptions.update(primary.id, {
           items: [{ id: primary.items.data[0].id, price: priceId }],
-          proration_behavior: "create_prorations",
+          proration_behavior: "always_invoice", // immediately bill/credit the difference
           metadata: { user_id: user.id, type, switched_from: currentPriceId || "" },
         });
 
