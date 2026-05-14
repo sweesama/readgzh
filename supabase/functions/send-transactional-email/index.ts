@@ -23,12 +23,10 @@ function generateToken(): string {
     .join('')
 }
 
-// Auth note: this function uses verify_jwt = true in config.toml, so Supabase's
-// gateway validates the caller's JWT (anon or service_role) before the request
-// reaches this code. No in-function auth check is needed.
-
+// Auth: verify_jwt is disabled in config.toml so server-side callers (notify-comment,
+// cron dispatcher, etc.) can authenticate with SERVICE_ROLE_KEY as a shared secret.
+// Required: Authorization header must be `Bearer <SUPABASE_SERVICE_ROLE_KEY>`.
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -40,10 +38,16 @@ Deno.serve(async (req) => {
     console.error('Missing required environment variables')
     return new Response(
       JSON.stringify({ error: 'Server configuration error' }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+
+  const authHeader = req.headers.get('Authorization') || req.headers.get('authorization') || ''
+  const presented = authHeader.replace(/^Bearer\s+/i, '').trim()
+  if (presented !== supabaseServiceKey) {
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 
