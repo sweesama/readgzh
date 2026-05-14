@@ -47,15 +47,38 @@ Deno.serve(async (req) => {
       .maybeSingle()
     const userName = profile?.display_name?.trim() || '匿名用户'
 
+    // Helper: call send-transactional-email via direct fetch so we can log failures
+    const sendEmail = async (label: string, body: Record<string, unknown>) => {
+      try {
+        const res = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${serviceKey}`,
+            apikey: serviceKey,
+          },
+          body: JSON.stringify(body),
+        })
+        const text = await res.text()
+        if (!res.ok) {
+          console.error(`[notify-comment] ${label} failed`, res.status, text)
+        } else {
+          console.log(`[notify-comment] ${label} ok`, text)
+        }
+      } catch (e) {
+        console.error(`[notify-comment] ${label} threw`, e)
+      }
+    }
+
     // Always notify admin about new comments
-    await supabase.functions.invoke('send-transactional-email', {
-      body: {
-        templateName: 'new-comment',
-        templateData: {
-          userName,
-          commentContent: comment.content.substring(0, 500),
-          commentUrl: 'https://readgzh.site/comments',
-        },
+    await sendEmail('admin', {
+      templateName: 'new-comment',
+      recipientEmail: 'sweeyeah@gmail.com',
+      idempotencyKey: `new-comment-admin-${comment.id}`,
+      templateData: {
+        userName,
+        commentContent: comment.content.substring(0, 500),
+        commentUrl: 'https://readgzh.site/comments',
       },
     })
 
@@ -75,16 +98,15 @@ Deno.serve(async (req) => {
           .maybeSingle()
 
         if (parentProfile?.email) {
-          await supabase.functions.invoke('send-transactional-email', {
-            body: {
-              templateName: 'comment-reply',
-              recipientEmail: parentProfile.email,
-              templateData: {
-                replierName: userName,
-                replyContent: comment.content.substring(0, 500),
-                originalContent: parentComment.content.substring(0, 200),
-                commentUrl: 'https://readgzh.site/comments',
-              },
+          await sendEmail('reply', {
+            templateName: 'comment-reply',
+            recipientEmail: parentProfile.email,
+            idempotencyKey: `comment-reply-${comment.id}`,
+            templateData: {
+              replierName: userName,
+              replyContent: comment.content.substring(0, 500),
+              originalContent: parentComment.content.substring(0, 200),
+              commentUrl: 'https://readgzh.site/comments',
             },
           })
         }
