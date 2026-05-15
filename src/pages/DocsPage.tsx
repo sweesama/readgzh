@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Copy, CheckCircle, Code, Globe, Bot, Search, BookOpen, Zap, Key, Cog } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import SEO from "@/components/SEO";
 
 const SITE_URL = "https://readgzh.site";
 const API_URL = "https://api.readgzh.site";
