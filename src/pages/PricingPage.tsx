@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Check, ArrowLeft, Zap, Gift, Loader2, Sparkles } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import Footer from "@/components/home/Footer";
+import SEO from "@/components/SEO";
 
 const PricingPage = () => {
   const navigate = useNavigate();
