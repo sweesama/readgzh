@@ -56,10 +56,16 @@ const UnsubscribePage = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <SEO
+        title="邮件退订 | ReadGZH"
+        description="退订 ReadGZH 通知邮件。确认后您将不再收到来自 ReadGZH 的通知邮件。"
+        path="/unsubscribe"
+        noindex
+      />
       <Card className="max-w-md w-full">
         <CardHeader className="text-center">
           <MailX className="h-10 w-10 mx-auto mb-2 text-muted-foreground" />
-          <CardTitle>邮件退订</CardTitle>
+          <h1 className="text-2xl font-semibold leading-none tracking-tight">邮件退订</h1>
         </CardHeader>
         <CardContent className="text-center space-y-4">
           {status === "loading" && (
