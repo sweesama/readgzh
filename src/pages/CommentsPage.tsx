@@ -4,12 +4,19 @@ import { Button } from "@/components/ui/button";
 import Footer from "@/components/home/Footer";
 import CommentSection from "@/components/home/CommentSection";
 import { useAuth } from "@/hooks/useAuth";
+import SEO from "@/components/SEO";
 
 const CommentsPage = () => {
   const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <SEO
+        title="留言板 - 用户反馈与建议 | ReadGZH"
+        description="欢迎在 ReadGZH 留言板分享使用反馈、提出功能建议或与其他用户交流，让 AI 更好地阅读微信公众号文章。"
+        path="/comments"
+        ogType="website"
+      />
       {/* Top bar - consistent with main site */}
       <div className="fixed top-0 left-0 right-0 z-50 px-4 py-3 flex items-center justify-between">
         <Link to="/">
