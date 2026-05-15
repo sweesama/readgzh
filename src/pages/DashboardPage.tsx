@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { Copy, Key, Plus, Trash2, Gift, LogOut, ArrowLeft, Eye, EyeOff, BarChart3, Coins, Zap, Loader2, Crown, Mail, Pencil, CreditCard, CalendarClock } from "lucide-react";
 import Footer from "@/components/home/Footer";
+import SEO from "@/components/SEO";
 
 interface ApiKey {
   id: string;
