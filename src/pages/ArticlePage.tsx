@@ -6,6 +6,7 @@ import { ArrowLeft, Copy, ExternalLink, CheckCircle, Share2, Eye, Bot } from "lu
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import DOMPurify from "dompurify";
+import SEO from "@/components/SEO";
 
 const API_BASE = "https://api.readgzh.site";
 const IMAGE_PROXY_BASE = `${API_BASE}/image-proxy`;
