@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckCircle, ArrowRight, AlertCircle } from "lucide-react";
+import SEO from "@/components/SEO";
 // Article submission is handled via edge function (server-side validation)
 
 /**
