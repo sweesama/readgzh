@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { CheckCircle, XCircle, Loader2, MailX } from "lucide-react";
+import SEO from "@/components/SEO";
 
 const UnsubscribePage = () => {
   const [searchParams] = useSearchParams();
