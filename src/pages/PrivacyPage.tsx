@@ -1,9 +1,16 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import SEO from "@/components/SEO";
 
 const PrivacyPage = () => (
   <div className="min-h-screen bg-background">
+    <SEO
+      title="隐私政策 | ReadGZH"
+      description="ReadGZH 隐私政策：我们如何收集、使用和保护您的信息，包括访问日志、注册邮箱与 Google Analytics 匿名数据。"
+      path="/privacy"
+      ogType="website"
+    />
     <div className="container mx-auto px-4 py-12 max-w-3xl">
       <Link to="/">
         <Button variant="ghost" size="sm" className="mb-6 gap-1.5">
@@ -28,7 +35,7 @@ const PrivacyPage = () => (
         <h2 className="text-xl font-semibold text-foreground mt-6">4. 第三方服务</h2>
         <p>我们使用 Google Analytics 来分析网站流量。Google 的隐私政策请参阅其官方文档。</p>
         <h2 className="text-xl font-semibold text-foreground mt-6">5. 联系我们</h2>
-        <p>如有隐私相关问题，请通过 GitHub 项目页面联系我们。</p>
+        <p>如有隐私相关问题，请通过 <a href="mailto:hi@readgzh.site" className="text-primary hover:underline">hi@readgzh.site</a> 与我们联系。</p>
       </div>
     </div>
   </div>
