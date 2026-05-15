@@ -48,7 +48,7 @@ const DocsPage = () => {
               返回首页
             </Button>
           </Link>
-          <h1 className="text-sm font-semibold">开发者文档</h1>
+          <span className="text-sm font-semibold">开发者文档</span>
         </div>
       </div>
 
