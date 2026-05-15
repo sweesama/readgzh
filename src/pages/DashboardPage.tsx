@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { Copy, Key, Plus, Trash2, Gift, LogOut, ArrowLeft, Eye, EyeOff, BarChart3, Coins, Zap, Loader2, Crown, Mail, Pencil, CreditCard, CalendarClock } from "lucide-react";
 import Footer from "@/components/home/Footer";
+import SEO from "@/components/SEO";
 
 interface ApiKey {
   id: string;
@@ -506,6 +507,12 @@ const DashboardPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="开发者控制台 - API Key 管理 | ReadGZH"
+        description="管理 ReadGZH API Key、查看积分使用情况、订阅与账户设置。"
+        path="/dashboard"
+        noindex
+      />
       {/* Header */}
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">

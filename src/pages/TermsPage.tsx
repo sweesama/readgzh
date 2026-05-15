@@ -1,9 +1,16 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import SEO from "@/components/SEO";
 
 const TermsPage = () => (
   <div className="min-h-screen bg-background">
+    <SEO
+      title="服务条款 | ReadGZH"
+      description="ReadGZH 服务条款：服务描述、使用规则、免责声明与知识产权说明。本服务仅用于个人学习和研究目的。"
+      path="/terms"
+      ogType="website"
+    />
     <div className="container mx-auto px-4 py-12 max-w-3xl">
       <Link to="/">
         <Button variant="ghost" size="sm" className="mb-6 gap-1.5">

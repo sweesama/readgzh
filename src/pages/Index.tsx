@@ -9,6 +9,7 @@ import AdvantagesSection from "@/components/home/AdvantagesSection";
 import AIGuideSection from "@/components/home/AIGuideSection";
 import StatsWidget from "@/components/home/StatsSection";
 import Footer from "@/components/home/Footer";
+import SEO from "@/components/SEO";
 import { Bot, Eye, BookOpen, Code, Zap, Key, Crown, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,6 +46,12 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="ReadGZH - 微信文章 AI 阅读器 | 让 AI 读懂微信公众号"
+        description="ReadGZH: 微信公众号文章 AI 协议级转换器。99.89% 穿透反爬，Token 消耗降低 50–87%。支持 API / MCP 协议，ChatGPT、Claude、Perplexity、Gemini 无缝引用。"
+        path="/"
+        ogType="website"
+      />
       {/* Top bar with AI view toggle and nav links */}
       <div className="fixed top-0 left-0 right-0 z-50 px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
         <Button

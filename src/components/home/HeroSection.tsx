@@ -61,8 +61,18 @@ const HeroSection = ({ initialUrl = "" }: HeroSectionProps) => {
       <div className="relative container mx-auto px-4 pt-20 pb-12 md:pt-28 md:pb-16">
         <div className="max-w-3xl mx-auto text-center">
           <div className="flex items-center justify-center mb-6">
-            <img src="/logo.png" alt="ReadGZH" className="h-16 w-16 mr-3" />
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground">ReadGZH</h1>
+            <img
+              src="/logo.png"
+              alt="ReadGZH logo"
+              width={64}
+              height={64}
+              fetchPriority="high"
+              decoding="async"
+              className="h-16 w-16 mr-3"
+            />
+            <h1 className="text-4xl md:text-5xl font-bold text-foreground">
+              ReadGZH — 微信文章 AI 阅读器
+            </h1>
           </div>
 
           <p className="text-lg md:text-xl text-muted-foreground mb-2">粘贴微信文章链接，一键生成 AI 可访问的页面</p>

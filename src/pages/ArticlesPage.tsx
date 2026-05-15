@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Search, Eye, Clock, ArrowLeft, ArrowRight, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import SEO from "@/components/SEO";
 
 interface Article {
   id: string;
@@ -64,6 +65,19 @@ const ArticlesPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="文章库 - 已缓存的微信公众号文章 | ReadGZH"
+        description="浏览 ReadGZH 已缓存的微信公众号文章库，所有文章可直接被 ChatGPT、Claude、Perplexity 等 AI 工具读取，缓存文章免费阅读。"
+        path="/articles"
+        ogType="website"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "ReadGZH 文章库",
+          description: "已缓存的微信公众号文章集合，AI 可直接读取",
+          url: "https://readgzh.site/articles",
+        }}
+      />
       {/* Header */}
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">

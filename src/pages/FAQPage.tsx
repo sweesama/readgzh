@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import SEO from "@/components/SEO";
 
 const faqs = [
   {
@@ -36,6 +37,21 @@ const faqs = [
 
 const FAQPage = () => (
   <div className="min-h-screen bg-background">
+    <SEO
+      title="常见问题 FAQ - ReadGZH 微信文章 AI 阅读器"
+      description="ReadGZH 常见问题解答：什么是 ReadGZH、为什么 AI 无法读取微信文章、支持哪些 AI 工具、积分与缓存机制、使用次数限制等。"
+      path="/faq"
+      ogType="website"
+      jsonLd={{
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: faqs.map((f) => ({
+          "@type": "Question",
+          name: f.q,
+          acceptedAnswer: { "@type": "Answer", text: f.a },
+        })),
+      }}
+    />
     <div className="container mx-auto px-4 py-12 max-w-3xl">
       <Link to="/">
         <Button variant="ghost" size="sm" className="mb-6 gap-1.5">

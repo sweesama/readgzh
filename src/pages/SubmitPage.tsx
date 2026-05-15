@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckCircle, ArrowRight, AlertCircle } from "lucide-react";
+import SEO from "@/components/SEO";
 // Article submission is handled via edge function (server-side validation)
 
 /**
@@ -111,9 +112,10 @@ const SubmitPage = () => {
   if (status === "loading") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
+        <SEO title="正在保存文章 | ReadGZH" description="正在通过 ReadGZH Bookmarklet 保存微信文章到 AI 可读链接。" path="/submit" noindex />
         <Card className="max-w-md w-full mx-4">
           <CardHeader>
-            <CardTitle className="text-center">正在保存文章...</CardTitle>
+            <h1 className="text-center text-2xl font-semibold leading-none tracking-tight">正在保存文章…</h1>
           </CardHeader>
           <CardContent className="space-y-4">
             <Skeleton className="h-4 w-full" />
@@ -128,6 +130,7 @@ const SubmitPage = () => {
   if (status === "error") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
+        <SEO title="保存失败 | ReadGZH" description="通过 Bookmarklet 保存微信文章时出现错误，请稍后重试。" path="/submit" noindex />
         <Card className="max-w-md w-full mx-4 border-destructive">
           <CardHeader>
             <div className="flex items-center justify-center mb-4">
@@ -135,7 +138,7 @@ const SubmitPage = () => {
                 <AlertCircle className="h-8 w-8 text-destructive" />
               </div>
             </div>
-            <CardTitle className="text-center text-destructive">保存失败</CardTitle>
+            <h1 className="text-center text-2xl font-semibold leading-none tracking-tight text-destructive">保存失败</h1>
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <p className="text-muted-foreground">{errorMessage}</p>
@@ -150,6 +153,7 @@ const SubmitPage = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
+      <SEO title="文章保存成功 | ReadGZH" description="文章已保存到 ReadGZH，现在可以分享给 ChatGPT、Claude、Perplexity 等 AI 工具直接阅读。" path="/submit" noindex />
       <Card className="max-w-md w-full mx-4">
         <CardHeader>
           <div className="flex items-center justify-center mb-4">
@@ -157,7 +161,7 @@ const SubmitPage = () => {
               <CheckCircle className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-center">文章保存成功！</CardTitle>
+          <h1 className="text-center text-2xl font-semibold leading-none tracking-tight">文章保存成功！</h1>
         </CardHeader>
         <CardContent className="text-center space-y-6">
           <p className="text-muted-foreground">

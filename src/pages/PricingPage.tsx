@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Check, ArrowLeft, Zap, Gift, Loader2, Sparkles } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import Footer from "@/components/home/Footer";
+import SEO from "@/components/SEO";
 
 const PricingPage = () => {
   const navigate = useNavigate();
@@ -111,6 +112,12 @@ const PricingPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="定价方案 - Free / Lite / Pro 套餐 | ReadGZH"
+        description="ReadGZH 定价方案：免费每日 50 积分，Lite/Pro 订阅获得更多积分配额、AI 摘要与高级特性。缓存文章永久免费读取。"
+        path="/pricing"
+        ogType="website"
+      />
       <div className="container mx-auto px-4 py-8">
         <Button variant="ghost" onClick={() => navigate("/")} className="mb-8">
           <ArrowLeft className="mr-2 h-4 w-4" />返回首页

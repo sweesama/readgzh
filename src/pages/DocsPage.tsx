@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Copy, CheckCircle, Code, Globe, Bot, Search, BookOpen, Zap, Key, Cog } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import SEO from "@/components/SEO";
 
 const SITE_URL = "https://readgzh.site";
 const API_URL = "https://api.readgzh.site";
@@ -39,6 +40,12 @@ const CodeBlock = ({ children, label }: { children: string; label?: string }) =>
 const DocsPage = () => {
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="开发者文档 - REST API 与 MCP 协议接入 | ReadGZH"
+        description="ReadGZH 开发者文档：REST API 端点、MCP Server 协议、API Key 认证、积分计费、智能分块与 AI 摘要等接入方式说明。"
+        path="/docs"
+        ogType="website"
+      />
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
         <div className="container mx-auto px-4 py-3 max-w-4xl flex items-center justify-between">
@@ -48,7 +55,7 @@ const DocsPage = () => {
               返回首页
             </Button>
           </Link>
-          <h1 className="text-sm font-semibold">开发者文档</h1>
+          <span className="text-sm font-semibold">开发者文档</span>
         </div>
       </div>
 

@@ -1,9 +1,16 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import SEO from "@/components/SEO";
 
 const CookiesPage = () => (
   <div className="min-h-screen bg-background">
+    <SEO
+      title="Cookie 政策 | ReadGZH"
+      description="ReadGZH Cookie 政策：我们使用的 Cookie 类型（必要 Cookie 与 Google Analytics 分析 Cookie）以及如何管理 Cookie。"
+      path="/cookies"
+      ogType="website"
+    />
     <div className="container mx-auto px-4 py-12 max-w-3xl">
       <Link to="/">
         <Button variant="ghost" size="sm" className="mb-6 gap-1.5">
