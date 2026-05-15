@@ -16,9 +16,19 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://readgzh.site/pricing</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://readgzh.site/faq</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://readgzh.site/comments</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
   </url>
   <url>
     <loc>https://readgzh.site/privacy</loc>
