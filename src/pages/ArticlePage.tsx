@@ -244,8 +244,31 @@ const ArticlePage = () => {
 
   if (!article) return null;
 
+  const articlePath = article.slug ? `/s/${article.slug.replace(/^s\//, "")}` : `/a/${article.id}`;
+  const articleDesc = (article.content || "").replace(/\s+/g, " ").trim().slice(0, 155);
+
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title={`${article.title.slice(0, 55)} | ReadGZH`}
+        description={articleDesc || `${article.title} - 由 ReadGZH 转换的 AI 可读微信公众号文章`}
+        path={articlePath}
+        ogType="article"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "Article",
+          headline: article.title,
+          author: { "@type": "Person", name: article.author || "未知作者" },
+          datePublished: article.publish_time || article.created_at,
+          dateModified: article.created_at,
+          mainEntityOfPage: `https://readgzh.site${articlePath}`,
+          publisher: {
+            "@type": "Organization",
+            name: "ReadGZH",
+            url: "https://readgzh.site",
+          },
+        }}
+      />
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
         <div className="container mx-auto px-4 py-3 max-w-3xl flex items-center justify-between">
