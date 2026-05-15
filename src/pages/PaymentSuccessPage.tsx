@@ -2,12 +2,14 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle, ArrowRight } from "lucide-react";
+import SEO from "@/components/SEO";
 
 const PaymentSuccessPage = () => {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <SEO title="支付成功 | ReadGZH" description="ReadGZH 订阅支付成功，账户将在几分钟内升级。" path="/payment-success" noindex />
       <Card className="max-w-md w-full text-center">
         <CardContent className="pt-10 pb-8 space-y-6">
           <CheckCircle className="h-16 w-16 text-primary mx-auto" />
