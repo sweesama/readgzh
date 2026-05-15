@@ -507,6 +507,12 @@ const DashboardPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="开发者控制台 - API Key 管理 | ReadGZH"
+        description="管理 ReadGZH API Key、查看积分使用情况、订阅与账户设置。"
+        path="/dashboard"
+        noindex
+      />
       {/* Header */}
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
