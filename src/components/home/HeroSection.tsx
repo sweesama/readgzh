@@ -60,7 +60,7 @@ const HeroSection = ({ initialUrl = "" }: HeroSectionProps) => {
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-background" />
       <div className="relative container mx-auto px-4 pt-20 pb-12 md:pt-28 md:pb-16">
         <div className="max-w-3xl mx-auto text-center">
-          <div className="flex items-center justify-center mb-6">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-6">
             <img
               src="/logo.png"
               alt="ReadGZH logo"
@@ -68,10 +68,12 @@ const HeroSection = ({ initialUrl = "" }: HeroSectionProps) => {
               height={64}
               fetchPriority="high"
               decoding="async"
-              className="h-16 w-16 mr-3"
+              className="h-14 w-14 sm:h-16 sm:w-16 shrink-0"
             />
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground">
-              ReadGZH — 微信文章 AI 阅读器
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground tracking-tight text-balance">
+              <span className="whitespace-nowrap">ReadGZH</span>
+              <span className="mx-2 text-muted-foreground">—</span>
+              <span className="whitespace-nowrap">微信文章 AI 阅读器</span>
             </h1>
           </div>
 
