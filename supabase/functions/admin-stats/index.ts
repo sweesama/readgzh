@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
       svc.rpc("get_api_usage_stats", { p_date: today }),
       svc.rpc("get_api_usage_stats"),
       svc.from("daily_credits").select("*", { count: "exact", head: true }).eq("claim_date", today),
-      svc.from("profiles").select("id, email, display_name, created_at").order("created_at", { ascending: false }).limit(20),
+      svc.from("profiles").select("id, email, display_name, created_at").order("created_at", { ascending: false }).limit(50),
       // Anonymous requests - use RPC aggregation
       svc.rpc("get_total_anon_requests", { p_date: today }),
       svc.rpc("get_total_anon_requests"),
@@ -88,9 +88,13 @@ Deno.serve(async (req) => {
 
     const todayUsage = todayUsageRes.data || { request_count: 0, cached_count: 0 };
     const totalUsage = totalUsageRes.data || { request_count: 0, cached_count: 0 };
-    const todayApiRequests = todayUsage.request_count || 0;
+    // request_count in api_usage actually stores credits consumed (3 per request)
+    const CREDIT_PER_REQUEST = 3;
+    const todayCreditsConsumed = Number(todayUsage.request_count || 0);
+    const totalCreditsConsumed = Number(totalUsage.request_count || 0);
+    const todayApiRequests = Math.round(todayCreditsConsumed / CREDIT_PER_REQUEST);
+    const totalApiRequests = Math.round(totalCreditsConsumed / CREDIT_PER_REQUEST);
     const todayCached = todayUsage.cached_count || 0;
-    const totalApiRequests = totalUsage.request_count || 0;
     const totalCached = totalUsage.cached_count || 0;
     const todayAnonRequests = todayAnonRes.data || 0;
     const totalAnonRequests = totalAnonRes.data || 0;
@@ -105,12 +109,14 @@ Deno.serve(async (req) => {
           active_api_keys: apiKeysRes.count || 0,
           pro_users: proKeysRes.count || 0,
           today_api_requests: todayApiRequests,
+          today_credits_consumed: todayCreditsConsumed,
           today_anon_requests: todayAnonRequests,
           today_all_requests: todayApiRequests + todayAnonRequests,
           today_cached: todayCached,
           today_active_users: todayCreditsRes.count || 0,
           today_new_articles: todayArticlesRes.count || 0,
           total_api_requests: totalApiRequests,
+          total_credits_consumed: totalCreditsConsumed,
           total_anon_requests: totalAnonRequests,
           total_all_requests: totalApiRequests + totalAnonRequests,
           total_cached: totalCached,
