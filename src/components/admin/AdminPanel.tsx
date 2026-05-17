@@ -9,12 +9,14 @@ interface AdminStats {
   active_api_keys: number;
   pro_users: number;
   today_api_requests: number;
+  today_credits_consumed: number;
   today_anon_requests: number;
   today_all_requests: number;
   today_cached: number;
   today_active_users: number;
   today_new_articles: number;
   total_api_requests: number;
+  total_credits_consumed: number;
   total_anon_requests: number;
   total_all_requests: number;
   total_cached: number;
