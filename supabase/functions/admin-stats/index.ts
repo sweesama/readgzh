@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
       svc.rpc("get_api_usage_stats", { p_date: today }),
       svc.rpc("get_api_usage_stats"),
       svc.from("daily_credits").select("*", { count: "exact", head: true }).eq("claim_date", today),
-      svc.from("profiles").select("id, email, display_name, created_at").order("created_at", { ascending: false }).limit(20),
+      svc.from("profiles").select("id, email, display_name, created_at").order("created_at", { ascending: false }).limit(50),
       // Anonymous requests - use RPC aggregation
       svc.rpc("get_total_anon_requests", { p_date: today }),
       svc.rpc("get_total_anon_requests"),
