@@ -188,14 +188,14 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
 
       {/* Recent Users */}
       <div className="border border-green-900/60 rounded bg-black/50 p-3">
-        <div className="text-green-600 text-xs mb-2">最近注册用户 (20)</div>
-        <div className="space-y-1 max-h-48 overflow-y-auto">
+        <div className="text-green-600 text-xs mb-2">最近注册用户 ({recentUsers.length})</div>
+        <div className="space-y-1 max-h-72 overflow-y-auto pr-3 scrollbar-thin">
           {recentUsers.map((u) => (
-            <div key={u.id} className="flex items-center justify-between text-xs">
-              <span className="text-green-400 truncate max-w-[200px]">
+            <div key={u.id} className="flex items-center justify-between gap-3 text-xs">
+              <span className="text-green-400 truncate min-w-0 flex-1">
                 {u.display_name || u.email || "匿名"}
               </span>
-              <span className="text-green-700">
+              <span className="text-green-700 shrink-0 tabular-nums">
                 {new Date(u.created_at).toLocaleDateString("zh-CN")}
               </span>
             </div>
