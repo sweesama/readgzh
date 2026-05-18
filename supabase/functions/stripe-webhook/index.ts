@@ -276,6 +276,7 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
       .eq("is_active", true)
       .in("tier", ["pro", "lite"]);
   }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
