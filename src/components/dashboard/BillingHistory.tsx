@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, Receipt, ExternalLink, RotateCcw } from "lucide-react";
+import RefundRequestDialog from "./RefundRequestDialog";
 
 interface Invoice {
   id: string;
@@ -83,20 +84,21 @@ const BillingHistory = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data: res, error: err } = await supabase.functions.invoke("billing-history");
+      if (err) throw err;
+      setData(res as BillingData);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const { data: res, error: err } = await supabase.functions.invoke("billing-history");
-        if (err) throw err;
-        setData(res as BillingData);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
-      } finally {
-        setLoading(false);
-      }
-    };
     load();
   }, []);
 
@@ -179,6 +181,9 @@ const BillingHistory = () => {
                       </p>
                     </div>
                   </div>
+                  {sub.status === "active" && !sub.cancel_at_period_end && (
+                    <RefundRequestDialog onRefunded={load} />
+                  )}
                 </div>
               ))}
             </div>

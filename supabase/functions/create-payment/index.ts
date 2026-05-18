@@ -128,7 +128,7 @@ Deno.serve(async (req) => {
         });
 
         return new Response(
-          JSON.stringify({ url: successUrl, switched: true }),
+          JSON.stringify({ url: `${successUrl}?upgraded=1`, switched: true }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }

@@ -204,6 +204,80 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 }
 
+async function handleChargeRefunded(charge: Stripe.Charge) {
+  const customerId = charge.customer as string;
+  if (!customerId) {
+    log("Refund: no customer on charge", { chargeId: charge.id });
+    return;
+  }
+  const customer = await stripe.customers.retrieve(customerId);
+  if ((customer as any).deleted || !(customer as Stripe.Customer).email) return;
+  const email = (customer as Stripe.Customer).email!;
+  const userId = await getUserIdByEmail(email);
+  if (!userId) {
+    log("Refund: no user found", { email });
+    return;
+  }
+
+  // Log each refund (idempotent on stripe_refund_id)
+  const refundList = charge.refunds?.data ?? [];
+  for (const r of refundList) {
+    // skip already-recorded
+    const { data: existing } = await supabase
+      .from("refund_records")
+      .select("id")
+      .eq("stripe_refund_id", r.id)
+      .maybeSingle();
+    if (existing) continue;
+
+    await supabase.from("refund_records").insert({
+      user_id: userId,
+      stripe_charge_id: charge.id,
+      stripe_payment_intent_id: (charge.payment_intent as string) || null,
+      stripe_refund_id: r.id,
+      stripe_subscription_id: null,
+      amount_refunded: r.amount,
+      currency: r.currency,
+      original_amount: charge.amount,
+      refund_type: "manual",
+      reason: r.reason || null,
+      formula_breakdown: null,
+    });
+  }
+
+  // Cancel any still-active subscriptions for this customer
+  const activeSubs = await stripe.subscriptions.list({
+    customer: customerId,
+    status: "active",
+    limit: 10,
+  });
+  for (const sub of activeSubs.data) {
+    try {
+      log("Refund backstop: canceling active sub", { id: sub.id });
+      await stripe.subscriptions.cancel(sub.id);
+    } catch (e) {
+      log("Cancel during refund failed", { id: sub.id, error: (e as Error).message });
+    }
+  }
+
+  // Downgrade + clear bonus (only on full refund OR if no active subscriptions remain)
+  const isFullyRefunded = charge.amount_refunded >= charge.amount;
+  if (isFullyRefunded || activeSubs.data.length > 0) {
+    log("Downgrading user via refund backstop", { userId, isFullyRefunded });
+    await supabase
+      .from("api_keys")
+      .update({
+        tier: "free",
+        daily_limit: 30,
+        bonus_credits: 0,
+        bonus_expires_at: null,
+      })
+      .eq("user_id", userId)
+      .eq("is_active", true)
+      .in("tier", ["pro", "lite"]);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204 });
@@ -245,6 +319,11 @@ Deno.serve(async (req) => {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
         await syncSubscriptionTier(customerId);
+        break;
+      }
+      case "charge.refunded": {
+        const charge = event.data.object as Stripe.Charge;
+        await handleChargeRefunded(charge);
         break;
       }
       default:

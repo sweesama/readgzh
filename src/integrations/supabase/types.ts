@@ -404,6 +404,54 @@ export type Database = {
         }
         Relationships: []
       }
+      refund_records: {
+        Row: {
+          amount_refunded: number
+          created_at: string
+          currency: string
+          formula_breakdown: Json | null
+          id: string
+          original_amount: number
+          reason: string | null
+          refund_type: string
+          stripe_charge_id: string
+          stripe_payment_intent_id: string | null
+          stripe_refund_id: string
+          stripe_subscription_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_refunded: number
+          created_at?: string
+          currency?: string
+          formula_breakdown?: Json | null
+          id?: string
+          original_amount: number
+          reason?: string | null
+          refund_type?: string
+          stripe_charge_id: string
+          stripe_payment_intent_id?: string | null
+          stripe_refund_id: string
+          stripe_subscription_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_refunded?: number
+          created_at?: string
+          currency?: string
+          formula_breakdown?: Json | null
+          id?: string
+          original_amount?: number
+          reason?: string | null
+          refund_type?: string
+          stripe_charge_id?: string
+          stripe_payment_intent_id?: string | null
+          stripe_refund_id?: string
+          stripe_subscription_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
