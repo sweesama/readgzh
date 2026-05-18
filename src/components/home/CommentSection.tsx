@@ -242,7 +242,7 @@ const CommentSection = () => {
     });
   };
 
-  const renderComment = (comment: Comment, isReply = false) => {
+  const renderComment = (comment: Comment, isReply = false, hideHeader = false) => {
     const isCommentAdmin = comment.profile?.is_admin === true;
     const hasReplies = comment.replies && comment.replies.length > 0;
     const showReplies = expandedReplies.has(comment.id);
@@ -251,27 +251,32 @@ const CommentSection = () => {
       <div key={comment.id} className={`${isReply ? "ml-8 border-l-2 border-border pl-4" : ""}`}>
         <div className="group py-3">
           {/* Header */}
-          <div className="flex items-center gap-2 mb-1.5">
-            <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground shrink-0">
-              {comment.is_anonymous ? (
-                <EyeOff className="h-3 w-3" />
-              ) : comment.profile?.avatar_url ? (
-                <img src={comment.profile.avatar_url} className="h-6 w-6 rounded-full object-cover" alt="" />
-              ) : (
-                (comment.profile?.display_name?.[0] || "?").toUpperCase()
-              )}
-            </div>
-            <span className="text-sm font-medium text-foreground">
-              {comment.is_anonymous ? "匿名用户" : (comment.profile?.display_name || "匿名用户")}
-            </span>
-            {!comment.is_anonymous && isCommentAdmin && (
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary">
-                <Shield className="h-2.5 w-2.5" />
-                开发者
+          {!hideHeader && (
+            <div className="flex items-center gap-2 mb-1.5">
+              <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground shrink-0">
+                {comment.is_anonymous ? (
+                  <EyeOff className="h-3 w-3" />
+                ) : comment.profile?.avatar_url ? (
+                  <img src={comment.profile.avatar_url} className="h-6 w-6 rounded-full object-cover" alt="" />
+                ) : (
+                  (comment.profile?.display_name?.[0] || "?").toUpperCase()
+                )}
+              </div>
+              <span className="text-sm font-medium text-foreground">
+                {comment.is_anonymous ? "匿名用户" : (comment.profile?.display_name || "匿名用户")}
               </span>
-            )}
-            <span className="text-xs text-muted-foreground">{timeAgo(comment.created_at)}</span>
-          </div>
+              {!comment.is_anonymous && isCommentAdmin && (
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary">
+                  <Shield className="h-2.5 w-2.5" />
+                  开发者
+                </span>
+              )}
+              <span className="text-xs text-muted-foreground">{timeAgo(comment.created_at)}</span>
+            </div>
+          )}
+          {hideHeader && (
+            <div className="ml-8 mb-1 text-xs text-muted-foreground">{timeAgo(comment.created_at)}</div>
+          )}
 
           {/* Content */}
           <p className="text-sm text-foreground/90 ml-8 whitespace-pre-wrap break-words">{comment.content}</p>
