@@ -258,7 +258,7 @@ const PricingPage = () => {
             },
             {
               q: "支持哪些支付方式？",
-              a: "我们通过 Stripe 支持信用卡（Visa/Mastercard）和支付宝。如需微信支付或其他方式，请联系我们。",
+              a: "我们通过 Stripe 支持：信用卡（Visa / Mastercard / 银联 UnionPay）、Link、支付宝、微信支付。注意：订阅套餐（Lite / Pro 月付 / 年付）由于需要按周期自动扣款，仅支持信用卡和 Link；支付宝、微信支付仅支持加量包等一次性付款。如需其他支付方式，欢迎联系我们。",
             },
           ].map(({ q, a }) => (
             <div key={q} className="border rounded-lg p-4">
