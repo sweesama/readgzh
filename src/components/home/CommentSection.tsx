@@ -63,6 +63,7 @@ const CommentSection = () => {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isReplyAnonymous, setIsReplyAnonymous] = useState(false);
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   const isAdmin = user?.email === ADMIN_EMAIL;
   const voterId = getVoterId(user?.id ?? null);
@@ -428,11 +429,31 @@ const CommentSection = () => {
           {sortedGroups.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">还没有留言，来说点什么吧 ✨</p>
           ) : (
-            sortedGroups.map((g) => (
-              <div key={g.key} className="py-1">
-                {g.items.map((c, idx) => renderComment(c, false, idx > 0))}
-              </div>
-            ))
+            sortedGroups.map((g) => {
+              const isExpanded = expandedGroups.has(g.key);
+              const shouldCollapse = g.items.length > 2;
+              const visibleItems = shouldCollapse && !isExpanded ? g.items.slice(0, 2) : g.items;
+              const hiddenCount = g.items.length - visibleItems.length;
+              return (
+                <div key={g.key} className="py-1">
+                  {visibleItems.map((c, idx) => renderComment(c, false, idx > 0))}
+                  {shouldCollapse && (
+                    <button
+                      onClick={() => setExpandedGroups((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(g.key)) next.delete(g.key);
+                        else next.add(g.key);
+                        return next;
+                      })}
+                      className="flex items-center gap-1 ml-8 mb-3 text-xs text-primary hover:text-primary/80 transition-colors"
+                    >
+                      {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                      {isExpanded ? "收起" : `展开其余 ${hiddenCount} 条留言`}
+                    </button>
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
       </div>
