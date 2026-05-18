@@ -29,6 +29,7 @@ const Footer = () => {
               <li><Link to="/pricing" className="text-muted-foreground hover:text-primary transition-colors">定价方案</Link></li>
               <li><Link to="/dashboard" className="text-muted-foreground hover:text-primary transition-colors">开发者控制台</Link></li>
               <li><Link to="/faq" className="text-muted-foreground hover:text-primary transition-colors">常见问题 (FAQ)</Link></li>
+              <li><Link to="/changelog" className="text-muted-foreground hover:text-primary transition-colors">更新日志</Link></li>
             </ul>
           </div>
 
