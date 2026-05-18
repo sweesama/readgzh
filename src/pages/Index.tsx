@@ -10,7 +10,7 @@ import AIGuideSection from "@/components/home/AIGuideSection";
 import StatsWidget from "@/components/home/StatsSection";
 import Footer from "@/components/home/Footer";
 import SEO from "@/components/SEO";
-import { Bot, Eye, BookOpen, Code, Zap, Key, Crown, MessageSquare } from "lucide-react";
+import { Bot, Eye, BookOpen, Code, Zap, Key, Crown, MessageSquare, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
