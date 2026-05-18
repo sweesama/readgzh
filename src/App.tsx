@@ -66,6 +66,7 @@ const App = () => (
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
           <Route path="/comments" element={<CommentsPage />} />
           <Route path="/unsubscribe" element={<UnsubscribePage />} />
+          <Route path="/changelog" element={<ChangelogPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
