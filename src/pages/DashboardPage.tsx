@@ -11,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { Copy, Key, Plus, Trash2, Gift, LogOut, ArrowLeft, Eye, EyeOff, BarChart3, Coins, Zap, Loader2, Crown, Mail, Pencil, CreditCard, CalendarClock } from "lucide-react";
 import Footer from "@/components/home/Footer";
 import SEO from "@/components/SEO";
+import BillingHistory from "@/components/dashboard/BillingHistory";
 
 interface ApiKey {
   id: string;
