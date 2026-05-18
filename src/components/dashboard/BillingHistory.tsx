@@ -181,6 +181,9 @@ const BillingHistory = () => {
                       </p>
                     </div>
                   </div>
+                  {sub.status === "active" && !sub.cancel_at_period_end && (
+                    <RefundRequestDialog onRefunded={load} />
+                  )}
                 </div>
               ))}
             </div>
