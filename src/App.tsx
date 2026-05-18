@@ -20,6 +20,7 @@ import PricingPage from "./pages/PricingPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import CommentsPage from "./pages/CommentsPage";
 import UnsubscribePage from "./pages/UnsubscribePage";
+import ChangelogPage from "./pages/ChangelogPage";
 
 // Error boundary to prevent WebMCP from crashing the app
 class WebMCPErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
