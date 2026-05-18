@@ -423,12 +423,16 @@ const CommentSection = () => {
           )}
         </div>
 
-        {/* Comments list */}
+        {/* Comments list — grouped by author */}
         <div className="divide-y divide-border">
-          {sorted.length === 0 ? (
+          {sortedGroups.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">还没有留言，来说点什么吧 ✨</p>
           ) : (
-            sorted.map((c) => renderComment(c))
+            sortedGroups.map((g) => (
+              <div key={g.key} className="py-1">
+                {g.items.map((c, idx) => renderComment(c, false, idx > 0))}
+              </div>
+            ))
           )}
         </div>
       </div>
