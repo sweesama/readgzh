@@ -321,6 +321,11 @@ Deno.serve(async (req) => {
         await syncSubscriptionTier(customerId);
         break;
       }
+      case "charge.refunded": {
+        const charge = event.data.object as Stripe.Charge;
+        await handleChargeRefunded(charge);
+        break;
+      }
       default:
         log("Unhandled event type", { type: event.type });
     }
