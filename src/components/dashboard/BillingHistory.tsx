@@ -84,20 +84,21 @@ const BillingHistory = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data: res, error: err } = await supabase.functions.invoke("billing-history");
+      if (err) throw err;
+      setData(res as BillingData);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const { data: res, error: err } = await supabase.functions.invoke("billing-history");
-        if (err) throw err;
-        setData(res as BillingData);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
-      } finally {
-        setLoading(false);
-      }
-    };
     load();
   }, []);
 
