@@ -131,9 +131,33 @@ const CommentSection = () => {
     fetchVotes();
   }, [fetchComments, fetchVotes]);
 
-  const sorted = [...comments].sort((a, b) => {
-    if (sort === "popular") return b.likes_count - a.likes_count;
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  // Group top-level comments by author (non-anonymous → group by user_id).
+  // Anonymous comments stay as singleton groups since identity is hidden.
+  type Group = { key: string; author: Comment; items: Comment[] };
+  const groupsMap = new Map<string, Group>();
+  comments.forEach((c) => {
+    const key = c.is_anonymous ? `anon:${c.id}` : `user:${c.user_id}`;
+    const existing = groupsMap.get(key);
+    if (existing) {
+      existing.items.push(c);
+    } else {
+      groupsMap.set(key, { key, author: c, items: [c] });
+    }
+  });
+  const groups = Array.from(groupsMap.values());
+  // Within each group, order items newest-first
+  groups.forEach((g) => g.items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+  // Update author reference to the latest comment (so header shows latest profile)
+  groups.forEach((g) => { g.author = g.items[0]; });
+
+  const sortedGroups = [...groups].sort((a, b) => {
+    if (sort === "popular") {
+      const aLikes = a.items.reduce((n, c) => n + c.likes_count, 0);
+      const bLikes = b.items.reduce((n, c) => n + c.likes_count, 0);
+      return bLikes - aLikes;
+    }
+    // newest: by latest comment time in group
+    return new Date(b.items[0].created_at).getTime() - new Date(a.items[0].created_at).getTime();
   });
 
   const handleSubmit = async (parentId: string | null = null) => {
