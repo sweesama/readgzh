@@ -1,22 +1,42 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle, ArrowRight } from "lucide-react";
+import { CheckCircle, ArrowRight, Sparkles } from "lucide-react";
 import SEO from "@/components/SEO";
 
 const PaymentSuccessPage = () => {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const upgraded = params.get("upgraded") === "1";
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <SEO title="支付成功 | ReadGZH" description="ReadGZH 订阅支付成功，账户将在几分钟内升级。" path="/payment-success" noindex />
+      <SEO
+        title={upgraded ? "订阅升级成功 | ReadGZH" : "支付成功 | ReadGZH"}
+        description="ReadGZH 订阅支付成功，账户将在几分钟内生效。"
+        path="/payment-success"
+        noindex
+      />
       <Card className="max-w-md w-full text-center">
         <CardContent className="pt-10 pb-8 space-y-6">
-          <CheckCircle className="h-16 w-16 text-primary mx-auto" />
+          {upgraded ? (
+            <Sparkles className="h-16 w-16 text-primary mx-auto" />
+          ) : (
+            <CheckCircle className="h-16 w-16 text-primary mx-auto" />
+          )}
           <div>
-            <h1 className="text-2xl font-bold mb-2">支付成功 🎉</h1>
+            <h1 className="text-2xl font-bold mb-2">
+              {upgraded ? "订阅升级成功 ✨" : "支付成功 🎉"}
+            </h1>
             <p className="text-muted-foreground">
-              感谢购买 ReadGZH Pro！你的账户将在几分钟内升级。
+              {upgraded ? (
+                <>
+                  你的订阅已升级为新套餐。系统已按已用天数自动补差价（详见控制台「账单与订阅」中的最新发票），
+                  没有重复扣款，新额度立即生效。
+                </>
+              ) : (
+                <>感谢购买 ReadGZH Pro！你的账户将在几分钟内升级。</>
+              )}
             </p>
           </div>
           <div className="space-y-3">
