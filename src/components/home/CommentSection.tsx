@@ -63,6 +63,7 @@ const CommentSection = () => {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isReplyAnonymous, setIsReplyAnonymous] = useState(false);
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   const isAdmin = user?.email === ADMIN_EMAIL;
   const voterId = getVoterId(user?.id ?? null);
