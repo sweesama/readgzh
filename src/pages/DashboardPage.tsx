@@ -892,6 +892,9 @@ const DashboardPage = () => {
           </Card>
         )}
 
+        {/* Billing & Subscriptions */}
+        <BillingHistory />
+
         {/* Credit Cost Guide */}
         <Card>
           <CardHeader>
