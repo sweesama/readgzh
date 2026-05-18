@@ -54,15 +54,23 @@ const Index = () => {
       />
       {/* Top bar with AI view toggle and nav links */}
       <div className="fixed top-0 left-0 right-0 z-50 px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setAiView(true)}
-          className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs"
-        >
-          <Bot className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">AI 视角</span>
-        </Button>
+        <div className="flex items-center gap-1 sm:gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setAiView(true)}
+            className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs"
+          >
+            <Bot className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">AI 视角</span>
+          </Button>
+          <Link to="/changelog">
+            <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs px-2 sm:px-3">
+              <Sparkles className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">更新日志</span>
+            </Button>
+          </Link>
+        </div>
 
         <div className="flex items-center gap-1 sm:gap-2">
           <Link to="/comments">
