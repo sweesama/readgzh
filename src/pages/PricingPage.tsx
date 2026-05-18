@@ -114,7 +114,7 @@ const PricingPage = () => {
     <div className="min-h-screen bg-background">
       <SEO
         title="定价方案 - Free / Lite / Pro 套餐 | ReadGZH"
-        description="ReadGZH 定价方案：免费每日 50 积分，Lite/Pro 订阅获得更多积分配额、AI 摘要与高级特性。缓存文章永久免费读取。"
+        description="ReadGZH 定价方案：免费每日 30 积分，Lite/Pro 订阅获得更多积分配额、AI 摘要与高级特性。缓存文章永久免费读取。"
         path="/pricing"
         ogType="website"
       />
@@ -128,7 +128,12 @@ const PricingPage = () => {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             免费开始使用，随业务增长升级。缓存文章免费读取。
           </p>
-          <p className="text-sm text-muted-foreground mt-2">支持信用卡、支付宝等多种支付方式 · 随时取消</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            支持信用卡（Visa / Mastercard / 银联）、Link、支付宝、微信 · 随时取消
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            订阅套餐仅支持信用卡 / Link；支付宝与微信仅支持加量包等一次性付款
+          </p>
 
           {/* Billing interval toggle */}
           <div className="flex items-center justify-center gap-2 mt-6">
