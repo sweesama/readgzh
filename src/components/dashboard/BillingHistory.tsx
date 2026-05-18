@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, Receipt, ExternalLink, RotateCcw } from "lucide-react";
+import RefundRequestDialog from "./RefundRequestDialog";
 
 interface Invoice {
   id: string;
