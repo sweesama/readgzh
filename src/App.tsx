@@ -52,6 +52,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <ScrollToTop />
+        <ReferralCatcher />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/articles" element={<ArticlesPage />} />
