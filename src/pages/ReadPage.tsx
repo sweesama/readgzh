@@ -68,6 +68,17 @@ const ReadPage = () => {
         }
 
         setArticle(data.data);
+
+        // 触发邀请奖励：仅在已登录、且本地未标记触发过时调用一次（幂等）
+        if (!hasReferralBeenTriggered()) {
+          supabase.auth.getSession().then(({ data: sess }) => {
+            if (!sess?.session) return;
+            supabase.functions
+              .invoke("referral-trigger")
+              .then(() => markReferralTriggered())
+              .catch(() => {});
+          });
+        }
       } catch (err) {
         console.error("Error fetching article:", err);
         setError(err instanceof Error ? err.message : "获取文章失败，请稍后重试");
