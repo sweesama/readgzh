@@ -1,6 +1,6 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { useEffect, useMemo } from "react";
-import { ArrowLeft, Sparkles, Gift, Calendar } from "lucide-react";
+import { ArrowLeft, Sparkles, Gift, Calendar, ArrowRight, Users, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
