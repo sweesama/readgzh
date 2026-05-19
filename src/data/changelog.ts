@@ -11,6 +11,15 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-05-19",
+    title: "支付完成页提示 + 邮件通知字符修复",
+    tags: ["改进", "修复"],
+    items: [
+      "支付成功页新增温和提示：积分通常在 1–2 分钟内到账，若未更新可稍候刷新或留言联系我们",
+      "修复部分中文字符在留言邮件通知中显示为乱码的问题（统一声明 UTF-8 编码）",
+    ],
+  },
+  {
     date: "2026-05-18",
     title: "更新日志上线、留言聚合、支付方式说明完善",
     tags: ["新增", "改进"],
@@ -21,6 +30,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       "Stripe Webhook：新增 charge.refunded 事件兜底，后台手动退款后会自动降级并清理加量包积分",
     ],
   },
+
   {
     date: "2026-05-14",
     title: "自助退款 + 14 天退款窗口",
