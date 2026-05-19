@@ -70,6 +70,7 @@ const App = () => (
           <Route path="/comments" element={<CommentsPage />} />
           <Route path="/unsubscribe" element={<UnsubscribePage />} />
           <Route path="/changelog" element={<ChangelogPage />} />
+          <Route path="/dashboard/invite" element={<InvitePage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
