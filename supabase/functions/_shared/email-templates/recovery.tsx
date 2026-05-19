@@ -24,7 +24,10 @@ export const RecoveryEmail = ({
   confirmationUrl,
 }: RecoveryEmailProps) => (
   <Html lang="zh" dir="ltr">
-    <Head />
+    <Head>
+      <meta httpEquiv="Content-Type" content="text/html; charset=utf-8" />
+      <meta charSet="utf-8" />
+    </Head>
     <Preview>重置你的 ReadGZH 密码</Preview>
     <Body style={main}>
       <Container style={container}>

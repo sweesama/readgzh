@@ -26,7 +26,10 @@ export const MagicLinkEmail = ({
   token,
 }: MagicLinkEmailProps) => (
   <Html lang="zh" dir="ltr">
-    <Head />
+    <Head>
+      <meta httpEquiv="Content-Type" content="text/html; charset=utf-8" />
+      <meta charSet="utf-8" />
+    </Head>
     <Preview>你的 ReadGZH 登录验证码</Preview>
     <Body style={main}>
       <Container style={container}>

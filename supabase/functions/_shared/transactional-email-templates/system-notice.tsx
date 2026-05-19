@@ -14,7 +14,10 @@ interface SystemNoticeProps {
 
 const SystemNoticeEmail = ({ title, content, greeting }: SystemNoticeProps) => (
   <Html lang="zh-CN" dir="ltr">
-    <Head />
+    <Head>
+      <meta httpEquiv="Content-Type" content="text/html; charset=utf-8" />
+      <meta charSet="utf-8" />
+    </Head>
     <Preview>{title || '来自 ReadGZH 的通知'}</Preview>
     <Body style={main}>
       <Container style={container}>

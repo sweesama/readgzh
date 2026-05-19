@@ -29,7 +29,10 @@ export const EmailChangeEmail = ({
   confirmationUrl,
 }: EmailChangeEmailProps) => (
   <Html lang="zh" dir="ltr">
-    <Head />
+    <Head>
+      <meta httpEquiv="Content-Type" content="text/html; charset=utf-8" />
+      <meta charSet="utf-8" />
+    </Head>
     <Preview>确认你的 ReadGZH 邮箱变更</Preview>
     <Body style={main}>
       <Container style={container}>
