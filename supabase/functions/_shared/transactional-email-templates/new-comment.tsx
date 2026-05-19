@@ -14,7 +14,11 @@ interface NewCommentProps {
 
 const NewCommentEmail = ({ userName, commentContent, commentUrl }: NewCommentProps) => (
   <Html lang="zh-CN" dir="ltr">
-    <Head />
+    <Head>
+      <meta httpEquiv="Content-Type" content="text/html; charset=utf-8" />
+      <meta charSet="utf-8" />
+    </Head>
+
     <Preview>有新留言：{commentContent?.slice(0, 40) || '查看详情'}</Preview>
     <Body style={main}>
       <Container style={container}>

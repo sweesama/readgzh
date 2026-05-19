@@ -15,7 +15,11 @@ interface CommentReplyProps {
 
 const CommentReplyEmail = ({ replierName, replyContent, originalContent, commentUrl }: CommentReplyProps) => (
   <Html lang="zh-CN" dir="ltr">
-    <Head />
+    <Head>
+      <meta httpEquiv="Content-Type" content="text/html; charset=utf-8" />
+      <meta charSet="utf-8" />
+    </Head>
+
     <Preview>{replierName || '有人'} 回复了你的留言</Preview>
     <Body style={main}>
       <Container style={container}>
