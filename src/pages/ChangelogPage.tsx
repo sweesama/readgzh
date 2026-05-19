@@ -1,6 +1,6 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { useEffect, useMemo } from "react";
-import { ArrowLeft, Sparkles, Gift, Calendar } from "lucide-react";
+import { ArrowLeft, Sparkles, Gift, Calendar, ArrowRight, Users, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -122,32 +122,71 @@ const ChangelogPage = () => {
                   return (
                     <article
                       key={ev.date + ev.title}
-                      className="rounded-xl border border-border bg-card p-6 shadow-sm"
+                      className="group relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 via-card to-card p-6 sm:p-8 shadow-sm hover:shadow-md transition-shadow"
                     >
-                      <div className="flex flex-wrap items-center gap-2 mb-3">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${sb.cls}`}>
-                          {sb.label}
-                        </span>
-                        <time className="text-xs font-mono text-muted-foreground">
-                          {ev.date}{ev.endDate ? ` – ${ev.endDate}` : ""}
-                        </time>
-                      </div>
-                      <h2 className="text-xl font-semibold mb-1 text-foreground">{ev.title}</h2>
-                      {ev.highlight && (
-                        <p className="text-sm text-primary font-medium mb-3">{ev.highlight}</p>
-                      )}
-                      <ul className="space-y-1.5 text-sm text-foreground/85 list-disc pl-5 marker:text-primary/60">
-                        {ev.items.map((item, i) => (
-                          <li key={i}>{item}</li>
-                        ))}
-                      </ul>
-                      {ev.cta && (
-                        <div className="mt-4">
-                          <Link to={ev.cta.href}>
-                            <Button size="sm">{ev.cta.label}</Button>
-                          </Link>
+                      {/* 背景装饰 */}
+                      <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+                      <div className="absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
+
+                      <div className="relative">
+                        <div className="flex flex-wrap items-center gap-2 mb-3">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${sb.cls}`}>
+                            <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
+                            {sb.label}
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            <time className="font-mono">
+                              {ev.date}{ev.endDate ? ` – ${ev.endDate}` : ""}
+                            </time>
+                          </span>
                         </div>
-                      )}
+
+                        <div className="flex items-start gap-3 mb-2">
+                          <div className="hidden sm:flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                            <Gift className="h-5 w-5" />
+                          </div>
+                          <div className="flex-1">
+                            <h2 className="text-xl sm:text-2xl font-bold text-foreground leading-tight">
+                              {ev.title}
+                            </h2>
+                            {ev.highlight && (
+                              <p className="text-sm text-primary/90 font-medium mt-1.5">
+                                {ev.highlight}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="mt-5 rounded-xl bg-background/60 border border-border/60 p-4 sm:p-5">
+                          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                            <Sparkles className="h-3 w-3" />活动细则
+                          </h3>
+                          <ul className="space-y-2 text-sm text-foreground/85">
+                            {ev.items.map((item, i) => (
+                              <li key={i} className="flex gap-2.5">
+                                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary/60" />
+                                <span className="flex-1">{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {ev.cta && (
+                          <div className="mt-5 flex flex-wrap items-center gap-3">
+                            <Link to={ev.cta.href}>
+                              <Button size="lg" className="gap-1.5 shadow-sm">
+                                <Users className="h-4 w-4" />
+                                {ev.cta.label}
+                                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                              </Button>
+                            </Link>
+                            <span className="text-xs text-muted-foreground">
+                              入口位于 控制台 → 邀请好友
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </article>
                   );
                 })}
