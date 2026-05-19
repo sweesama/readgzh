@@ -100,8 +100,8 @@ const InvitePage = () => {
         description="邀请好友注册 ReadGZH，最高可得 1620 积分。"
         path="/dashboard/invite"
         ogType="website"
-        robots="noindex,nofollow"
       />
+
       <div className="container mx-auto px-4 py-8 flex-1 max-w-3xl">
         <Link to="/dashboard">
           <Button variant="ghost" className="mb-6">
