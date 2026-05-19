@@ -713,6 +713,25 @@ const DashboardPage = () => {
           </Card>
         </div>
 
+        {/* 邀请好友入口 */}
+        <Card className="mb-6 border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
+          <CardContent className="pt-5 pb-5 flex items-center gap-4">
+            <div className="h-11 w-11 shrink-0 rounded-full bg-primary/15 flex items-center justify-center">
+              <Gift className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-sm">邀请好友，最高得 1620 积分</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                好友完成首读即可发放，60 天有效。
+              </p>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => navigate("/dashboard/invite")}>
+              查看邀请
+            </Button>
+          </CardContent>
+        </Card>
+
+
         {/* New Key Alert */}
         {newKey && (
           <Card className="border-primary bg-primary/5">
