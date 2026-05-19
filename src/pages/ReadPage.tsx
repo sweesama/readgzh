@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Copy, ExternalLink, CheckCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { hasReferralBeenTriggered, markReferralTriggered } from "@/lib/referral";
 
 interface ArticleData {
   title: string;
