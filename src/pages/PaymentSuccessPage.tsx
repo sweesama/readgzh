@@ -38,6 +38,9 @@ const PaymentSuccessPage = () => {
                 <>感谢购买 ReadGZH Pro！你的账户将在几分钟内升级。</>
               )}
             </p>
+            <p className="text-sm text-muted-foreground mt-3 px-3 py-2 rounded-md bg-muted/50 border border-border/60">
+              账户额度通常在 1–2 分钟内到账。若控制台暂未更新，请稍候刷新；如仍有问题，欢迎在留言板联系我们。
+            </p>
           </div>
           <div className="space-y-3">
             <Button onClick={() => navigate("/dashboard")} className="w-full">
