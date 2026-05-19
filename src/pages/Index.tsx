@@ -13,10 +13,16 @@ import SEO from "@/components/SEO";
 import { Bot, Eye, BookOpen, Code, Zap, Key, Crown, MessageSquare, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { hasUnseenWhatsnew } from "@/lib/whatsnew";
 
 const Index = () => {
   const [aiView, setAiView] = useState(false);
   const [isPro, setIsPro] = useState(false);
+  const [whatsnewUnseen, setWhatsnewUnseen] = useState(false);
+
+  useEffect(() => {
+    setWhatsnewUnseen(hasUnseenWhatsnew());
+  }, []);
 
   useEffect(() => {
     // Only check Pro status if user is logged in
@@ -65,9 +71,15 @@ const Index = () => {
             <span className="hidden sm:inline">AI 视角</span>
           </Button>
           <Link to="/changelog">
-            <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs px-2 sm:px-3">
-              <Sparkles className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">更新日志</span>
+            <Button size="sm" variant="ghost" className="relative gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs px-2 sm:px-3">
+              <Sparkles className={`h-3.5 w-3.5 ${whatsnewUnseen ? "text-primary" : ""}`} />
+              <span className="hidden sm:inline">新鲜事</span>
+              {whatsnewUnseen && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-60 animate-ping" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                </span>
+              )}
             </Button>
           </Link>
         </div>
