@@ -70,18 +70,19 @@ const Index = () => {
             <Bot className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">AI 视角</span>
           </Button>
-          <Link to="/changelog">
-            <Button size="sm" variant="ghost" className="relative gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs px-2 sm:px-3">
+          <Link to="/changelog" className="relative">
+            <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs px-2 sm:px-3">
               <Sparkles className={`h-3.5 w-3.5 ${whatsnewUnseen ? "text-primary" : ""}`} />
               <span className="hidden sm:inline">新鲜事</span>
-              {whatsnewUnseen && (
-                <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-60 animate-ping" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-                </span>
-              )}
             </Button>
+            {whatsnewUnseen && (
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-primary animate-breath ring-2 ring-background"
+              />
+            )}
           </Link>
+
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2">
