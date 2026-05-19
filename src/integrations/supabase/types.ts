@@ -142,6 +142,42 @@ export type Database = {
         }
         Relationships: []
       }
+      bonus_grants: {
+        Row: {
+          amount: number
+          consumed_amount: number
+          expires_at: string
+          granted_at: string
+          id: string
+          note: string | null
+          source: string
+          source_ref: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          consumed_amount?: number
+          expires_at: string
+          granted_at?: string
+          id?: string
+          note?: string | null
+          source: string
+          source_ref?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          consumed_amount?: number
+          expires_at?: string
+          granted_at?: string
+          id?: string
+          note?: string | null
+          source?: string
+          source_ref?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       comment_votes: {
         Row: {
           comment_id: string
@@ -404,6 +440,69 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          invalid_reason: string | null
+          invitee_bonus_amount: number | null
+          invitee_id: string
+          inviter_id: string
+          qualified_at: string | null
+          reward_amount: number | null
+          rewarded_at: string | null
+          signup_ip: string | null
+          signup_user_agent: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invalid_reason?: string | null
+          invitee_bonus_amount?: number | null
+          invitee_id: string
+          inviter_id: string
+          qualified_at?: string | null
+          reward_amount?: number | null
+          rewarded_at?: string | null
+          signup_ip?: string | null
+          signup_user_agent?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invalid_reason?: string | null
+          invitee_bonus_amount?: number | null
+          invitee_id?: string
+          inviter_id?: string
+          qualified_at?: string | null
+          reward_amount?: number | null
+          rewarded_at?: string | null
+          signup_ip?: string | null
+          signup_user_agent?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       refund_records: {
         Row: {
           amount_refunded: number
@@ -521,6 +620,16 @@ export type Database = {
         Returns: Json
       }
       cleanup_old_rate_limits: { Args: never; Returns: undefined }
+      create_referral: {
+        Args: {
+          p_code: string
+          p_invitee_email: string
+          p_invitee_id: string
+          p_signup_ip: string
+          p_signup_ua: string
+        }
+        Returns: Json
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -529,6 +638,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      generate_referral_code: { Args: { p_user_id: string }; Returns: string }
       get_api_usage_stats: { Args: { p_date?: string }; Returns: Json }
       get_comment_profiles: {
         Args: { p_user_ids: string[] }
@@ -539,6 +649,7 @@ export type Database = {
           is_admin: boolean
         }[]
       }
+      get_my_referral_stats: { Args: never; Returns: Json }
       get_public_article_detail: {
         Args: { p_article_id?: string; p_slug?: string }
         Returns: Json
@@ -549,6 +660,7 @@ export type Database = {
       get_user_balance: { Args: { p_user_id: string }; Returns: Json }
       increment_view_count: { Args: { article_id: string }; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
+      issue_referral_reward: { Args: { p_invitee_id: string }; Returns: Json }
       list_public_articles: {
         Args: { p_limit?: number; p_offset?: number; p_search?: string }
         Returns: Json
