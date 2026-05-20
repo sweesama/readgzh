@@ -161,7 +161,7 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
 
   const statCards = [
     { icon: Users, label: "注册用户数", value: stats.total_users ?? 0, color: "text-cyan-400" },
-    { icon: Crown, label: "Pro 付费用户", value: stats.pro_users ?? 0, color: "text-amber-400" },
+    { icon: Crown, label: "Pro 付费用户", value: stats.pro_users ?? 0, color: "text-amber-400", sub: `Lite: ${stats.lite_users ?? 0}` },
     { icon: FileText, label: "文章库总数", value: stats.total_articles ?? 0, color: "text-emerald-400" },
     { icon: Key, label: "活跃 API Key", value: stats.active_api_keys ?? 0, color: "text-purple-400" },
     { icon: Activity, label: "今日 API 请求次数", value: stats.today_api_requests ?? 0, color: "text-green-300", sub: `匿名访客: ${stats.today_anon_requests ?? 0} 次` },
