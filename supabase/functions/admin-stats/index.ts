@@ -95,6 +95,16 @@ Deno.serve(async (req) => {
       svc.from("articles").select("*", { count: "exact", head: true }).gte("created_at", today + "T00:00:00Z"),
       // Total article views - use RPC aggregation
       svc.rpc("get_total_views"),
+      // Referral stats
+      svc.from("referrals").select("*", { count: "exact", head: true }),
+      svc.from("referrals").select("*", { count: "exact", head: true }).eq("status", "rewarded"),
+      svc.from("referrals").select("*", { count: "exact", head: true }).in("status", ["pending", "qualified"]),
+      svc.from("referrals").select("*", { count: "exact", head: true }).eq("status", "invalid"),
+      svc.from("referrals").select("*", { count: "exact", head: true }).gte("created_at", today + "T00:00:00Z"),
+      svc.from("bonus_grants").select("amount, consumed_amount").eq("source", "referral"),
+      svc.from("bonus_grants").select("amount, consumed_amount").eq("source", "referral_welcome"),
+      svc.from("referrals").select("inviter_id, reward_amount, status").eq("status", "rewarded"),
+      svc.from("referrals").select("id, inviter_id, invitee_id, status, reward_amount, created_at, rewarded_at").order("created_at", { ascending: false }).limit(20),
     ]);
 
     const todayUsage = todayUsageRes.data || { request_count: 0, cached_count: 0 };
