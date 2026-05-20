@@ -60,6 +60,8 @@ interface RecentReferral {
 export default function AdminPanel({ onBack }: { onBack: () => void }) {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
+  const [topInviters, setTopInviters] = useState<TopInviter[]>([]);
+  const [recentReferrals, setRecentReferrals] = useState<RecentReferral[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [needsLogin, setNeedsLogin] = useState(false);
@@ -80,7 +82,9 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
       setError(data?.error || fnErr?.message || "无权访问");
     } else {
       setStats(data.stats);
-      setRecentUsers(data.recent_users);
+      setRecentUsers(data.recent_users || []);
+      setTopInviters(data.top_inviters || []);
+      setRecentReferrals(data.recent_referrals || []);
     }
     setLoading(false);
   };
