@@ -121,6 +121,62 @@ Deno.serve(async (req) => {
     const totalAnonRequests = totalAnonRes.data || 0;
     const totalViews = totalViewsRes.data || 0;
 
+    // Referral aggregates
+    const sumGrants = (rows: any[] | null) => {
+      if (!rows) return { granted: 0, consumed: 0 };
+      let granted = 0, consumed = 0;
+      for (const r of rows) { granted += Number(r.amount || 0); consumed += Number(r.consumed_amount || 0); }
+      return { granted, consumed };
+    };
+    const refGrants = sumGrants(bonusReferralRes.data as any[]);
+    const welcomeGrants = sumGrants(bonusWelcomeRes.data as any[]);
+
+    // Top inviters by rewarded count
+    const inviterMap = new Map<string, { count: number; credits: number }>();
+    for (const r of (topInvitersRes.data || []) as any[]) {
+      const cur = inviterMap.get(r.inviter_id) || { count: 0, credits: 0 };
+      cur.count += 1;
+      cur.credits += Number(r.reward_amount || 0);
+      inviterMap.set(r.inviter_id, cur);
+    }
+    const topInviterIds = [...inviterMap.entries()]
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 10);
+
+    // Enrich top inviters and recent referrals with profile info
+    const userIds = new Set<string>();
+    topInviterIds.forEach(([id]) => userIds.add(id));
+    for (const r of (recentReferralsRes.data || []) as any[]) {
+      userIds.add(r.inviter_id); userIds.add(r.invitee_id);
+    }
+    const profileMap = new Map<string, { email: string; display_name: string }>();
+    if (userIds.size) {
+      const { data: pros } = await svc.from("profiles").select("id, email, display_name").in("id", [...userIds]);
+      for (const p of pros || []) profileMap.set(p.id, { email: p.email, display_name: p.display_name });
+    }
+    const labelFor = (id: string) => {
+      const p = profileMap.get(id);
+      if (!p) return id.slice(0, 8);
+      return p.display_name || p.email || id.slice(0, 8);
+    };
+
+    const top_inviters = topInviterIds.map(([id, v]) => ({
+      user_id: id,
+      label: labelFor(id),
+      rewarded_count: v.count,
+      credits_earned: v.credits,
+    }));
+
+    const recent_referrals = ((recentReferralsRes.data || []) as any[]).map((r) => ({
+      id: r.id,
+      inviter: labelFor(r.inviter_id),
+      invitee: labelFor(r.invitee_id),
+      status: r.status,
+      reward_amount: r.reward_amount,
+      created_at: r.created_at,
+      rewarded_at: r.rewarded_at,
+    }));
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -129,6 +185,7 @@ Deno.serve(async (req) => {
           total_articles: articlesRes.count || 0,
           active_api_keys: apiKeysRes.count || 0,
           pro_users: proKeysRes.count || 0,
+          lite_users: liteKeysRes.count || 0,
           today_api_requests: todayApiRequests,
           today_credits_consumed: todayCreditsConsumed,
           today_anon_requests: todayAnonRequests,
@@ -142,8 +199,20 @@ Deno.serve(async (req) => {
           total_all_requests: totalApiRequests + totalAnonRequests,
           total_cached: totalCached,
           total_views: totalViews,
+          // Referral
+          referrals_total: referralsAllRes.count || 0,
+          referrals_rewarded: referralsRewardedRes.count || 0,
+          referrals_pending: referralsPendingRes.count || 0,
+          referrals_invalid: referralsInvalidRes.count || 0,
+          referrals_today: referralsTodayRes.count || 0,
+          referral_credits_granted: refGrants.granted,
+          referral_credits_consumed: refGrants.consumed,
+          welcome_credits_granted: welcomeGrants.granted,
+          welcome_credits_consumed: welcomeGrants.consumed,
         },
         recent_users: recentUsersRes.data || [],
+        top_inviters,
+        recent_referrals,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
