@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
-import { Shield, Users, FileText, Key, Activity, TrendingUp, Crown, Zap, LogIn, Globe, Eye, PlusCircle } from "lucide-react";
+import { Shield, Users, FileText, Key, Activity, TrendingUp, Crown, Zap, LogIn, Globe, Eye, PlusCircle, UserPlus, Gift, Sparkles } from "lucide-react";
 
 interface AdminStats {
   total_users: number;
   total_articles: number;
   active_api_keys: number;
   pro_users: number;
+  lite_users: number;
   today_api_requests: number;
   today_credits_consumed: number;
   today_anon_requests: number;
@@ -21,6 +22,15 @@ interface AdminStats {
   total_all_requests: number;
   total_cached: number;
   total_views: number;
+  referrals_total: number;
+  referrals_rewarded: number;
+  referrals_pending: number;
+  referrals_invalid: number;
+  referrals_today: number;
+  referral_credits_granted: number;
+  referral_credits_consumed: number;
+  welcome_credits_granted: number;
+  welcome_credits_consumed: number;
 }
 
 interface RecentUser {
@@ -28,6 +38,23 @@ interface RecentUser {
   email: string;
   display_name: string;
   created_at: string;
+}
+
+interface TopInviter {
+  user_id: string;
+  label: string;
+  rewarded_count: number;
+  credits_earned: number;
+}
+
+interface RecentReferral {
+  id: string;
+  inviter: string;
+  invitee: string;
+  status: string;
+  reward_amount: number | null;
+  created_at: string;
+  rewarded_at: string | null;
 }
 
 export default function AdminPanel({ onBack }: { onBack: () => void }) {
