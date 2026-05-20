@@ -217,6 +217,88 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
         </div>
       </div>
 
+      {/* Referral Section */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 text-green-300 mb-2">
+          <Gift className="h-4 w-4" />
+          <span>邀请活动 — REFERRAL PROGRAM</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
+          {[
+            { icon: UserPlus, label: "邀请关系总数", value: stats.referrals_total ?? 0, color: "text-cyan-400", sub: `今日新增: ${stats.referrals_today ?? 0}` },
+            { icon: Sparkles, label: "已发放奖励笔数", value: stats.referrals_rewarded ?? 0, color: "text-emerald-400" },
+            { icon: Activity, label: "待激活 (未首读)", value: stats.referrals_pending ?? 0, color: "text-amber-400" },
+            { icon: Shield, label: "已作废", value: stats.referrals_invalid ?? 0, color: "text-red-400" },
+            { icon: Zap, label: "邀请人累计积分", value: stats.referral_credits_granted ?? 0, color: "text-fuchsia-400", sub: `已消耗: ${stats.referral_credits_consumed ?? 0}` },
+            { icon: Gift, label: "新人欢迎积分", value: stats.welcome_credits_granted ?? 0, color: "text-purple-400", sub: `已消耗: ${stats.welcome_credits_consumed ?? 0}` },
+            { icon: TrendingUp, label: "活动总发放积分", value: (stats.referral_credits_granted ?? 0) + (stats.welcome_credits_granted ?? 0), color: "text-yellow-400" },
+            { icon: Users, label: "新用户带来占比", value: (stats.total_users ?? 0) > 0 ? Math.round(((stats.referrals_total ?? 0) / stats.total_users) * 1000) / 10 : 0, color: "text-pink-400", sub: "% 注册来自邀请" },
+          ].map((card) => (
+            <div key={card.label} className="border border-green-900/60 rounded bg-black/50 p-3">
+              <div className="flex items-center gap-1.5 mb-1">
+                <card.icon className={`h-3.5 w-3.5 ${card.color}`} />
+                <span className="text-green-600 text-xs">{card.label}</span>
+              </div>
+              <div className={`text-xl font-bold ${card.color}`}>
+                {(card.value ?? 0).toLocaleString()}
+              </div>
+              {(card as any).sub && (
+                <div className="text-green-700 text-[10px] mt-0.5">{(card as any).sub}</div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* Top inviters */}
+          <div className="border border-green-900/60 rounded bg-black/50 p-3">
+            <div className="text-green-600 text-xs mb-2">邀请排行榜 Top 10</div>
+            {topInviters.length === 0 ? (
+              <div className="text-green-700 text-xs">暂无数据</div>
+            ) : (
+              <div className="space-y-1">
+                {topInviters.map((u, i) => (
+                  <div key={u.user_id} className="flex items-center justify-between gap-3 text-xs">
+                    <span className="text-green-700 w-5 shrink-0 tabular-nums">#{i + 1}</span>
+                    <span className="text-green-400 truncate min-w-0 flex-1">{u.label}</span>
+                    <span className="text-amber-400 shrink-0 tabular-nums">{u.rewarded_count} 人</span>
+                    <span className="text-fuchsia-400 shrink-0 tabular-nums w-16 text-right">{u.credits_earned} 积分</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Recent referrals */}
+          <div className="border border-green-900/60 rounded bg-black/50 p-3">
+            <div className="text-green-600 text-xs mb-2">最近邀请关系 ({recentReferrals.length})</div>
+            {recentReferrals.length === 0 ? (
+              <div className="text-green-700 text-xs">暂无数据</div>
+            ) : (
+              <div className="space-y-1 max-h-56 overflow-y-auto pr-2 scrollbar-thin">
+                {recentReferrals.map((r) => (
+                  <div key={r.id} className="flex items-center justify-between gap-2 text-xs">
+                    <span className="text-green-400 truncate min-w-0 flex-1">
+                      {r.inviter} <span className="text-green-700">→</span> {r.invitee}
+                    </span>
+                    <span className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded border ${
+                      r.status === "rewarded" ? "text-emerald-400 border-emerald-800" :
+                      r.status === "invalid" ? "text-red-400 border-red-800" :
+                      "text-amber-400 border-amber-800"
+                    }`}>
+                      {r.status === "rewarded" ? `+${r.reward_amount ?? 0}` : r.status === "invalid" ? "作废" : "待激活"}
+                    </span>
+                    <span className="text-green-700 shrink-0 tabular-nums">
+                      {new Date(r.created_at).toLocaleDateString("zh-CN")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Recent Users */}
       <div className="border border-green-900/60 rounded bg-black/50 p-3">
         <div className="text-green-600 text-xs mb-2">最近注册用户 ({recentUsers.length})</div>
