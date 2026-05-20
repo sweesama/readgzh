@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
-import { Shield, Users, FileText, Key, Activity, TrendingUp, Crown, Zap, LogIn, Globe, Eye, PlusCircle } from "lucide-react";
+import { Shield, Users, FileText, Key, Activity, TrendingUp, Crown, Zap, LogIn, Globe, Eye, PlusCircle, UserPlus, Gift, Sparkles } from "lucide-react";
 
 interface AdminStats {
   total_users: number;
   total_articles: number;
   active_api_keys: number;
   pro_users: number;
+  lite_users: number;
   today_api_requests: number;
   today_credits_consumed: number;
   today_anon_requests: number;
@@ -21,6 +22,15 @@ interface AdminStats {
   total_all_requests: number;
   total_cached: number;
   total_views: number;
+  referrals_total: number;
+  referrals_rewarded: number;
+  referrals_pending: number;
+  referrals_invalid: number;
+  referrals_today: number;
+  referral_credits_granted: number;
+  referral_credits_consumed: number;
+  welcome_credits_granted: number;
+  welcome_credits_consumed: number;
 }
 
 interface RecentUser {
@@ -30,9 +40,28 @@ interface RecentUser {
   created_at: string;
 }
 
+interface TopInviter {
+  user_id: string;
+  label: string;
+  rewarded_count: number;
+  credits_earned: number;
+}
+
+interface RecentReferral {
+  id: string;
+  inviter: string;
+  invitee: string;
+  status: string;
+  reward_amount: number | null;
+  created_at: string;
+  rewarded_at: string | null;
+}
+
 export default function AdminPanel({ onBack }: { onBack: () => void }) {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
+  const [topInviters, setTopInviters] = useState<TopInviter[]>([]);
+  const [recentReferrals, setRecentReferrals] = useState<RecentReferral[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [needsLogin, setNeedsLogin] = useState(false);
@@ -53,7 +82,9 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
       setError(data?.error || fnErr?.message || "无权访问");
     } else {
       setStats(data.stats);
-      setRecentUsers(data.recent_users);
+      setRecentUsers(data.recent_users || []);
+      setTopInviters(data.top_inviters || []);
+      setRecentReferrals(data.recent_referrals || []);
     }
     setLoading(false);
   };
@@ -130,7 +161,7 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
 
   const statCards = [
     { icon: Users, label: "注册用户数", value: stats.total_users ?? 0, color: "text-cyan-400" },
-    { icon: Crown, label: "Pro 付费用户", value: stats.pro_users ?? 0, color: "text-amber-400" },
+    { icon: Crown, label: "Pro 付费用户", value: stats.pro_users ?? 0, color: "text-amber-400", sub: `Lite: ${stats.lite_users ?? 0}` },
     { icon: FileText, label: "文章库总数", value: stats.total_articles ?? 0, color: "text-emerald-400" },
     { icon: Key, label: "活跃 API Key", value: stats.active_api_keys ?? 0, color: "text-purple-400" },
     { icon: Activity, label: "今日 API 请求次数", value: stats.today_api_requests ?? 0, color: "text-green-300", sub: `匿名访客: ${stats.today_anon_requests ?? 0} 次` },
@@ -183,6 +214,88 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
           <span className="text-green-700 text-xs">
             ({(stats.total_cached ?? 0).toLocaleString()} / {(stats.total_api_requests ?? 0).toLocaleString()})
           </span>
+        </div>
+      </div>
+
+      {/* Referral Section */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 text-green-300 mb-2">
+          <Gift className="h-4 w-4" />
+          <span>邀请活动 — REFERRAL PROGRAM</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
+          {[
+            { icon: UserPlus, label: "邀请关系总数", value: stats.referrals_total ?? 0, color: "text-cyan-400", sub: `今日新增: ${stats.referrals_today ?? 0}` },
+            { icon: Sparkles, label: "已发放奖励笔数", value: stats.referrals_rewarded ?? 0, color: "text-emerald-400" },
+            { icon: Activity, label: "待激活 (未首读)", value: stats.referrals_pending ?? 0, color: "text-amber-400" },
+            { icon: Shield, label: "已作废", value: stats.referrals_invalid ?? 0, color: "text-red-400" },
+            { icon: Zap, label: "邀请人累计积分", value: stats.referral_credits_granted ?? 0, color: "text-fuchsia-400", sub: `已消耗: ${stats.referral_credits_consumed ?? 0}` },
+            { icon: Gift, label: "新人欢迎积分", value: stats.welcome_credits_granted ?? 0, color: "text-purple-400", sub: `已消耗: ${stats.welcome_credits_consumed ?? 0}` },
+            { icon: TrendingUp, label: "活动总发放积分", value: (stats.referral_credits_granted ?? 0) + (stats.welcome_credits_granted ?? 0), color: "text-yellow-400" },
+            { icon: Users, label: "新用户带来占比", value: (stats.total_users ?? 0) > 0 ? Math.round(((stats.referrals_total ?? 0) / stats.total_users) * 1000) / 10 : 0, color: "text-pink-400", sub: "% 注册来自邀请" },
+          ].map((card) => (
+            <div key={card.label} className="border border-green-900/60 rounded bg-black/50 p-3">
+              <div className="flex items-center gap-1.5 mb-1">
+                <card.icon className={`h-3.5 w-3.5 ${card.color}`} />
+                <span className="text-green-600 text-xs">{card.label}</span>
+              </div>
+              <div className={`text-xl font-bold ${card.color}`}>
+                {(card.value ?? 0).toLocaleString()}
+              </div>
+              {(card as any).sub && (
+                <div className="text-green-700 text-[10px] mt-0.5">{(card as any).sub}</div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* Top inviters */}
+          <div className="border border-green-900/60 rounded bg-black/50 p-3">
+            <div className="text-green-600 text-xs mb-2">邀请排行榜 Top 10</div>
+            {topInviters.length === 0 ? (
+              <div className="text-green-700 text-xs">暂无数据</div>
+            ) : (
+              <div className="space-y-1">
+                {topInviters.map((u, i) => (
+                  <div key={u.user_id} className="flex items-center justify-between gap-3 text-xs">
+                    <span className="text-green-700 w-5 shrink-0 tabular-nums">#{i + 1}</span>
+                    <span className="text-green-400 truncate min-w-0 flex-1">{u.label}</span>
+                    <span className="text-amber-400 shrink-0 tabular-nums">{u.rewarded_count} 人</span>
+                    <span className="text-fuchsia-400 shrink-0 tabular-nums w-16 text-right">{u.credits_earned} 积分</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Recent referrals */}
+          <div className="border border-green-900/60 rounded bg-black/50 p-3">
+            <div className="text-green-600 text-xs mb-2">最近邀请关系 ({recentReferrals.length})</div>
+            {recentReferrals.length === 0 ? (
+              <div className="text-green-700 text-xs">暂无数据</div>
+            ) : (
+              <div className="space-y-1 max-h-56 overflow-y-auto pr-2 scrollbar-thin">
+                {recentReferrals.map((r) => (
+                  <div key={r.id} className="flex items-center justify-between gap-2 text-xs">
+                    <span className="text-green-400 truncate min-w-0 flex-1">
+                      {r.inviter} <span className="text-green-700">→</span> {r.invitee}
+                    </span>
+                    <span className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded border ${
+                      r.status === "rewarded" ? "text-emerald-400 border-emerald-800" :
+                      r.status === "invalid" ? "text-red-400 border-red-800" :
+                      "text-amber-400 border-amber-800"
+                    }`}>
+                      {r.status === "rewarded" ? `+${r.reward_amount ?? 0}` : r.status === "invalid" ? "作废" : "待激活"}
+                    </span>
+                    <span className="text-green-700 shrink-0 tabular-nums">
+                      {new Date(r.created_at).toLocaleDateString("zh-CN")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
