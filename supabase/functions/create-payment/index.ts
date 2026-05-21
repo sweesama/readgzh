@@ -44,6 +44,30 @@ Deno.serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
+    const serviceClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const PRODUCT_TIER_MAP: Record<string, { tier: string; limit: number }> = {
+      "prod_UIWlK0eiiBL1gd": { tier: "lite", limit: 300 },
+      "prod_U6UKPXDtv2SFEP": { tier: "pro", limit: 2000 },
+      "prod_U6UKSXOZfSMSpB": { tier: "pro", limit: 2000 },
+    };
+
+    const syncPriceToAccount = async (priceIdToSync: string) => {
+      const price = await stripe.prices.retrieve(priceIdToSync);
+      const productId = price.product as string;
+      const tierInfo = PRODUCT_TIER_MAP[productId];
+      if (!tierInfo) return;
+      await serviceClient
+        .from("api_keys")
+        .update({ tier: tierInfo.tier, daily_limit: tierInfo.limit })
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .in("tier", ["free", "lite", "pro"]);
+    };
+
     // Ensure Stripe customer exists
     const customers = await stripe.customers.list({ email: user.email!, limit: 1 });
     let customerId: string;
@@ -126,6 +150,8 @@ Deno.serve(async (req) => {
           proration_behavior: "always_invoice", // immediately bill/credit the difference
           metadata: { user_id: user.id, type, switched_from: currentPriceId || "" },
         });
+
+        await syncPriceToAccount(priceId);
 
         return new Response(
           JSON.stringify({ url: `${successUrl}?upgraded=1`, switched: true }),
