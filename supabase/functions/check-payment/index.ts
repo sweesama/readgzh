@@ -11,6 +11,48 @@ const log = (step: string, details?: any) => {
   console.log(`[check-payment] ${step}`, details ? JSON.stringify(details) : "");
 };
 
+async function ensureCreditPackGrant(
+  serviceClient: ReturnType<typeof createClient>,
+  userId: string,
+  sessionId: string,
+  credits = 500,
+) {
+  const { data: existingGrant } = await serviceClient
+    .from("bonus_grants")
+    .select("id")
+    .eq("source", "stripe_credit_pack")
+    .eq("source_ref", sessionId)
+    .maybeSingle();
+
+  if (!existingGrant) {
+    const expiresAt = new Date(Date.now() + 30 * 86400000).toISOString();
+    const { error: grantError } = await serviceClient.from("bonus_grants").insert({
+      user_id: userId,
+      amount: credits,
+      source: "stripe_credit_pack",
+      source_ref: sessionId,
+      expires_at: expiresAt,
+      note: `Stripe 加量包 ${credits} 积分`,
+    });
+    if (grantError) throw grantError;
+    log("Added credit pack grant", { sessionId, credits, expiresAt });
+  }
+
+  const { data: existingClaim } = await serviceClient
+    .from("credit_pack_claims")
+    .select("id")
+    .eq("stripe_session_id", sessionId)
+    .maybeSingle();
+
+  if (!existingClaim) {
+    await serviceClient.from("credit_pack_claims").insert({
+      user_id: userId,
+      stripe_session_id: sessionId,
+      credits_added: credits,
+    });
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -192,40 +234,7 @@ Deno.serve(async (req) => {
         (s) => s.metadata?.type === "credits" || s.metadata?.type === "credits_free"
       );
       for (const session of creditSessions) {
-        const sessionId = session.id;
-        // Check if this session was already claimed
-        const { data: existingClaim } = await serviceClient
-          .from("credit_pack_claims")
-          .select("id")
-          .eq("stripe_session_id", sessionId)
-          .maybeSingle();
-
-        if (!existingClaim) {
-          const { data: activeKeys } = await serviceClient
-            .from("api_keys")
-            .select("id, bonus_credits")
-            .eq("user_id", userId)
-            .eq("is_active", true);
-
-          if (activeKeys && activeKeys.length > 0) {
-            const expiresAt = new Date(Date.now() + 30 * 86400000).toISOString();
-            await serviceClient
-              .from("api_keys")
-              .update({ 
-                bonus_credits: (activeKeys[0].bonus_credits || 0) + 500,
-                bonus_expires_at: expiresAt,
-              })
-              .eq("id", activeKeys[0].id);
-            log("Added 500 bonus credits with 30-day expiry", { sessionId, expiresAt });
-          }
-
-          // Record the claim to prevent duplicate credits
-          await serviceClient.from("credit_pack_claims").insert({
-            user_id: userId,
-            stripe_session_id: sessionId,
-            credits_added: 500,
-          });
-        }
+        await ensureCreditPackGrant(serviceClient, userId, session.id);
       }
 
       // If no subscription AND no legacy pro, downgrade to free
