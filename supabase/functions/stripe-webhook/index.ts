@@ -25,7 +25,7 @@ async function ensureCreditPackGrant(userId: string, sessionId: string, credits 
   const { data: existingGrant } = await supabase
     .from("bonus_grants")
     .select("id")
-    .eq("source", "stripe_credit_pack")
+    .eq("source", "credit_pack")
     .eq("source_ref", sessionId)
     .maybeSingle();
 
@@ -34,7 +34,7 @@ async function ensureCreditPackGrant(userId: string, sessionId: string, credits 
     const { error } = await supabase.from("bonus_grants").insert({
       user_id: userId,
       amount: credits,
-      source: "stripe_credit_pack",
+      source: "credit_pack",
       source_ref: sessionId,
       expires_at: expiresAt,
       note: `Stripe 加量包 ${credits} 积分`,

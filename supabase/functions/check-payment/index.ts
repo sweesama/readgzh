@@ -20,7 +20,7 @@ async function ensureCreditPackGrant(
   const { data: existingGrant } = await serviceClient
     .from("bonus_grants")
     .select("id")
-    .eq("source", "stripe_credit_pack")
+    .eq("source", "credit_pack")
     .eq("source_ref", sessionId)
     .maybeSingle();
 
@@ -29,7 +29,7 @@ async function ensureCreditPackGrant(
     const { error: grantError } = await serviceClient.from("bonus_grants").insert({
       user_id: userId,
       amount: credits,
-      source: "stripe_credit_pack",
+      source: "credit_pack",
       source_ref: sessionId,
       expires_at: expiresAt,
       note: `Stripe 加量包 ${credits} 积分`,
