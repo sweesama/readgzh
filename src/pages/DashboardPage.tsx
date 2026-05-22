@@ -8,7 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Copy, Key, Plus, Trash2, Gift, LogOut, ArrowLeft, Eye, EyeOff, BarChart3, Coins, Zap, Loader2, Crown, Mail, Pencil, CreditCard, CalendarClock } from "lucide-react";
+import { Copy, Key, Plus, Trash2, Gift, LogOut, ArrowLeft, Eye, EyeOff, BarChart3, Coins, Zap, Loader2, Crown, Mail, Pencil, CreditCard, CalendarClock, AlertTriangle, X, Minus } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import Footer from "@/components/home/Footer";
 import SEO from "@/components/SEO";
 import BillingHistory from "@/components/dashboard/BillingHistory";
@@ -78,6 +79,12 @@ const DashboardPage = () => {
   const [nameLoading, setNameLoading] = useState(false);
   const [revealedKeys, setRevealedKeys] = useState<Set<string>>(new Set());
   const [showRevokedKeys, setShowRevokedKeys] = useState(false);
+  // Credit pack dialog
+  const [buyDialogOpen, setBuyDialogOpen] = useState(false);
+  const [buyQuantity, setBuyQuantity] = useState(1);
+  // Usage warning banner dismissal (per-month key in localStorage)
+  const [warningDismissed, setWarningDismissed] = useState(false);
+  const [overLimitDismissed, setOverLimitDismissed] = useState(false);
 
   const handleUpgrade = async (type: "pro" | "pro_annual" = "pro") => {
     setUpgradeLoading(true);
@@ -96,14 +103,19 @@ const DashboardPage = () => {
   };
 
   const handleBuyCredits = async () => {
+    setBuyDialogOpen(true);
+  };
+
+  const handleConfirmBuyCredits = async () => {
     setUpgradeLoading(true);
     try {
       const creditType = isPro ? "credits" : "credits_free";
       const { data, error } = await supabase.functions.invoke("create-payment", {
-        body: { type: creditType },
+        body: { type: creditType, quantity: buyQuantity },
       });
       if (error) throw error;
       if (data?.url) {
+        setBuyDialogOpen(false);
         window.open(data.url, "_blank");
       }
     } catch (err) {
@@ -287,7 +299,19 @@ const DashboardPage = () => {
       window.history.replaceState({}, "", "/dashboard");
       void checkProStatus();
     }
+    if (params.get("action") === "buy_credits") {
+      setBuyDialogOpen(true);
+      window.history.replaceState({}, "", "/dashboard");
+    }
   }, [user, loading, fetchKeys, fetchUsage, fetchBalance, checkProStatus, fetchProfile]);
+
+  // Restore banner dismissal state (per-month key) when balance/user changes
+  useEffect(() => {
+    if (!user?.id) return;
+    const monthKey = new Date().toISOString().slice(0, 7);
+    setWarningDismissed(localStorage.getItem(`rgz_warn90_${user.id}_${monthKey}`) === "1");
+    setOverLimitDismissed(localStorage.getItem(`rgz_warn100_${user.id}_${monthKey}`) === "1");
+  }, [user?.id, balance?.used_credits]);
 
   const handleGoogleLogin = async () => {
     const { error } = await lovable.auth.signInWithOAuth("google", {
@@ -413,6 +437,24 @@ const DashboardPage = () => {
   const totalCredits = balance?.total_credits ?? 0;
   const bonusCredits = balance?.bonus_credits ?? 0;
   const dailyLimit = balance?.daily_limit ?? (isPro ? 2000 : 30);
+  const usedCredits = balance?.used_credits ?? 0;
+  const usagePercent = totalCredits > 0 ? (usedCredits / totalCredits) * 100 : 0;
+  const showWarn90 = isPro && usagePercent >= 90 && usagePercent < 100 && !warningDismissed;
+  const showOverLimit = isPro && usagePercent >= 100 && !overLimitDismissed;
+  const unitPrice = isPro ? 9 : 15;
+
+  const dismissWarn90 = () => {
+    if (!user?.id) return;
+    const monthKey = new Date().toISOString().slice(0, 7);
+    localStorage.setItem(`rgz_warn90_${user.id}_${monthKey}`, "1");
+    setWarningDismissed(true);
+  };
+  const dismissOverLimit = () => {
+    if (!user?.id) return;
+    const monthKey = new Date().toISOString().slice(0, 7);
+    localStorage.setItem(`rgz_warn100_${user.id}_${monthKey}`, "1");
+    setOverLimitDismissed(true);
+  };
 
   if (loading) {
     return (
@@ -560,6 +602,47 @@ const DashboardPage = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8 space-y-8">
+        {/* Usage warning banner: 90%+ (amber, dismissible) */}
+        {showWarn90 && (
+          <div className="rounded-lg border border-amber-500/40 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 text-sm">
+              <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+              <div>
+                <p className="font-medium text-amber-900 dark:text-amber-100">本月额度即将用完</p>
+                <p className="text-amber-800/80 dark:text-amber-200/80">已使用 {usedCredits} / {totalCredits} 积分。建议提前购买加量包，避免影响调用。</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button size="sm" variant="outline" className="border-amber-500/50" onClick={handleBuyCredits}>
+                <Plus className="mr-1 h-3.5 w-3.5" />购买加量包
+              </Button>
+              <button onClick={dismissWarn90} className="text-amber-700 hover:text-amber-900 p-1" aria-label="关闭提示">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+        {/* Over-limit banner: 100%+ (soft red, dismissible, non-blocking) */}
+        {showOverLimit && (
+          <div className="rounded-lg border border-rose-300/60 bg-rose-50 dark:bg-rose-950/30 px-4 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 text-sm">
+              <AlertTriangle className="h-5 w-5 text-rose-600 shrink-0" />
+              <div>
+                <p className="font-medium text-rose-900 dark:text-rose-100">本月额度已用完</p>
+                <p className="text-rose-800/80 dark:text-rose-200/80">新的 API 请求会失败。可购买加量包继续使用，下个月续费后自动重置。</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button size="sm" className="bg-rose-600 hover:bg-rose-700 text-white" onClick={handleBuyCredits}>
+                <Plus className="mr-1 h-3.5 w-3.5" />立即购买
+              </Button>
+              <button onClick={dismissOverLimit} className="text-rose-700 hover:text-rose-900 p-1" aria-label="关闭提示">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Upgrade Banner - only show for free users */}
         {!isPro && !proLoading && (
           <Card className="border-primary/40 bg-gradient-to-r from-primary/10 to-primary/5">
@@ -948,6 +1031,73 @@ const DashboardPage = () => {
           </CardContent>
         </Card>
       </main>
+
+      {/* Credit pack purchase dialog with quantity selector */}
+      <Dialog open={buyDialogOpen} onOpenChange={setBuyDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>购买加量包</DialogTitle>
+            <DialogDescription>
+              每份 500 积分，30 天有效。{isPro ? "Pro 会员价 ¥9/份" : "Free 用户价 ¥15/份（升级 Pro 可享 ¥9/份）"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <p className="text-sm font-medium mb-2">选择数量（1~20）</p>
+              <div className="grid grid-cols-5 gap-2">
+                {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setBuyQuantity(n)}
+                    className={`h-9 rounded-md border text-sm font-medium transition-colors ${
+                      buyQuantity === n
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background hover:bg-accent border-input"
+                    }`}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => setBuyQuantity(Math.max(1, buyQuantity - 1))}
+                disabled={buyQuantity <= 1}
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <div className="flex-1 text-center text-sm">
+                <span className="font-semibold">{buyQuantity}</span> 份 × 500 积分 ={" "}
+                <span className="font-semibold">{buyQuantity * 500}</span> 积分
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => setBuyQuantity(Math.min(20, buyQuantity + 1))}
+                disabled={buyQuantity >= 20}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="rounded-lg bg-muted p-3 flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">合计</span>
+              <span className="text-xl font-bold">¥{buyQuantity * unitPrice}</span>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setBuyDialogOpen(false)}>取消</Button>
+            <Button onClick={handleConfirmBuyCredits} disabled={upgradeLoading}>
+              {upgradeLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
+              去支付
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>

@@ -39,6 +39,8 @@ Deno.serve(async (req) => {
     const user = userData.user;
     const body = await req.json().catch(() => ({}));
     const type = body.type || "pro"; // "pro", "pro_annual", "lite", "credits", or "credits_free"
+    const rawQty = Number(body.quantity);
+    const quantity = Number.isFinite(rawQty) ? Math.min(20, Math.max(1, Math.floor(rawQty))) : 1;
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
       apiVersion: "2025-08-27.basil",
@@ -89,11 +91,11 @@ Deno.serve(async (req) => {
 
     if (type === "credits") {
       priceId = "price_1T7tEZB04cx1cwwsvtQBDXY5"; // 500 credits ¥9 one-time (Pro users)
-      successUrl = `${origin}/dashboard?credits_purchased=500`;
+      successUrl = `${origin}/dashboard?credits_purchased=${500 * quantity}`;
       mode = "payment";
     } else if (type === "credits_free") {
       priceId = "price_1T8d04B04cx1cwwsvwrVBAfC"; // 500 credits ¥15 one-time (Free users)
-      successUrl = `${origin}/dashboard?credits_purchased=500`;
+      successUrl = `${origin}/dashboard?credits_purchased=${500 * quantity}`;
       mode = "payment";
     } else if (type === "lite") {
       priceId = "price_1TJvhYB04cx1cwwsUmFUZwDr"; // Lite monthly ¥9/month
@@ -160,13 +162,14 @@ Deno.serve(async (req) => {
       }
     }
 
+    const isCreditPack = type === "credits" || type === "credits_free";
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: isCreditPack ? quantity : 1 }],
       mode,
       success_url: successUrl,
       cancel_url: `${origin}/pricing`,
-      metadata: { user_id: user.id, type },
+      metadata: { user_id: user.id, type, quantity: String(quantity) },
     });
 
     return new Response(JSON.stringify({ url: session.url }), {
