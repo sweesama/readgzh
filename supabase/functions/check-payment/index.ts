@@ -234,7 +234,8 @@ Deno.serve(async (req) => {
         (s) => s.metadata?.type === "credits" || s.metadata?.type === "credits_free"
       );
       for (const session of creditSessions) {
-        await ensureCreditPackGrant(serviceClient, userId, session.id);
+        const qty = Math.max(1, parseInt(session.metadata?.quantity || "1", 10) || 1);
+        await ensureCreditPackGrant(serviceClient, userId, session.id, 500 * qty);
       }
 
       // If no subscription AND no legacy pro, downgrade to free
