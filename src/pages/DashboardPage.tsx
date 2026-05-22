@@ -602,6 +602,47 @@ const DashboardPage = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8 space-y-8">
+        {/* Usage warning banner: 90%+ (amber, dismissible) */}
+        {showWarn90 && (
+          <div className="rounded-lg border border-amber-500/40 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 text-sm">
+              <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+              <div>
+                <p className="font-medium text-amber-900 dark:text-amber-100">本月额度即将用完</p>
+                <p className="text-amber-800/80 dark:text-amber-200/80">已使用 {usedCredits} / {totalCredits} 积分。建议提前购买加量包，避免影响调用。</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button size="sm" variant="outline" className="border-amber-500/50" onClick={handleBuyCredits}>
+                <Plus className="mr-1 h-3.5 w-3.5" />购买加量包
+              </Button>
+              <button onClick={dismissWarn90} className="text-amber-700 hover:text-amber-900 p-1" aria-label="关闭提示">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+        {/* Over-limit banner: 100%+ (soft red, dismissible, non-blocking) */}
+        {showOverLimit && (
+          <div className="rounded-lg border border-rose-300/60 bg-rose-50 dark:bg-rose-950/30 px-4 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 text-sm">
+              <AlertTriangle className="h-5 w-5 text-rose-600 shrink-0" />
+              <div>
+                <p className="font-medium text-rose-900 dark:text-rose-100">本月额度已用完</p>
+                <p className="text-rose-800/80 dark:text-rose-200/80">新的 API 请求会失败。可购买加量包继续使用，下个月续费后自动重置。</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button size="sm" className="bg-rose-600 hover:bg-rose-700 text-white" onClick={handleBuyCredits}>
+                <Plus className="mr-1 h-3.5 w-3.5" />立即购买
+              </Button>
+              <button onClick={dismissOverLimit} className="text-rose-700 hover:text-rose-900 p-1" aria-label="关闭提示">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Upgrade Banner - only show for free users */}
         {!isPro && !proLoading && (
           <Card className="border-primary/40 bg-gradient-to-r from-primary/10 to-primary/5">
