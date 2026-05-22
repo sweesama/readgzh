@@ -437,6 +437,24 @@ const DashboardPage = () => {
   const totalCredits = balance?.total_credits ?? 0;
   const bonusCredits = balance?.bonus_credits ?? 0;
   const dailyLimit = balance?.daily_limit ?? (isPro ? 2000 : 30);
+  const usedCredits = balance?.used_credits ?? 0;
+  const usagePercent = totalCredits > 0 ? (usedCredits / totalCredits) * 100 : 0;
+  const showWarn90 = isPro && usagePercent >= 90 && usagePercent < 100 && !warningDismissed;
+  const showOverLimit = isPro && usagePercent >= 100 && !overLimitDismissed;
+  const unitPrice = isPro ? 9 : 15;
+
+  const dismissWarn90 = () => {
+    if (!user?.id) return;
+    const monthKey = new Date().toISOString().slice(0, 7);
+    localStorage.setItem(`rgz_warn90_${user.id}_${monthKey}`, "1");
+    setWarningDismissed(true);
+  };
+  const dismissOverLimit = () => {
+    if (!user?.id) return;
+    const monthKey = new Date().toISOString().slice(0, 7);
+    localStorage.setItem(`rgz_warn100_${user.id}_${monthKey}`, "1");
+    setOverLimitDismissed(true);
+  };
 
   if (loading) {
     return (
