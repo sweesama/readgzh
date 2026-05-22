@@ -299,7 +299,19 @@ const DashboardPage = () => {
       window.history.replaceState({}, "", "/dashboard");
       void checkProStatus();
     }
+    if (params.get("action") === "buy_credits") {
+      setBuyDialogOpen(true);
+      window.history.replaceState({}, "", "/dashboard");
+    }
   }, [user, loading, fetchKeys, fetchUsage, fetchBalance, checkProStatus, fetchProfile]);
+
+  // Restore banner dismissal state (per-month key) when balance/user changes
+  useEffect(() => {
+    if (!user?.id) return;
+    const monthKey = new Date().toISOString().slice(0, 7);
+    setWarningDismissed(localStorage.getItem(`rgz_warn90_${user.id}_${monthKey}`) === "1");
+    setOverLimitDismissed(localStorage.getItem(`rgz_warn100_${user.id}_${monthKey}`) === "1");
+  }, [user?.id, balance?.used_credits]);
 
   const handleGoogleLogin = async () => {
     const { error } = await lovable.auth.signInWithOAuth("google", {
