@@ -1032,6 +1032,73 @@ const DashboardPage = () => {
         </Card>
       </main>
 
+      {/* Credit pack purchase dialog with quantity selector */}
+      <Dialog open={buyDialogOpen} onOpenChange={setBuyDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>购买加量包</DialogTitle>
+            <DialogDescription>
+              每份 500 积分，30 天有效。{isPro ? "Pro 会员价 ¥9/份" : "Free 用户价 ¥15/份（升级 Pro 可享 ¥9/份）"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <p className="text-sm font-medium mb-2">选择数量（1~20）</p>
+              <div className="grid grid-cols-5 gap-2">
+                {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setBuyQuantity(n)}
+                    className={`h-9 rounded-md border text-sm font-medium transition-colors ${
+                      buyQuantity === n
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background hover:bg-accent border-input"
+                    }`}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => setBuyQuantity(Math.max(1, buyQuantity - 1))}
+                disabled={buyQuantity <= 1}
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <div className="flex-1 text-center text-sm">
+                <span className="font-semibold">{buyQuantity}</span> 份 × 500 积分 ={" "}
+                <span className="font-semibold">{buyQuantity * 500}</span> 积分
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => setBuyQuantity(Math.min(20, buyQuantity + 1))}
+                disabled={buyQuantity >= 20}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="rounded-lg bg-muted p-3 flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">合计</span>
+              <span className="text-xl font-bold">¥{buyQuantity * unitPrice}</span>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setBuyDialogOpen(false)}>取消</Button>
+            <Button onClick={handleConfirmBuyCredits} disabled={upgradeLoading}>
+              {upgradeLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
+              去支付
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Footer />
     </div>
   );
