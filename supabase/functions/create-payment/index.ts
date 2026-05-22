@@ -162,13 +162,14 @@ Deno.serve(async (req) => {
       }
     }
 
+    const isCreditPack = type === "credits" || type === "credits_free";
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: isCreditPack ? quantity : 1 }],
       mode,
       success_url: successUrl,
       cancel_url: `${origin}/pricing`,
-      metadata: { user_id: user.id, type },
+      metadata: { user_id: user.id, type, quantity: String(quantity) },
     });
 
     return new Response(JSON.stringify({ url: session.url }), {
