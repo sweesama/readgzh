@@ -8,7 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Copy, Key, Plus, Trash2, Gift, LogOut, ArrowLeft, Eye, EyeOff, BarChart3, Coins, Zap, Loader2, Crown, Mail, Pencil, CreditCard, CalendarClock } from "lucide-react";
+import { Copy, Key, Plus, Trash2, Gift, LogOut, ArrowLeft, Eye, EyeOff, BarChart3, Coins, Zap, Loader2, Crown, Mail, Pencil, CreditCard, CalendarClock, AlertTriangle, X, Minus } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import Footer from "@/components/home/Footer";
 import SEO from "@/components/SEO";
 import BillingHistory from "@/components/dashboard/BillingHistory";
@@ -78,6 +79,12 @@ const DashboardPage = () => {
   const [nameLoading, setNameLoading] = useState(false);
   const [revealedKeys, setRevealedKeys] = useState<Set<string>>(new Set());
   const [showRevokedKeys, setShowRevokedKeys] = useState(false);
+  // Credit pack dialog
+  const [buyDialogOpen, setBuyDialogOpen] = useState(false);
+  const [buyQuantity, setBuyQuantity] = useState(1);
+  // Usage warning banner dismissal (per-month key in localStorage)
+  const [warningDismissed, setWarningDismissed] = useState(false);
+  const [overLimitDismissed, setOverLimitDismissed] = useState(false);
 
   const handleUpgrade = async (type: "pro" | "pro_annual" = "pro") => {
     setUpgradeLoading(true);
@@ -96,14 +103,19 @@ const DashboardPage = () => {
   };
 
   const handleBuyCredits = async () => {
+    setBuyDialogOpen(true);
+  };
+
+  const handleConfirmBuyCredits = async () => {
     setUpgradeLoading(true);
     try {
       const creditType = isPro ? "credits" : "credits_free";
       const { data, error } = await supabase.functions.invoke("create-payment", {
-        body: { type: creditType },
+        body: { type: creditType, quantity: buyQuantity },
       });
       if (error) throw error;
       if (data?.url) {
+        setBuyDialogOpen(false);
         window.open(data.url, "_blank");
       }
     } catch (err) {
