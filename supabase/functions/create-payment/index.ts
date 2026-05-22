@@ -91,11 +91,11 @@ Deno.serve(async (req) => {
 
     if (type === "credits") {
       priceId = "price_1T7tEZB04cx1cwwsvtQBDXY5"; // 500 credits ¥9 one-time (Pro users)
-      successUrl = `${origin}/dashboard?credits_purchased=500`;
+      successUrl = `${origin}/dashboard?credits_purchased=${500 * quantity}`;
       mode = "payment";
     } else if (type === "credits_free") {
       priceId = "price_1T8d04B04cx1cwwsvwrVBAfC"; // 500 credits ¥15 one-time (Free users)
-      successUrl = `${origin}/dashboard?credits_purchased=500`;
+      successUrl = `${origin}/dashboard?credits_purchased=${500 * quantity}`;
       mode = "payment";
     } else if (type === "lite") {
       priceId = "price_1TJvhYB04cx1cwwsUmFUZwDr"; // Lite monthly ¥9/month
