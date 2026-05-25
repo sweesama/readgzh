@@ -38,8 +38,29 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Rate limit anonymous traffic (no user API key).
-  if (!hasUserApiKey(req)) {
+  const url = new URL(req.url);
+
+  // P0: Cache-hit bypass. If ?s=slug points to an already-cached article,
+  // skip the IP rate limit entirely — serving cache is zero-cost.
+  let cacheHit = false;
+  const slugParam = url.searchParams.get("s");
+  if (slugParam && !hasUserApiKey(req)) {
+    try {
+      const normalized = slugParam.startsWith("s/") ? slugParam : `s/${slugParam}`;
+      const { data: art } = await supabase
+        .from("articles")
+        .select("id")
+        .or(`slug.eq.${normalized},slug.eq.${slugParam}`)
+        .limit(1)
+        .maybeSingle();
+      if (art) cacheHit = true;
+    } catch (e) {
+      console.error("[rd] cache lookup failed:", e);
+    }
+  }
+
+  // Rate limit anonymous traffic (no user API key, no cache hit).
+  if (!hasUserApiKey(req) && !cacheHit) {
     const ip = getClientIp(req);
     if (ip !== "unknown") {
       try {
@@ -53,9 +74,16 @@ Deno.serve(async (req) => {
             console.log(`[rd] Anon rate limit exceeded for IP: ${ip}, current: ${result.current}`);
             return new Response(
               JSON.stringify({
-                error: `Anonymous limit reached (${ANON_DAILY_LIMIT}/IP/day). Register at https://readgzh.site/dashboard for daily credits, or upgrade to Lite/Pro.`,
-                hint: "If you are calling from shared infrastructure (Replit, Vercel, Cloudflare Workers, etc.), the IP quota may already be exhausted by other users. Use an API Key in the Authorization header (Bearer rgz_...) to bypass IP limits. Get a free key at https://readgzh.site/dashboard.",
+                success: false,
+                code: "rate_limited",
+                error: "rate_limited",
+                message: `Anonymous limit reached (${ANON_DAILY_LIMIT}/IP/day).`,
+                retry_after: 86400,
+                hint: "Pass an API Key in the Authorization header (Bearer sk_live_...) or as ?key=sk_live_... to bypass IP limits. Cached articles can be fetched via /rd?s={slug}&format=text without consuming the IP quota. If you are on shared infrastructure (Replit/Vercel/ChatGPT/etc.), the IP pool may already be exhausted by other users.",
                 dashboard_url: "https://readgzh.site/dashboard",
+                upgrade_url: "https://readgzh.site/pricing",
+                use_api_key: "https://readgzh.site/dashboard",
+                docs_url: "https://readgzh.site/docs",
               }),
               {
                 status: 429,
