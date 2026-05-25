@@ -219,7 +219,7 @@ export type Database = {
           is_anonymous: boolean
           likes_count: number
           parent_id: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           content: string
@@ -229,7 +229,7 @@ export type Database = {
           is_anonymous?: boolean
           likes_count?: number
           parent_id?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           content?: string
@@ -239,7 +239,7 @@ export type Database = {
           is_anonymous?: boolean
           likes_count?: number
           parent_id?: string | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
