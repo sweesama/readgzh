@@ -104,7 +104,6 @@ Deno.serve(async (req) => {
     }
   }
 
-  const url = new URL(req.url);
   const targetUrl = `${SUPABASE_URL}/functions/v1/wechat-reader${url.search}`;
 
   const headers = new Headers();
