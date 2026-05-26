@@ -128,7 +128,7 @@ const CommentSection = () => {
   type Group = { key: string; author: Comment; items: Comment[] };
   const groupsMap = new Map<string, Group>();
   comments.forEach((c) => {
-    const key = c.is_anonymous ? `anon:${c.id}` : `user:${c.user_id}`;
+    const key = c.is_anonymous || !c.author_key ? `anon:${c.id}` : `user:${c.author_key}`;
     const existing = groupsMap.get(key);
     if (existing) {
       existing.items.push(c);
