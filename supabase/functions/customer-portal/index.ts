@@ -52,7 +52,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    const origin = req.headers.get("origin") || "https://readgzh.lovable.app";
+    const ALLOWED_ORIGINS = [
+      "https://readgzh.site",
+      "https://www.readgzh.site",
+      "https://readgzh.lovable.app",
+    ];
+    const requestOrigin = req.headers.get("origin") || "";
+    const origin = ALLOWED_ORIGINS.includes(requestOrigin) ? requestOrigin : "https://readgzh.site";
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customers.data[0].id,
       return_url: `${origin}/dashboard`,
