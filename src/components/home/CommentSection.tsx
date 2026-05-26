@@ -11,7 +11,8 @@ const ADMIN_EMAIL = "sweeyeah@gmail.com";
 
 type Comment = {
   id: string;
-  user_id: string;
+  author_key: string | null;
+  is_own: boolean;
   content: string;
   parent_id: string | null;
   likes_count: number;
@@ -22,12 +23,6 @@ type Comment = {
   replies?: Comment[];
 };
 
-type CommentProfile = {
-  id: string;
-  display_name: string | null;
-  avatar_url: string | null;
-  is_admin: boolean;
-};
 
 function getVoterId(userId: string | null): string {
   if (userId) return userId;
@@ -69,39 +64,33 @@ const CommentSection = () => {
   const voterId = getVoterId(user?.id ?? null);
 
   const fetchComments = useCallback(async () => {
-    // Fetch all comments
-    const { data: commentsData } = await supabase
-      .from("comments")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const { data, error } = await supabase.rpc("list_public_comments");
+    if (error || !data) return;
 
-    if (!commentsData) return;
-
-    // Fetch safe author profile fields via backend RPC so public comments can
-    // still show the correct author after refresh/account switching.
-    const userIds = [...new Set(commentsData.map((c) => c.user_id))];
-    const { data: profiles, error: profilesError } = await supabase.rpc("get_comment_profiles", {
-      p_user_ids: userIds,
-    });
-
-    if (profilesError) {
-      toast.error("留言作者信息加载失败");
-      return;
-    }
-
-    const profileMap = new Map((profiles as CommentProfile[] | null)?.map((p) => [p.id, p]) ?? []);
-
-    // Build tree
-    const withProfiles = commentsData.map((c) => ({
-      ...c,
-      profile: profileMap.get(c.user_id) || undefined,
-      replies: [] as Comment[],
+    const withTree: Comment[] = data.map((c: any) => ({
+      id: c.id,
+      author_key: c.author_key,
+      is_own: c.is_own,
+      content: c.content,
+      parent_id: c.parent_id,
+      likes_count: c.likes_count,
+      dislikes_count: c.dislikes_count,
+      is_anonymous: c.is_anonymous,
+      created_at: c.created_at,
+      profile: c.is_anonymous
+        ? undefined
+        : {
+            display_name: c.author_display_name,
+            avatar_url: c.author_avatar_url,
+            is_admin: c.author_is_admin,
+          },
+      replies: [],
     }));
 
     const topLevel: Comment[] = [];
     const byId = new Map<string, Comment>();
-    withProfiles.forEach((c) => byId.set(c.id, c));
-    withProfiles.forEach((c) => {
+    withTree.forEach((c) => byId.set(c.id, c));
+    withTree.forEach((c) => {
       if (c.parent_id && byId.has(c.parent_id)) {
         byId.get(c.parent_id)!.replies!.push(c);
       } else {
@@ -109,11 +98,13 @@ const CommentSection = () => {
       }
     });
 
-    // Sort replies by time ascending
-    topLevel.forEach((c) => c.replies?.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
+    topLevel.forEach((c) =>
+      c.replies?.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+    );
 
     setComments(topLevel);
   }, []);
+
 
   const fetchVotes = useCallback(async () => {
     const { data } = await supabase
@@ -137,7 +128,7 @@ const CommentSection = () => {
   type Group = { key: string; author: Comment; items: Comment[] };
   const groupsMap = new Map<string, Group>();
   comments.forEach((c) => {
-    const key = c.is_anonymous ? `anon:${c.id}` : `user:${c.user_id}`;
+    const key = c.is_anonymous || !c.author_key ? `anon:${c.id}` : `user:${c.author_key}`;
     const existing = groupsMap.get(key);
     if (existing) {
       existing.items.push(c);
@@ -307,7 +298,7 @@ const CommentSection = () => {
                 回复
               </button>
             )}
-            {(isAdmin || user?.id === comment.user_id) && (
+            {(isAdmin || comment.is_own) && (
               <button
                 onClick={() => handleDelete(comment.id)}
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
