@@ -11,7 +11,8 @@ const ADMIN_EMAIL = "sweeyeah@gmail.com";
 
 type Comment = {
   id: string;
-  user_id: string;
+  author_key: string | null;
+  is_own: boolean;
   content: string;
   parent_id: string | null;
   likes_count: number;
@@ -22,12 +23,6 @@ type Comment = {
   replies?: Comment[];
 };
 
-type CommentProfile = {
-  id: string;
-  display_name: string | null;
-  avatar_url: string | null;
-  is_admin: boolean;
-};
 
 function getVoterId(userId: string | null): string {
   if (userId) return userId;
