@@ -665,6 +665,22 @@ export type Database = {
         Args: { p_limit?: number; p_offset?: number; p_search?: string }
         Returns: Json
       }
+      list_public_comments: {
+        Args: never
+        Returns: {
+          author_avatar_url: string
+          author_display_name: string
+          author_is_admin: boolean
+          content: string
+          created_at: string
+          dislikes_count: number
+          id: string
+          is_anonymous: boolean
+          is_own: boolean
+          likes_count: number
+          parent_id: string
+        }[]
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
