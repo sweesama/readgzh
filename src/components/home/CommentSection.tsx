@@ -298,7 +298,7 @@ const CommentSection = () => {
                 回复
               </button>
             )}
-            {(isAdmin || user?.id === comment.user_id) && (
+            {(isAdmin || comment.is_own) && (
               <button
                 onClick={() => handleDelete(comment.id)}
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
