@@ -102,7 +102,6 @@ Deno.serve(async (req) => {
         user_id: user.id,
         key_hash: keyHash,
         key_prefix: keyPrefix,
-        key_value: rawKey,
         name: keyName,
         tier: newTier,
         daily_limit: newLimit,
