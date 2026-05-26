@@ -671,6 +671,7 @@ export type Database = {
           author_avatar_url: string
           author_display_name: string
           author_is_admin: boolean
+          author_key: string
           content: string
           created_at: string
           dislikes_count: number
