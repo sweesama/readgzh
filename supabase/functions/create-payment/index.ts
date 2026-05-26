@@ -83,7 +83,13 @@ Deno.serve(async (req) => {
       customerId = newCustomer.id;
     }
 
-    const origin = req.headers.get("origin") || "https://readgzh.lovable.app";
+    const ALLOWED_ORIGINS = [
+      "https://readgzh.site",
+      "https://www.readgzh.site",
+      "https://readgzh.lovable.app",
+    ];
+    const requestOrigin = req.headers.get("origin") || "";
+    const origin = ALLOWED_ORIGINS.includes(requestOrigin) ? requestOrigin : "https://readgzh.site";
 
     let priceId: string;
     let successUrl: string;
