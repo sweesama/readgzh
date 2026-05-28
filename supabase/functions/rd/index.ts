@@ -1,6 +1,6 @@
 // ReadGZH short URL proxy → backend edge function
 // Anonymous IP rate-limited (shared 10/IP/day pool with Web/MCP).
-// Requests carrying a user API Key (rgz_*) bypass IP limits.
+// Requests carrying a user API Key (sk_live_*) bypass IP limits.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {

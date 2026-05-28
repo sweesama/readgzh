@@ -309,8 +309,8 @@ const DashboardPage = () => {
   useEffect(() => {
     if (!user?.id) return;
     const monthKey = new Date().toISOString().slice(0, 7);
-    setWarningDismissed(localStorage.getItem(`rgz_warn90_${user.id}_${monthKey}`) === "1");
-    setOverLimitDismissed(localStorage.getItem(`rgz_warn100_${user.id}_${monthKey}`) === "1");
+    setWarningDismissed(localStorage.getItem(`sk_warn90_${user.id}_${monthKey}`) === "1");
+    setOverLimitDismissed(localStorage.getItem(`sk_warn100_${user.id}_${monthKey}`) === "1");
   }, [user?.id, balance?.used_credits]);
 
   const handleGoogleLogin = async () => {
@@ -446,13 +446,13 @@ const DashboardPage = () => {
   const dismissWarn90 = () => {
     if (!user?.id) return;
     const monthKey = new Date().toISOString().slice(0, 7);
-    localStorage.setItem(`rgz_warn90_${user.id}_${monthKey}`, "1");
+    localStorage.setItem(`sk_warn90_${user.id}_${monthKey}`, "1");
     setWarningDismissed(true);
   };
   const dismissOverLimit = () => {
     if (!user?.id) return;
     const monthKey = new Date().toISOString().slice(0, 7);
-    localStorage.setItem(`rgz_warn100_${user.id}_${monthKey}`, "1");
+    localStorage.setItem(`sk_warn100_${user.id}_${monthKey}`, "1");
     setOverLimitDismissed(true);
   };
 
