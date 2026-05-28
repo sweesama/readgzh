@@ -335,7 +335,7 @@ function hasUserApiKey(req: Request): boolean {
   const token = auth.slice(7).trim();
   if (!token) return false;
   // Public/anon keys and service role JWTs start with "eyJ" (JWT). User API keys
-  // issued by ReadGZH use a different format (e.g. "rgz_..."). Reject JWTs.
+  // issued by ReadGZH use a different format (e.g. "sk_live_..."). Reject JWTs.
   if (token.startsWith("eyJ")) return false;
   return true;
 }
@@ -356,7 +356,7 @@ app.all("/*", async (c) => {
           jsonrpc: "2.0",
           error: {
             code: -32000,
-            message: `Anonymous MCP limit reached (${MCP_ANON_DAILY_LIMIT}/IP/day). If you are calling from shared infrastructure (Replit, Vercel, Cloudflare Workers, etc.), the IP quota may already be exhausted by other users — use an API Key in the Authorization header (Bearer rgz_...) to bypass IP limits. Get a free key at https://readgzh.site/dashboard.`,
+            message: `Anonymous MCP limit reached (${MCP_ANON_DAILY_LIMIT}/IP/day). If you are calling from shared infrastructure (Replit, Vercel, Cloudflare Workers, etc.), the IP quota may already be exhausted by other users — use an API Key in the Authorization header (Bearer sk_live_...) to bypass IP limits. Get a free key at https://readgzh.site/dashboard.`,
             data: {
               dashboard_url: "https://readgzh.site/dashboard",
               retry_after_seconds: 86400,
