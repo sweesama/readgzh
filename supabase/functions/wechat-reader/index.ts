@@ -9,6 +9,39 @@ const corsHeaders = {
   "X-Powered-By": "ReadGZH (readgzh.site)",
 };
 
+// ===== Standardized API error response with actionable guidance =====
+// Every user-facing error should go through this helper so clients always
+// see a `code`, a human-readable `message`, a `hint`, and links to docs /
+// dashboard. This prevents "tool failed" black-box errors in MCP / API clients.
+function apiError(opts: {
+  code: string;
+  message: string;
+  status: number;
+  hint?: string;
+  extras?: Record<string, unknown>;
+  contentType?: string;
+}): Response {
+  const body = {
+    success: false,
+    code: opts.code,
+    error: opts.code,
+    message: opts.message,
+    hint: opts.hint ?? "如需帮助，请查看开发者文档或访问控制台获取 API Key。",
+    dashboard_url: "https://readgzh.site/dashboard",
+    docs_url: "https://readgzh.site/docs",
+    pricing_url: "https://readgzh.site/pricing",
+    support_url: "https://readgzh.site/#feedback",
+    ...(opts.extras ?? {}),
+  };
+  return new Response(JSON.stringify(body), {
+    status: opts.status,
+    headers: {
+      ...corsHeaders,
+      "Content-Type": opts.contentType ?? "application/json",
+    },
+  });
+}
+
 // Check if content indicates a verification/captcha page
 function isVerificationPage(text: string): boolean {
   const patterns = [
