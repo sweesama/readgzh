@@ -173,7 +173,11 @@ Deno.serve(async (req) => {
 
       if (error) {
         return new Response(
-          JSON.stringify({ success: false, error: "db_error", message: error.message }),
+          JSON.stringify({
+            success: false, code: "db_error", error: "db_error", message: error.message,
+            hint: "数据库查询异常，请稍后重试。",
+            support_url: "https://readgzh.site/#feedback",
+          }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -191,12 +195,23 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: false, error: "not_found", message: "Unknown endpoint. Use /search?q=keyword or /recent?limit=10" }),
+      JSON.stringify({
+        success: false, code: "not_found", error: "not_found",
+        message: "未知接口。可用端点：/search?q=keyword、/recent?limit=10。",
+        hint: "完整接口列表见开发者文档。",
+        available_endpoints: ["/search?q=keyword&limit=10", "/recent?limit=10"],
+        docs_url: "https://readgzh.site/docs", dashboard_url: "https://readgzh.site/dashboard",
+      }),
       { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
     return new Response(
-      JSON.stringify({ success: false, error: "internal_error", message: err instanceof Error ? err.message : "Unknown error" }),
+      JSON.stringify({
+        success: false, code: "internal_error", error: "internal_error",
+        message: err instanceof Error ? err.message : "Unknown error",
+        hint: "服务端异常，请稍后重试。若持续出现请反馈。",
+        support_url: "https://readgzh.site/#feedback",
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
