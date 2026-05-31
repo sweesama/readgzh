@@ -42,6 +42,16 @@ function apiError(opts: {
   });
 }
 
+// Standardized response for WeChat security/verification interception.
+function wechatVerificationError(sourceUrl?: string): Response {
+  return apiError({
+    code: "wechat_verification",
+    status: 403,
+    message: "微信服务器当前对该文章触发了临时访问保护，这是微信的正常安全机制，通常 3-5 分钟后会自动恢复。",
+    hint: "建议：1）稍等 3-5 分钟后重试同一篇文章；2）先读其他文章，稍后再回来；3）在微信内打开后使用首页的「书签提取工具」手动提交（不受此限制）。",
+    extras: { source_url: sourceUrl, bookmarklet_url: "https://readgzh.site/#bookmarklet", retry_after_seconds: 300 },
+  });
+
 // Check if content indicates a verification/captcha page
 function isVerificationPage(text: string): boolean {
   const patterns = [
