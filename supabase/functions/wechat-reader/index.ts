@@ -1019,10 +1019,12 @@ async function generateSummary(content: string, title: string): Promise<string> 
 
 async function handleSummaryMode(slug: string | null, articleId: string | null): Promise<Response> {
   if (!slug && !articleId) {
-    return new Response(
-      JSON.stringify({ success: false, error: "Missing article identifier. Use ?s=slug or ?id=uuid" }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return apiError({
+      code: "missing_identifier",
+      status: 400,
+      message: "摘要接口缺少文章标识。请使用 ?s={slug}&mode=summary 或 ?id={uuid}&mode=summary。",
+      hint: "AI 摘要为 Pro 专属功能，请确保已在 Authorization 头携带 sk_live_... 形式的 Pro Key。",
+    });
   }
 
   const supabase = createClient(
