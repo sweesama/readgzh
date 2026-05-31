@@ -1476,10 +1476,13 @@ async function handleScrapeAndRedirect(url: string, keyHash?: string): Promise<R
 
 async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     if (!url.includes("mp.weixin.qq.com") && !url.includes("weixin.qq.com")) {
-      return new Response(
-        JSON.stringify({ success: false, error: "请提供有效的微信公众号文章链接" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return apiError({
+        code: "invalid_url",
+        status: 400,
+        message: "请提供有效的微信公众号文章链接（域名需为 mp.weixin.qq.com 或 weixin.qq.com）。",
+        hint: "示例：https://mp.weixin.qq.com/s/AbCdEf123。其他平台链接暂不支持。",
+        extras: { received: url },
+      });
     }
 
     // Extract slug from URL (e.g., "s/L3Tbd4KMmPnahnStnunTVA" from WeChat URL)
