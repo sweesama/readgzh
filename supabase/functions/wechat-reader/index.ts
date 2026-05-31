@@ -1063,10 +1063,13 @@ async function handleSummaryMode(slug: string | null, articleId: string | null):
       supabase.from("articles").update({ summary }).eq("id", article.id).then(() => {});
     } catch (err) {
       console.error("Summary generation failed:", err);
-      return new Response(
-        JSON.stringify({ success: false, error: err instanceof Error ? err.message : "Summary generation failed" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return apiError({
+        code: "summary_generation_failed",
+        status: 500,
+        message: "AI 摘要生成失败：" + (err instanceof Error ? err.message : "未知错误"),
+        hint: "请稍后重试。若持续失败，可在反馈渠道告知文章 slug，我们会人工排查。",
+        extras: { article_id: article.id, slug: article.slug },
+      });
     }
   }
 
