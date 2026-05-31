@@ -1315,13 +1315,20 @@ Deno.serve(async (req) => {
       return await handleScrape(url, rateInfo?.keyHash);
     }
 
-    return new Response("Method not allowed", { status: 405, headers: corsHeaders });
+    return apiError({
+      code: "method_not_allowed",
+      status: 405,
+      message: "不支持的 HTTP 方法。仅接受 GET（?url=... / ?s=... / ?id=...）或 POST（JSON body）。",
+      hint: "完整接口规范见 https://readgzh.site/docs。OPTIONS 用于 CORS preflight。",
+    });
   } catch (error) {
     console.error("Error:", error);
-    return new Response(
-      JSON.stringify({ success: false, error: `处理请求失败: ${error instanceof Error ? error.message : "未知错误"}` }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return apiError({
+      code: "internal_error",
+      status: 500,
+      message: `处理请求失败：${error instanceof Error ? error.message : "未知错误"}`,
+      hint: "服务端异常。请稍后重试；若持续出现，请在反馈渠道附上请求时间与 URL，我们会人工排查。",
+    });
   }
 });
 
