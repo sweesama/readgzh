@@ -1298,10 +1298,12 @@ Deno.serve(async (req) => {
       // Handle URL scraping - rate limit applies
       const url = body.url;
       if (!url) {
-        return new Response(
-          JSON.stringify({ success: false, error: "请提供微信文章链接" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return apiError({
+          code: "missing_url",
+          status: 400,
+          message: "请提供微信文章链接（请求体字段 url）。",
+          hint: 'POST 示例：{"url":"https://mp.weixin.qq.com/s/..."}，Content-Type: application/json。',
+        });
       }
 
       // Check rate limit
