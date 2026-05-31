@@ -1662,16 +1662,18 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
 
     if (!result.isPictureWithImages && (!textContent || textContent.length < MIN_CONTENT_LENGTH || substantiveText.length < MIN_SUBSTANTIVE_LENGTH)) {
       console.log(`Content validation failed: raw=${textContent?.length || 0}, substantive=${substantiveText.length}`);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "无法提取文章正文内容（仅检测到安全提示或空白内容）。",
-          hint: "该文章可能使用了复杂排版结构或内容通过 JS 动态加载。请尝试书签提取工具手动提交。",
+      return apiError({
+        code: "content_too_short",
+        status: 422,
+        message: "无法提取文章正文内容（仅检测到安全提示或空白内容）。",
+        hint: "该文章可能使用了复杂排版或正文通过 JS 动态加载。建议：在微信内打开后使用首页「书签提取工具」手动提交。",
+        extras: {
+          source_url: url,
           raw_length: textContent?.length || 0,
           substantive_length: substantiveText.length,
-        }),
-        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+          bookmarklet_url: "https://readgzh.site/#bookmarklet",
+        },
+      });
     }
 
     // Save to database - content stores plain text for AI, raw_html stores formatted HTML for display
