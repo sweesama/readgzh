@@ -1460,10 +1460,13 @@ async function handleScrapeAndRedirect(url: string, keyHash?: string): Promise<R
   const resultData = await scrapeResult.json();
 
   if (!resultData.success) {
-    return new Response(
-      JSON.stringify({ success: false, error: resultData.error || "未知错误", message: "抓取失败，请稍后重试" }),
-      { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return apiError({
+      code: "scrape_failed",
+      status: 502,
+      message: "抓取失败：" + (resultData.error || "未知错误"),
+      hint: "请稍后重试。若该链接长期失败，可在微信内打开文章，使用首页推荐的「书签提取工具」手动提交。",
+      extras: { source_url: url, upstream_error: resultData.error },
+    });
   }
 
   // Return SSR HTML directly (no redirect)
