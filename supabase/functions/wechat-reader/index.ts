@@ -618,9 +618,11 @@ function htmlToMarkdown(html: string, title: string, author: string, publishTime
 
 async function handleReadMode(slug: string | null, articleId: string | null, partNum?: number, formatText?: boolean): Promise<Response> {
   if (!slug && !articleId) {
-    return new Response("Missing article identifier. Use ?s=slug or ?id=uuid", {
+    return apiError({
+      code: "missing_identifier",
       status: 400,
-      headers: { ...corsHeaders, "Content-Type": "text/plain; charset=utf-8" },
+      message: "缺少文章标识。请使用 ?s={slug} 或 ?id={uuid}。",
+      hint: "示例：/rd?s=AbCdEf123 或 /rd?id=550e8400-...。完整参数说明见开发者文档。",
     });
   }
 
