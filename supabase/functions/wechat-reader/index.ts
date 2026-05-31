@@ -51,6 +51,9 @@ function wechatVerificationError(sourceUrl?: string): Response {
     hint: "建议：1）稍等 3-5 分钟后重试同一篇文章；2）先读其他文章，稍后再回来；3）在微信内打开后使用首页的「书签提取工具」手动提交（不受此限制）。",
     extras: { source_url: sourceUrl, bookmarklet_url: "https://readgzh.site/#bookmarklet", retry_after_seconds: 300 },
   });
+}
+
+
 
 // Check if content indicates a verification/captcha page
 function isVerificationPage(text: string): boolean {
