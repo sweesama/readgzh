@@ -1693,10 +1693,13 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
 
     if (dbError) {
       console.error("DB error:", dbError);
-      return new Response(
-        JSON.stringify({ success: false, error: "保存文章失败，请稍后重试" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return apiError({
+        code: "db_save_failed",
+        status: 500,
+        message: "保存文章失败：" + (dbError.message || "数据库异常"),
+        hint: "请稍后重试。若持续出现，请在反馈渠道附上文章 URL，我们会人工排查。",
+        extras: { source_url: url },
+      });
     }
 
     console.log("Saved:", saved.id, saved.slug, metadata.title, "Text:", textContent.length, "HTML:", contentHtml.length);
