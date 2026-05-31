@@ -1653,10 +1653,7 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     // Final safety: reject if extracted content is actually a verification page
     if (isVerificationPage(textContent || "")) {
       console.log("Post-extraction verification check failed: content is verification page text");
-      return new Response(
-        JSON.stringify({ success: false, error: "微信服务器当前对该文章触发了临时访问保护，这是微信的正常安全机制，通常 3-5 分钟后会自动恢复。建议您：1）稍等几分钟后重试同一篇文章；2）先尝试阅读其他文章，之后再回来读这篇；3）使用我们的书签工具从微信内直接提取（不受此限制）。", code: "WECHAT_VERIFICATION" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return wechatVerificationError(url);
     }
 
     // Validate: strip noise (security tips, follow prompts) before checking length
