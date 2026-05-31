@@ -1227,10 +1227,12 @@ Deno.serve(async (req) => {
 
       const url = params.get("url");
       if (!url) {
-        return new Response(
-          JSON.stringify({ success: false, error: "请提供微信文章链接" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return apiError({
+          code: "missing_url",
+          status: 400,
+          message: "请提供微信文章链接（参数 url）。",
+          hint: "示例：/rd?url=https://mp.weixin.qq.com/s/AbCdEf123。仅支持 mp.weixin.qq.com / weixin.qq.com 域名。",
+        });
       }
 
       // Check cache FIRST before deducting credits
