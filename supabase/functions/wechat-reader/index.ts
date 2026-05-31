@@ -9,6 +9,52 @@ const corsHeaders = {
   "X-Powered-By": "ReadGZH (readgzh.site)",
 };
 
+// ===== Standardized API error response with actionable guidance =====
+// Every user-facing error should go through this helper so clients always
+// see a `code`, a human-readable `message`, a `hint`, and links to docs /
+// dashboard. This prevents "tool failed" black-box errors in MCP / API clients.
+function apiError(opts: {
+  code: string;
+  message: string;
+  status: number;
+  hint?: string;
+  extras?: Record<string, unknown>;
+  contentType?: string;
+}): Response {
+  const body = {
+    success: false,
+    code: opts.code,
+    error: opts.code,
+    message: opts.message,
+    hint: opts.hint ?? "如需帮助，请查看开发者文档或访问控制台获取 API Key。",
+    dashboard_url: "https://readgzh.site/dashboard",
+    docs_url: "https://readgzh.site/docs",
+    pricing_url: "https://readgzh.site/pricing",
+    support_url: "https://readgzh.site/#feedback",
+    ...(opts.extras ?? {}),
+  };
+  return new Response(JSON.stringify(body), {
+    status: opts.status,
+    headers: {
+      ...corsHeaders,
+      "Content-Type": opts.contentType ?? "application/json",
+    },
+  });
+}
+
+// Standardized response for WeChat security/verification interception.
+function wechatVerificationError(sourceUrl?: string): Response {
+  return apiError({
+    code: "wechat_verification",
+    status: 403,
+    message: "微信服务器当前对该文章触发了临时访问保护，这是微信的正常安全机制，通常 3-5 分钟后会自动恢复。",
+    hint: "建议：1）稍等 3-5 分钟后重试同一篇文章；2）先读其他文章，稍后再回来；3）在微信内打开后使用首页的「书签提取工具」手动提交（不受此限制）。",
+    extras: { source_url: sourceUrl, bookmarklet_url: "https://readgzh.site/#bookmarklet", retry_after_seconds: 300 },
+  });
+}
+
+
+
 // Check if content indicates a verification/captcha page
 function isVerificationPage(text: string): boolean {
   const patterns = [
@@ -585,9 +631,11 @@ function htmlToMarkdown(html: string, title: string, author: string, publishTime
 
 async function handleReadMode(slug: string | null, articleId: string | null, partNum?: number, formatText?: boolean): Promise<Response> {
   if (!slug && !articleId) {
-    return new Response("Missing article identifier. Use ?s=slug or ?id=uuid", {
+    return apiError({
+      code: "missing_identifier",
       status: 400,
-      headers: { ...corsHeaders, "Content-Type": "text/plain; charset=utf-8" },
+      message: "缺少文章标识。请使用 ?s={slug} 或 ?id={uuid}。",
+      hint: "示例：/rd?s=AbCdEf123 或 /rd?id=550e8400-...。完整参数说明见开发者文档。",
     });
   }
 
@@ -607,9 +655,12 @@ async function handleReadMode(slug: string | null, articleId: string | null, par
 
   if (error || !article) {
     console.error("Article not found:", error);
-    return new Response("Article not found.", {
+    return apiError({
+      code: "article_not_found",
       status: 404,
-      headers: { ...corsHeaders, "Content-Type": "text/plain; charset=utf-8" },
+      message: "未找到该文章。它可能尚未被收录，或链接已失效。",
+      hint: "若是新文章，请先用 ?url={微信文章链接} 提交抓取；若链接错误，请到首页粘贴公众号文章 URL 重新生成。",
+      extras: { slug, article_id: articleId },
     });
   }
 
@@ -981,10 +1032,12 @@ async function generateSummary(content: string, title: string): Promise<string> 
 
 async function handleSummaryMode(slug: string | null, articleId: string | null): Promise<Response> {
   if (!slug && !articleId) {
-    return new Response(
-      JSON.stringify({ success: false, error: "Missing article identifier. Use ?s=slug or ?id=uuid" }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return apiError({
+      code: "missing_identifier",
+      status: 400,
+      message: "摘要接口缺少文章标识。请使用 ?s={slug}&mode=summary 或 ?id={uuid}&mode=summary。",
+      hint: "AI 摘要为 Pro 专属功能，请确保已在 Authorization 头携带 sk_live_... 形式的 Pro Key。",
+    });
   }
 
   const supabase = createClient(
@@ -1002,10 +1055,13 @@ async function handleSummaryMode(slug: string | null, articleId: string | null):
   const { data: article, error } = await query.single();
 
   if (error || !article) {
-    return new Response(
-      JSON.stringify({ success: false, error: "Article not found" }),
-      { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return apiError({
+      code: "article_not_found",
+      status: 404,
+      message: "未找到该文章，无法生成摘要。",
+      hint: "请先用 /rd?url={微信文章链接} 抓取并入库，再调用摘要接口。",
+      extras: { slug, article_id: articleId },
+    });
   }
 
   // Increment view count
@@ -1020,10 +1076,13 @@ async function handleSummaryMode(slug: string | null, articleId: string | null):
       supabase.from("articles").update({ summary }).eq("id", article.id).then(() => {});
     } catch (err) {
       console.error("Summary generation failed:", err);
-      return new Response(
-        JSON.stringify({ success: false, error: err instanceof Error ? err.message : "Summary generation failed" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return apiError({
+        code: "summary_generation_failed",
+        status: 500,
+        message: "AI 摘要生成失败：" + (err instanceof Error ? err.message : "未知错误"),
+        hint: "请稍后重试。若持续失败，可在反馈渠道告知文章 slug，我们会人工排查。",
+        extras: { article_id: article.id, slug: article.slug },
+      });
     }
   }
 
@@ -1181,10 +1240,12 @@ Deno.serve(async (req) => {
 
       const url = params.get("url");
       if (!url) {
-        return new Response(
-          JSON.stringify({ success: false, error: "请提供微信文章链接" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return apiError({
+          code: "missing_url",
+          status: 400,
+          message: "请提供微信文章链接（参数 url）。",
+          hint: "示例：/rd?url=https://mp.weixin.qq.com/s/AbCdEf123。仅支持 mp.weixin.qq.com / weixin.qq.com 域名。",
+        });
       }
 
       // Check cache FIRST before deducting credits
@@ -1250,10 +1311,12 @@ Deno.serve(async (req) => {
       // Handle URL scraping - rate limit applies
       const url = body.url;
       if (!url) {
-        return new Response(
-          JSON.stringify({ success: false, error: "请提供微信文章链接" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return apiError({
+          code: "missing_url",
+          status: 400,
+          message: "请提供微信文章链接（请求体字段 url）。",
+          hint: 'POST 示例：{"url":"https://mp.weixin.qq.com/s/..."}，Content-Type: application/json。',
+        });
       }
 
       // Check rate limit
@@ -1265,13 +1328,20 @@ Deno.serve(async (req) => {
       return await handleScrape(url, rateInfo?.keyHash);
     }
 
-    return new Response("Method not allowed", { status: 405, headers: corsHeaders });
+    return apiError({
+      code: "method_not_allowed",
+      status: 405,
+      message: "不支持的 HTTP 方法。仅接受 GET（?url=... / ?s=... / ?id=...）或 POST（JSON body）。",
+      hint: "完整接口规范见 https://readgzh.site/docs。OPTIONS 用于 CORS preflight。",
+    });
   } catch (error) {
     console.error("Error:", error);
-    return new Response(
-      JSON.stringify({ success: false, error: `处理请求失败: ${error instanceof Error ? error.message : "未知错误"}` }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return apiError({
+      code: "internal_error",
+      status: 500,
+      message: `处理请求失败：${error instanceof Error ? error.message : "未知错误"}`,
+      hint: "服务端异常。请稍后重试；若持续出现，请在反馈渠道附上请求时间与 URL，我们会人工排查。",
+    });
   }
 });
 
@@ -1367,7 +1437,7 @@ async function handleDirectSubmit(body: Record<string, unknown>): Promise<Respon
 async function handleScrapeAndRedirect(url: string, keyHash?: string): Promise<Response> {
   if (!url.includes("mp.weixin.qq.com") && !url.includes("weixin.qq.com")) {
     return new Response(
-      `<!DOCTYPE html><html><body><h1>错误</h1><p>请提供有效的微信公众号文章链接</p></body></html>`,
+      `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><title>链接无效 - ReadGZH</title></head><body style="font-family:system-ui;max-width:560px;margin:60px auto;padding:0 20px;color:#172533"><h1>链接无效</h1><p>请提供有效的微信公众号文章链接（域名需为 <code>mp.weixin.qq.com</code> 或 <code>weixin.qq.com</code>）。</p><p>示例：<code>https://mp.weixin.qq.com/s/AbCdEf123</code></p><p><a href="https://readgzh.site" style="color:#299e7a">回到首页粘贴链接</a> · <a href="https://readgzh.site/docs" style="color:#299e7a">查看 API 文档</a></p></body></html>`,
       { status: 400, headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } }
     );
   }
@@ -1403,10 +1473,13 @@ async function handleScrapeAndRedirect(url: string, keyHash?: string): Promise<R
   const resultData = await scrapeResult.json();
 
   if (!resultData.success) {
-    return new Response(
-      JSON.stringify({ success: false, error: resultData.error || "未知错误", message: "抓取失败，请稍后重试" }),
-      { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return apiError({
+      code: "scrape_failed",
+      status: 502,
+      message: "抓取失败：" + (resultData.error || "未知错误"),
+      hint: "请稍后重试。若该链接长期失败，可在微信内打开文章，使用首页推荐的「书签提取工具」手动提交。",
+      extras: { source_url: url, upstream_error: resultData.error },
+    });
   }
 
   // Return SSR HTML directly (no redirect)
@@ -1416,10 +1489,13 @@ async function handleScrapeAndRedirect(url: string, keyHash?: string): Promise<R
 
 async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     if (!url.includes("mp.weixin.qq.com") && !url.includes("weixin.qq.com")) {
-      return new Response(
-        JSON.stringify({ success: false, error: "请提供有效的微信公众号文章链接" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return apiError({
+        code: "invalid_url",
+        status: 400,
+        message: "请提供有效的微信公众号文章链接（域名需为 mp.weixin.qq.com 或 weixin.qq.com）。",
+        hint: "示例：https://mp.weixin.qq.com/s/AbCdEf123。其他平台链接暂不支持。",
+        extras: { received: url },
+      });
     }
 
     // Extract slug from URL (e.g., "s/L3Tbd4KMmPnahnStnunTVA" from WeChat URL)
@@ -1476,20 +1552,26 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     }
 
     if (!html || html.length < 500) {
-      return new Response(
-        JSON.stringify({ success: false, error: "无法获取文章内容，请稍后重试" }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return apiError({
+        code: "upstream_empty",
+        status: 502,
+        message: "无法获取文章内容（上游返回为空或过短）。",
+        hint: "请稍后重试。若链接复制自分享卡片，建议在微信里重新打开后再复制完整链接。",
+        extras: { source_url: url },
+      });
     }
 
     // Check if WeChat returned an error page (deleted/invalid article)
     const wechatError = isWeChatErrorPage(html);
     if (wechatError) {
       console.log("WeChat error page detected:", wechatError);
-      return new Response(
-        JSON.stringify({ success: false, error: wechatError }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return apiError({
+        code: "wechat_article_unavailable",
+        status: 404,
+        message: wechatError,
+        hint: "该文章已被微信侧删除或屏蔽，无法再抓取。可在我们站内搜索是否已有早先版本的缓存。",
+        extras: { source_url: url },
+      });
     }
 
     // Check for verification page
@@ -1503,16 +1585,10 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
         if (firecrawlHtml && firecrawlHtml.length > 500 && !isVerificationPage(firecrawlHtml)) {
           html = firecrawlHtml;
         } else {
-          return new Response(
-            JSON.stringify({ success: false, error: "微信服务器当前对该文章触发了临时访问保护，这是微信的正常安全机制，通常 3-5 分钟后会自动恢复。建议您：1）稍等几分钟后重试同一篇文章；2）先尝试阅读其他文章，之后再回来读这篇；3）使用我们的书签工具从微信内直接提取（不受此限制）。", code: "WECHAT_VERIFICATION" }),
-            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return wechatVerificationError(url);
         }
       } else {
-        return new Response(
-          JSON.stringify({ success: false, error: "微信服务器当前对该文章触发了临时访问保护，这是微信的正常安全机制，通常 3-5 分钟后会自动恢复。建议您：1）稍等几分钟后重试同一篇文章；2）先尝试阅读其他文章，之后再回来读这篇；3）使用我们的书签工具从微信内直接提取（不受此限制）。", code: "WECHAT_VERIFICATION" }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return wechatVerificationError(url);
       }
     }
 
@@ -1580,10 +1656,7 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     // Final safety: reject if extracted content is actually a verification page
     if (isVerificationPage(textContent || "")) {
       console.log("Post-extraction verification check failed: content is verification page text");
-      return new Response(
-        JSON.stringify({ success: false, error: "微信服务器当前对该文章触发了临时访问保护，这是微信的正常安全机制，通常 3-5 分钟后会自动恢复。建议您：1）稍等几分钟后重试同一篇文章；2）先尝试阅读其他文章，之后再回来读这篇；3）使用我们的书签工具从微信内直接提取（不受此限制）。", code: "WECHAT_VERIFICATION" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return wechatVerificationError(url);
     }
 
     // Validate: strip noise (security tips, follow prompts) before checking length
@@ -1592,16 +1665,18 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
 
     if (!result.isPictureWithImages && (!textContent || textContent.length < MIN_CONTENT_LENGTH || substantiveText.length < MIN_SUBSTANTIVE_LENGTH)) {
       console.log(`Content validation failed: raw=${textContent?.length || 0}, substantive=${substantiveText.length}`);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "无法提取文章正文内容（仅检测到安全提示或空白内容）。",
-          hint: "该文章可能使用了复杂排版结构或内容通过 JS 动态加载。请尝试书签提取工具手动提交。",
+      return apiError({
+        code: "content_too_short",
+        status: 422,
+        message: "无法提取文章正文内容（仅检测到安全提示或空白内容）。",
+        hint: "该文章可能使用了复杂排版或正文通过 JS 动态加载。建议：在微信内打开后使用首页「书签提取工具」手动提交。",
+        extras: {
+          source_url: url,
           raw_length: textContent?.length || 0,
           substantive_length: substantiveText.length,
-        }),
-        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+          bookmarklet_url: "https://readgzh.site/#bookmarklet",
+        },
+      });
     }
 
     // Save to database - content stores plain text for AI, raw_html stores formatted HTML for display
@@ -1621,10 +1696,13 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
 
     if (dbError) {
       console.error("DB error:", dbError);
-      return new Response(
-        JSON.stringify({ success: false, error: "保存文章失败，请稍后重试" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return apiError({
+        code: "db_save_failed",
+        status: 500,
+        message: "保存文章失败：" + (dbError.message || "数据库异常"),
+        hint: "请稍后重试。若持续出现，请在反馈渠道附上文章 URL，我们会人工排查。",
+        extras: { source_url: url },
+      });
     }
 
     console.log("Saved:", saved.id, saved.slug, metadata.title, "Text:", textContent.length, "HTML:", contentHtml.length);
