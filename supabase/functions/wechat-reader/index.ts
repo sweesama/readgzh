@@ -642,9 +642,12 @@ async function handleReadMode(slug: string | null, articleId: string | null, par
 
   if (error || !article) {
     console.error("Article not found:", error);
-    return new Response("Article not found.", {
+    return apiError({
+      code: "article_not_found",
       status: 404,
-      headers: { ...corsHeaders, "Content-Type": "text/plain; charset=utf-8" },
+      message: "未找到该文章。它可能尚未被收录，或链接已失效。",
+      hint: "若是新文章，请先用 ?url={微信文章链接} 提交抓取；若链接错误，请到首页粘贴公众号文章 URL 重新生成。",
+      extras: { slug, article_id: articleId },
     });
   }
 
