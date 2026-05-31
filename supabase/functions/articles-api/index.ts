@@ -121,7 +121,12 @@ Deno.serve(async (req) => {
 
       if (!query) {
         return new Response(
-          JSON.stringify({ success: false, error: "missing_query", message: "Parameter 'q' is required" }),
+          JSON.stringify({
+            success: false, code: "missing_query", error: "missing_query",
+            message: "缺少搜索关键词。请提供参数 q。",
+            hint: "示例：/articles-api/search?q=人工智能&limit=10。limit 默认 5，最大 20。",
+            docs_url: "https://readgzh.site/docs", dashboard_url: "https://readgzh.site/dashboard",
+          }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -135,7 +140,11 @@ Deno.serve(async (req) => {
 
       if (error) {
         return new Response(
-          JSON.stringify({ success: false, error: "db_error", message: error.message }),
+          JSON.stringify({
+            success: false, code: "db_error", error: "db_error", message: error.message,
+            hint: "数据库查询异常，请稍后重试。若持续出现请反馈。",
+            support_url: "https://readgzh.site/#feedback",
+          }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
