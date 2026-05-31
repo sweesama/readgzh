@@ -1042,10 +1042,13 @@ async function handleSummaryMode(slug: string | null, articleId: string | null):
   const { data: article, error } = await query.single();
 
   if (error || !article) {
-    return new Response(
-      JSON.stringify({ success: false, error: "Article not found" }),
-      { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return apiError({
+      code: "article_not_found",
+      status: 404,
+      message: "未找到该文章，无法生成摘要。",
+      hint: "请先用 /rd?url={微信文章链接} 抓取并入库，再调用摘要接口。",
+      extras: { slug, article_id: articleId },
+    });
   }
 
   // Increment view count
