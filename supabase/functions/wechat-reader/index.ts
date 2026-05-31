@@ -1539,20 +1539,26 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     }
 
     if (!html || html.length < 500) {
-      return new Response(
-        JSON.stringify({ success: false, error: "无法获取文章内容，请稍后重试" }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return apiError({
+        code: "upstream_empty",
+        status: 502,
+        message: "无法获取文章内容（上游返回为空或过短）。",
+        hint: "请稍后重试。若链接复制自分享卡片，建议在微信里重新打开后再复制完整链接。",
+        extras: { source_url: url },
+      });
     }
 
     // Check if WeChat returned an error page (deleted/invalid article)
     const wechatError = isWeChatErrorPage(html);
     if (wechatError) {
       console.log("WeChat error page detected:", wechatError);
-      return new Response(
-        JSON.stringify({ success: false, error: wechatError }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return apiError({
+        code: "wechat_article_unavailable",
+        status: 404,
+        message: wechatError,
+        hint: "该文章已被微信侧删除或屏蔽，无法再抓取。可在我们站内搜索是否已有早先版本的缓存。",
+        extras: { source_url: url },
+      });
     }
 
     // Check for verification page
@@ -1566,16 +1572,10 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
         if (firecrawlHtml && firecrawlHtml.length > 500 && !isVerificationPage(firecrawlHtml)) {
           html = firecrawlHtml;
         } else {
-          return new Response(
-            JSON.stringify({ success: false, error: "微信服务器当前对该文章触发了临时访问保护，这是微信的正常安全机制，通常 3-5 分钟后会自动恢复。建议您：1）稍等几分钟后重试同一篇文章；2）先尝试阅读其他文章，之后再回来读这篇；3）使用我们的书签工具从微信内直接提取（不受此限制）。", code: "WECHAT_VERIFICATION" }),
-            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return wechatVerificationError(url);
         }
       } else {
-        return new Response(
-          JSON.stringify({ success: false, error: "微信服务器当前对该文章触发了临时访问保护，这是微信的正常安全机制，通常 3-5 分钟后会自动恢复。建议您：1）稍等几分钟后重试同一篇文章；2）先尝试阅读其他文章，之后再回来读这篇；3）使用我们的书签工具从微信内直接提取（不受此限制）。", code: "WECHAT_VERIFICATION" }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return wechatVerificationError(url);
       }
     }
 
