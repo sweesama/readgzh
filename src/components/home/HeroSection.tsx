@@ -75,8 +75,8 @@ const HeroSection = ({ initialUrl = "" }: HeroSectionProps) => {
             </h1>
           </div>
 
-          <p className="text-lg md:text-xl text-muted-foreground mb-2">粘贴微信文章链接，一键生成 AI 可访问的页面</p>
-          <p className="text-muted-foreground mb-8">ChatGPT、Claude、Perplexity 等 AI 工具可直接阅读</p>
+          <p className="text-sm sm:text-lg md:text-xl text-muted-foreground mb-2 whitespace-nowrap">粘贴微信文章链接，一键生成 AI 可访问的页面</p>
+          <p className="text-xs sm:text-base text-muted-foreground mb-8 whitespace-nowrap">ChatGPT、Claude、Perplexity 等 AI 工具可直接阅读</p>
 
           <Card className="max-w-2xl mx-auto shadow-lg border-2">
             <CardContent className="pt-6 pb-6">
