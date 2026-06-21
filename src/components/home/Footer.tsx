@@ -37,6 +37,7 @@ const Footer = () => {
               <li><Link to="/privacy" className="text-muted-foreground hover:text-primary transition-colors">隐私政策</Link></li>
               <li><Link to="/terms" className="text-muted-foreground hover:text-primary transition-colors">服务条款</Link></li>
               <li><Link to="/cookies" className="text-muted-foreground hover:text-primary transition-colors">Cookie 政策</Link></li>
+              <li><a href="mailto:sweeyeah@hotmail.com?subject=ReadGZH%20%E5%86%85%E5%AE%B9%E4%B8%8B%E6%9E%B6%E7%94%B3%E8%AF%B7" className="text-muted-foreground hover:text-primary transition-colors">内容下架申诉</a></li>
             </ul>
           </div>
         </div>
