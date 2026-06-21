@@ -11,6 +11,18 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-06-21",
+    title: "法律页面改版 + 内容下架通道上线",
+    tags: ["新增", "改进"],
+    items: [
+      "服务条款新增「知识产权与内容下架」专章，原作者一封邮件即可下架已缓存文章，承诺 24–48 小时内核实删除",
+      "隐私政策补充第三方服务清单（Supabase / Stripe / Cloudflare / Mailgun）、用户权利章节（访问 / 导出 / 删除 / 退订）",
+      "Cookie 政策细化必要 Cookie 与分析 Cookie 的边界说明，并标注本地存储用途",
+      "三个法律页面统一改用卡片式版式与品牌色图标，阅读体验与首页保持一致",
+      "联系邮箱统一为 sweeyeah@hotmail.com，方便集中处理下架、退款与隐私请求",
+    ],
+  },
+  {
     date: "2026-05-19",
     title: "邀请好友活动正式上线",
     tags: ["新增"],
