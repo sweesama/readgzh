@@ -192,10 +192,12 @@ mcp.tool("readgzh.search", {
 
     try {
       // Search in title first
+      // Strip PostgREST filter metacharacters to prevent .or() filter injection.
+      const safeQuery = String(query).replace(/[,.()'"\\:*]/g, "").slice(0, 100);
       const { data: articles, error } = await supabase
         .from("articles")
         .select("id, title, author, publish_time, slug, source_url")
-        .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
+        .or(`title.ilike.%${safeQuery}%,content.ilike.%${safeQuery}%`)
         .order("created_at", { ascending: false })
         .limit(limit);
 
