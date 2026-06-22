@@ -7,10 +7,13 @@ const corsHeaders = {
 };
 
 function generateApiKey(): string {
+  // Use Web Crypto CSPRNG (not Math.random) for unpredictable keys.
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const bytes = new Uint8Array(40);
+  crypto.getRandomValues(bytes);
   let key = "sk_live_";
-  for (let i = 0; i < 40; i++) {
-    key += chars.charAt(Math.floor(Math.random() * chars.length));
+  for (const b of bytes) {
+    key += chars[b % chars.length];
   }
   return key;
 }

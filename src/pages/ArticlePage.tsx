@@ -325,7 +325,7 @@ const ArticlePage = () => {
           {aiView ? (
             <div
               className="ai-view-content leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: aiHtml || article.content }}
+              dangerouslySetInnerHTML={{ __html: aiHtml || DOMPurify.sanitize(article.content) }}
             />
           ) : sanitizedHtml ? (
             <div

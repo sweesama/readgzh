@@ -45,17 +45,20 @@ Deno.serve(async (req) => {
   let cacheHit = false;
   const slugParam = url.searchParams.get("s");
   if (slugParam && !hasUserApiKey(req)) {
-    try {
-      const normalized = slugParam.startsWith("s/") ? slugParam : `s/${slugParam}`;
-      const { data: art } = await supabase
-        .from("articles")
-        .select("id")
-        .or(`slug.eq.${normalized},slug.eq.${slugParam}`)
-        .limit(1)
-        .maybeSingle();
-      if (art) cacheHit = true;
-    } catch (e) {
-      console.error("[rd] cache lookup failed:", e);
+    // Validate slug strictly to prevent PostgREST filter injection in .or().
+    if (/^[a-zA-Z0-9/_-]{1,120}$/.test(slugParam)) {
+      try {
+        const normalized = slugParam.startsWith("s/") ? slugParam : `s/${slugParam}`;
+        const { data: art } = await supabase
+          .from("articles")
+          .select("id")
+          .or(`slug.eq.${normalized},slug.eq.${slugParam}`)
+          .limit(1)
+          .maybeSingle();
+        if (art) cacheHit = true;
+      } catch (e) {
+        console.error("[rd] cache lookup failed:", e);
+      }
     }
   }
 
