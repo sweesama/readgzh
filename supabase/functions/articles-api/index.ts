@@ -131,10 +131,12 @@ Deno.serve(async (req) => {
         );
       }
 
+      // Strip PostgREST filter metacharacters to prevent .or() filter injection.
+      const safeQuery = query.replace(/[,.()'"\\:*]/g, "").slice(0, 100);
       const { data: articles, error } = await supabase
         .from("articles")
         .select("title, author, publish_time, slug, source_url, view_count, created_at")
-        .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
+        .or(`title.ilike.%${safeQuery}%,content.ilike.%${safeQuery}%`)
         .order("created_at", { ascending: false })
         .limit(limit);
 
