@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
       return new Response("Invalid URL", { status: 400, headers: corsHeaders });
     }
 
-    if (!allowed.some((d) => hostname.endsWith(d))) {
+    if (!allowedSuffixes.some((d) => hostname.endsWith(d))) {
       return new Response("Domain not allowed", { status: 403, headers: corsHeaders });
     }
 
