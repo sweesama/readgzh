@@ -88,7 +88,8 @@ Deno.serve(async (req) => {
 
     imageUrl = imageUrl.replace(/&amp;/g, "&");
 
-    const allowed = ["mmbiz.qpic.cn", "mmbiz.qlogo.cn", "wx.qlogo.cn"];
+    // Allow all WeChat image CDN subdomains (mmbiz.qpic.cn, mmecoa.qpic.cn, etc.)
+    const allowedSuffixes = [".qpic.cn", ".qlogo.cn"];
     let hostname: string;
     try {
       hostname = new URL(imageUrl).hostname;
