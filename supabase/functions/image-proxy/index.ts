@@ -88,7 +88,8 @@ Deno.serve(async (req) => {
 
     imageUrl = imageUrl.replace(/&amp;/g, "&");
 
-    const allowed = ["mmbiz.qpic.cn", "mmbiz.qlogo.cn", "wx.qlogo.cn"];
+    // Allow all WeChat image CDN subdomains (mmbiz.qpic.cn, mmecoa.qpic.cn, etc.)
+    const allowedSuffixes = [".qpic.cn", ".qlogo.cn"];
     let hostname: string;
     try {
       hostname = new URL(imageUrl).hostname;
@@ -96,7 +97,7 @@ Deno.serve(async (req) => {
       return new Response("Invalid URL", { status: 400, headers: corsHeaders });
     }
 
-    if (!allowed.some((d) => hostname.endsWith(d))) {
+    if (!allowedSuffixes.some((d) => hostname.endsWith(d))) {
       return new Response("Domain not allowed", { status: 403, headers: corsHeaders });
     }
 
