@@ -1330,11 +1330,22 @@ Deno.serve(async (req) => {
     return apiError({
       code: "internal_error",
       status: 500,
-      message: `处理请求失败：${error instanceof Error ? error.message : "未知错误"}`,
-      hint: "服务端异常。请稍后重试；若持续出现，请在反馈渠道附上请求时间与 URL，我们会人工排查。",
+      message: "服务端处理请求时发生异常，请稍后重试。",
+      hint: "若持续出现，请在反馈渠道附上请求时间与 URL，我们会人工排查。",
     });
   }
 });
+
+// Hostname allowlist check (replaces substring .includes which is bypassable
+// via crafted URLs like https://attacker.com/?ref=mp.weixin.qq.com).
+function isWeixinUrl(rawUrl: string): boolean {
+  try {
+    const { hostname } = new URL(rawUrl);
+    return hostname === "mp.weixin.qq.com" || hostname === "weixin.qq.com";
+  } catch {
+    return false;
+  }
+}
 
 // ===== Handle direct article submission (from bookmarklet) =====
 async function handleDirectSubmit(body: Record<string, unknown>): Promise<Response> {
