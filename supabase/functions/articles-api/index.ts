@@ -143,10 +143,12 @@ Deno.serve(async (req) => {
         .limit(limit);
 
       if (error) {
+        console.error("[articles-api] search db_error:", error);
         return new Response(
           JSON.stringify({
-            success: false, code: "db_error", error: "db_error", message: error.message,
-            hint: "数据库查询异常，请稍后重试。若持续出现请反馈。",
+            success: false, code: "db_error", error: "db_error",
+            message: "数据库查询异常，请稍后重试。",
+            hint: "若持续出现请反馈。",
             support_url: "https://readgzh.site/#feedback",
           }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
