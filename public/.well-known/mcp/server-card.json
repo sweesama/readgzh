@@ -17,9 +17,18 @@
     "keywords": ["wechat", "weixin", "chinese", "article", "reader", "scraper", "mp.weixin.qq.com"]
   },
   "authentication": {
-    "required": false,
+    "required": true,
     "schemes": ["bearer"],
-    "description": "Optional API Key (Bearer rgz_...). Without a key, requests are subject to a 10/day per-IP anonymous limit. Get a free key at https://readgzh.site/dashboard — 30 credits/day free, with paid tiers for higher quotas."
+    "description": "API Key required for reliable access. Without a key, requests are subject to a strict 10/day per-IP anonymous limit and may return 429 errors. Get a free key at https://readgzh.site/dashboard — 30 credits/day free, with paid tiers for higher quotas.",
+    "credentials": [
+      {
+        "type": "bearer",
+        "header": "Authorization",
+        "format": "Bearer sk_live_<your-key>",
+        "obtainUrl": "https://readgzh.site/dashboard",
+        "getKey": "Sign up free at readgzh.site, then go to Dashboard → API Keys → Create. Free tier gives 30 credits/day; copy the key starting with sk_live_."
+      }
+    ]
   },
   "tools": [
     {
