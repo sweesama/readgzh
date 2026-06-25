@@ -846,22 +846,13 @@ async function checkApiKeyAuth(req: Request, creditCost: number = 1): Promise<{
   keyHash?: string;
   creditCost?: number;
 } | null> {
-  // Try Authorization header first, then fall back to ?key= query parameter
+  // API keys must be sent via Authorization header only.
+  // Query-parameter keys (?key=sk_live_...) are no longer accepted because they leak
+  // into server logs, proxy access logs, browser history and Referer headers.
   let apiKey = "";
   const authHeader = req.headers.get("authorization") || "";
   if (authHeader.startsWith("Bearer sk_live_")) {
     apiKey = authHeader.replace("Bearer ", "");
-    console.log("API Key source: Authorization header");
-  } else {
-    // Fallback: check ?key= query parameter (for AI agents whose headers get stripped by proxies)
-    try {
-      const url = new URL(req.url);
-      const keyParam = url.searchParams.get("key");
-      if (keyParam && keyParam.startsWith("sk_live_")) {
-        apiKey = keyParam;
-        console.log("API Key source: URL query parameter (?key=)");
-      }
-    } catch (_) { /* ignore URL parse errors */ }
   }
   if (!apiKey) return null;
   const keyHash = await hashApiKey(apiKey);
@@ -1249,7 +1240,7 @@ Deno.serve(async (req) => {
       }
 
       // Check cache FIRST before deducting credits
-      if (url.includes("mp.weixin.qq.com") || url.includes("weixin.qq.com")) {
+      if (isWeixinUrl(url)) {
         const cacheSupabase = createClient(
           Deno.env.get("SUPABASE_URL")!,
           Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -1339,11 +1330,22 @@ Deno.serve(async (req) => {
     return apiError({
       code: "internal_error",
       status: 500,
-      message: `处理请求失败：${error instanceof Error ? error.message : "未知错误"}`,
-      hint: "服务端异常。请稍后重试；若持续出现，请在反馈渠道附上请求时间与 URL，我们会人工排查。",
+      message: "服务端处理请求时发生异常，请稍后重试。",
+      hint: "若持续出现，请在反馈渠道附上请求时间与 URL，我们会人工排查。",
     });
   }
 });
+
+// Hostname allowlist check (replaces substring .includes which is bypassable
+// via crafted URLs like https://attacker.com/?ref=mp.weixin.qq.com).
+function isWeixinUrl(rawUrl: string): boolean {
+  try {
+    const { hostname } = new URL(rawUrl);
+    return hostname === "mp.weixin.qq.com" || hostname === "weixin.qq.com";
+  } catch {
+    return false;
+  }
+}
 
 // ===== Handle direct article submission (from bookmarklet) =====
 async function handleDirectSubmit(body: Record<string, unknown>): Promise<Response> {
@@ -1435,7 +1437,7 @@ async function handleDirectSubmit(body: Record<string, unknown>): Promise<Respon
 
 // GET ?url= handler: scrape, store, then return SSR HTML directly (no redirect)
 async function handleScrapeAndRedirect(url: string, keyHash?: string): Promise<Response> {
-  if (!url.includes("mp.weixin.qq.com") && !url.includes("weixin.qq.com")) {
+  if (!isWeixinUrl(url)) {
     return new Response(
       `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><title>链接无效 - ReadGZH</title></head><body style="font-family:system-ui;max-width:560px;margin:60px auto;padding:0 20px;color:#172533"><h1>链接无效</h1><p>请提供有效的微信公众号文章链接（域名需为 <code>mp.weixin.qq.com</code> 或 <code>weixin.qq.com</code>）。</p><p>示例：<code>https://mp.weixin.qq.com/s/AbCdEf123</code></p><p><a href="https://readgzh.site" style="color:#299e7a">回到首页粘贴链接</a> · <a href="https://readgzh.site/docs" style="color:#299e7a">查看 API 文档</a></p></body></html>`,
       { status: 400, headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } }
@@ -1488,7 +1490,7 @@ async function handleScrapeAndRedirect(url: string, keyHash?: string): Promise<R
 }
 
 async function handleScrape(url: string, keyHash?: string): Promise<Response> {
-    if (!url.includes("mp.weixin.qq.com") && !url.includes("weixin.qq.com")) {
+    if (!isWeixinUrl(url)) {
       return apiError({
         code: "invalid_url",
         status: 400,

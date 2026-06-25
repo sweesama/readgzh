@@ -12,12 +12,14 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 // Extract API key from request (header or query param)
-function extractApiKey(req: Request, url: URL): string | null {
+// API keys must be sent via Authorization: Bearer header only.
+// Query-parameter keys leak into logs, browser history and Referer headers.
+function extractApiKey(req: Request, _url: URL): string | null {
   const authHeader = req.headers.get("authorization");
   if (authHeader?.startsWith("Bearer ")) {
     return authHeader.slice(7);
   }
-  return url.searchParams.get("key") || null;
+  return null;
 }
 
 // Hash API key (same logic as other functions)
@@ -141,10 +143,12 @@ Deno.serve(async (req) => {
         .limit(limit);
 
       if (error) {
+        console.error("[articles-api] search db_error:", error);
         return new Response(
           JSON.stringify({
-            success: false, code: "db_error", error: "db_error", message: error.message,
-            hint: "数据库查询异常，请稍后重试。若持续出现请反馈。",
+            success: false, code: "db_error", error: "db_error",
+            message: "数据库查询异常，请稍后重试。",
+            hint: "若持续出现请反馈。",
             support_url: "https://readgzh.site/#feedback",
           }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -174,10 +178,12 @@ Deno.serve(async (req) => {
         .limit(limit);
 
       if (error) {
+        console.error("[articles-api] recent db_error:", error);
         return new Response(
           JSON.stringify({
-            success: false, code: "db_error", error: "db_error", message: error.message,
-            hint: "数据库查询异常，请稍后重试。",
+            success: false, code: "db_error", error: "db_error",
+            message: "数据库查询异常，请稍后重试。",
+            hint: "若持续出现请反馈。",
             support_url: "https://readgzh.site/#feedback",
           }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -207,11 +213,12 @@ Deno.serve(async (req) => {
       { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
+    console.error("[articles-api] internal_error:", err);
     return new Response(
       JSON.stringify({
         success: false, code: "internal_error", error: "internal_error",
-        message: err instanceof Error ? err.message : "Unknown error",
-        hint: "服务端异常，请稍后重试。若持续出现请反馈。",
+        message: "服务端异常，请稍后重试。",
+        hint: "若持续出现请反馈。",
         support_url: "https://readgzh.site/#feedback",
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
