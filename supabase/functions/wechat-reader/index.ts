@@ -1490,7 +1490,7 @@ async function handleScrapeAndRedirect(url: string, keyHash?: string): Promise<R
 }
 
 async function handleScrape(url: string, keyHash?: string): Promise<Response> {
-    if (!url.includes("mp.weixin.qq.com") && !url.includes("weixin.qq.com")) {
+    if (!isWeixinUrl(url)) {
       return apiError({
         code: "invalid_url",
         status: 400,
