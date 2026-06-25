@@ -1437,7 +1437,7 @@ async function handleDirectSubmit(body: Record<string, unknown>): Promise<Respon
 
 // GET ?url= handler: scrape, store, then return SSR HTML directly (no redirect)
 async function handleScrapeAndRedirect(url: string, keyHash?: string): Promise<Response> {
-  if (!url.includes("mp.weixin.qq.com") && !url.includes("weixin.qq.com")) {
+  if (!isWeixinUrl(url)) {
     return new Response(
       `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><title>链接无效 - ReadGZH</title></head><body style="font-family:system-ui;max-width:560px;margin:60px auto;padding:0 20px;color:#172533"><h1>链接无效</h1><p>请提供有效的微信公众号文章链接（域名需为 <code>mp.weixin.qq.com</code> 或 <code>weixin.qq.com</code>）。</p><p>示例：<code>https://mp.weixin.qq.com/s/AbCdEf123</code></p><p><a href="https://readgzh.site" style="color:#299e7a">回到首页粘贴链接</a> · <a href="https://readgzh.site/docs" style="color:#299e7a">查看 API 文档</a></p></body></html>`,
       { status: 400, headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } }
