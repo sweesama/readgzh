@@ -1,0 +1,149 @@
+{
+  "serverInfo": {
+    "name": "readgzh",
+    "version": "1.3.0",
+    "displayName": "ReadGZH — WeChat Article Reader for AI",
+    "title": "ReadGZH",
+    "description": "Let AI read full-text WeChat Official Account (微信公众号) articles. Cloud-based, zero-install. Returns title, author, publish time, and clean Markdown content. Supports standard articles and image-post (图文) formats. Includes search, list, and AI summary tools.",
+    "homepage": "https://readgzh.site",
+    "documentation": "https://readgzh.site/docs",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/sweesama/readgzh"
+    },
+    "license": "AGPL-3.0",
+    "icon": "https://readgzh.site/logo.png",
+    "categories": ["content", "reading", "scraping", "china", "wechat", "knowledge"],
+    "keywords": ["wechat", "weixin", "chinese", "article", "reader", "scraper", "mp.weixin.qq.com"]
+  },
+  "authentication": {
+    "required": false,
+    "schemes": ["bearer"],
+    "description": "Optional API Key (Bearer rgz_...). Without a key, requests are subject to a 10/day per-IP anonymous limit. Get a free key at https://readgzh.site/dashboard — 30 credits/day free, with paid tiers for higher quotas."
+  },
+  "tools": [
+    {
+      "name": "readgzh.read",
+      "description": "Read and extract the full text of a WeChat article from its mp.weixin.qq.com URL. Returns title, author, publish time, and clean Markdown content. Article is automatically cached for subsequent reads (0 credits for everyone).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "WeChat article URL (mp.weixin.qq.com/s/...)",
+            "pattern": "^https?://mp\\.weixin\\.qq\\.com/s/[A-Za-z0-9_-]+"
+          }
+        },
+        "required": ["url"]
+      }
+    },
+    {
+      "name": "readgzh.search",
+      "description": "Search cached WeChat articles by keyword in titles and content. Returns matching slugs and snippets.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search keyword (Chinese or English)"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Maximum results to return (default 10, max 50)",
+            "default": 10,
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "required": ["query"]
+      }
+    },
+    {
+      "name": "readgzh.list",
+      "description": "List recently cached WeChat articles. Useful for discovery and browsing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "description": "Maximum results to return (default 20, max 100)",
+            "default": 20,
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      }
+    },
+    {
+      "name": "readgzh.get",
+      "description": "Get a previously cached WeChat article by its slug or article ID. Supports paginated reading of long articles via the part parameter.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "Article slug (e.g. 'article-title')"
+          },
+          "id": {
+            "type": "string",
+            "description": "Article UUID"
+          },
+          "part": {
+            "type": "integer",
+            "description": "Part number for paginated reading of long articles (1-indexed)",
+            "minimum": 1
+          },
+          "mode": {
+            "type": "string",
+            "enum": ["full", "summary"],
+            "description": "'summary' returns an AI-generated structured summary (Pro tier only)"
+          }
+        }
+      }
+    }
+  ],
+  "resources": [],
+  "prompts": [
+    {
+      "name": "summarize_wechat_article",
+      "description": "Read a WeChat article and return a structured summary (Pro tier).",
+      "arguments": [
+        {
+          "name": "url",
+          "description": "WeChat article URL",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "_meta": {
+    "pricing": {
+      "model": "freemium",
+      "free_tier": "30 credits/day for registered users, 10 reads/day for anonymous IP",
+      "paid_tiers": [
+        { "name": "Lite", "price": "¥9/month", "quota": "300 reads/month" },
+        { "name": "Pro", "price": "¥39/month", "quota": "2000 reads/month + AI summary" }
+      ],
+      "details_url": "https://readgzh.site/pricing"
+    },
+    "highlights": [
+      "Cloud-based — no local WeChat desktop installation required",
+      "Shared cache — previously read articles cost 0 credits for everyone",
+      "CDN image proxy — permanent image access, no expiry",
+      "Image-post (图文) format support",
+      "AI structured summaries via mode=summary (Pro tier)"
+    ],
+    "examples": [
+      {
+        "title": "Read a WeChat article",
+        "prompt": "Read this for me: https://mp.weixin.qq.com/s/abc123",
+        "tool": "readgzh.read"
+      },
+      {
+        "title": "Search Chinese AI articles",
+        "prompt": "Find recent WeChat articles about DeepSeek",
+        "tool": "readgzh.search"
+      }
+    ]
+  }
+}
