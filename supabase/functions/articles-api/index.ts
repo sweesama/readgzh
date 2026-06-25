@@ -213,11 +213,12 @@ Deno.serve(async (req) => {
       { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
+    console.error("[articles-api] internal_error:", err);
     return new Response(
       JSON.stringify({
         success: false, code: "internal_error", error: "internal_error",
-        message: err instanceof Error ? err.message : "Unknown error",
-        hint: "服务端异常，请稍后重试。若持续出现请反馈。",
+        message: "服务端异常，请稍后重试。",
+        hint: "若持续出现请反馈。",
         support_url: "https://readgzh.site/#feedback",
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
