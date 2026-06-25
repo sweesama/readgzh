@@ -1240,7 +1240,7 @@ Deno.serve(async (req) => {
       }
 
       // Check cache FIRST before deducting credits
-      if (url.includes("mp.weixin.qq.com") || url.includes("weixin.qq.com")) {
+      if (isWeixinUrl(url)) {
         const cacheSupabase = createClient(
           Deno.env.get("SUPABASE_URL")!,
           Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
