@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, ArrowLeft, Zap, Gift, Loader2, Sparkles } from "lucide-react";
+import { Check, ArrowLeft, Zap, Gift, Loader2, Sparkles, Package, Clock, Infinity as InfinityIcon } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import Footer from "@/components/home/Footer";
 import SEO from "@/components/SEO";
@@ -211,6 +211,86 @@ const PricingPage = () => {
             </Card>
           ))}
         </div>
+
+        {/* 按需购买：一次性加量包，无需订阅 */}
+        <div className="max-w-5xl mx-auto mb-20">
+          <div className="text-center mb-8">
+            <Badge variant="secondary" className="mb-3">不想订阅？</Badge>
+            <h2 className="text-3xl font-bold mb-3">按需购买加量包</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              一次付清，30 天有效，不绑定订阅。适合临时调研、批量阅读、做项目等短期需求。
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+            {/* 免费用户加量包 */}
+            <Card className="flex flex-col">
+              <CardHeader>
+                <div className="flex items-center justify-between mb-2">
+                  <Package className="h-8 w-8 text-muted-foreground" />
+                  <Badge variant="outline">免费用户</Badge>
+                </div>
+                <CardTitle className="text-xl">基础加量包</CardTitle>
+                <div className="flex items-baseline gap-1 mt-2">
+                  <span className="text-3xl font-bold">¥15</span>
+                  <span className="text-muted-foreground">/ 500 积分</span>
+                </div>
+                <CardDescription>未订阅用户可直接购买</CardDescription>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col">
+                <ul className="space-y-2 mb-6 flex-1">
+                  <li className="flex items-start gap-2 text-sm"><Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />500 积分（约可读 166 篇新文章）</li>
+                  <li className="flex items-start gap-2 text-sm"><Clock className="h-4 w-4 text-primary shrink-0 mt-0.5" />自购买日起 30 天有效</li>
+                  <li className="flex items-start gap-2 text-sm"><InfinityIcon className="h-4 w-4 text-primary shrink-0 mt-0.5" />缓存文章仍然免费读</li>
+                  <li className="flex items-start gap-2 text-sm"><Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />支持支付宝 / 微信 / 信用卡</li>
+                </ul>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => navigate(user ? "/dashboard?action=buy_credits" : "/dashboard")}
+                >
+                  {user ? "立即购买" : "登录后购买"}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* 订阅用户优惠加量包 */}
+            <Card className="flex flex-col border-primary/50">
+              <CardHeader>
+                <div className="flex items-center justify-between mb-2">
+                  <Package className="h-8 w-8 text-primary" />
+                  <Badge className="bg-primary/10 text-primary hover:bg-primary/10">订阅用户 6 折</Badge>
+                </div>
+                <CardTitle className="text-xl">优惠加量包</CardTitle>
+                <div className="flex items-baseline gap-1 mt-2">
+                  <span className="text-3xl font-bold">¥9</span>
+                  <span className="text-muted-foreground">/ 500 积分</span>
+                </div>
+                <CardDescription>Lite / Pro 订阅用户专属价</CardDescription>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col">
+                <ul className="space-y-2 mb-6 flex-1">
+                  <li className="flex items-start gap-2 text-sm"><Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />500 积分，比基础包便宜 ¥6</li>
+                  <li className="flex items-start gap-2 text-sm"><Clock className="h-4 w-4 text-primary shrink-0 mt-0.5" />自购买日起 30 天有效，可叠加</li>
+                  <li className="flex items-start gap-2 text-sm"><InfinityIcon className="h-4 w-4 text-primary shrink-0 mt-0.5" />与订阅积分独立计算</li>
+                  <li className="flex items-start gap-2 text-sm"><Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />在控制台一键购买，可选 1-20 份</li>
+                </ul>
+                <Button
+                  className="w-full"
+                  onClick={() => navigate(user ? "/dashboard?action=buy_credits" : "/dashboard")}
+                >
+                  {user ? "前往控制台购买" : "登录后购买"}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          <p className="text-center text-xs text-muted-foreground mt-6">
+            * 加量包属于一次性消耗品，购买后已用部分不支持退款；7 天内完全未使用可联系客服全额退款。
+          </p>
+        </div>
+
+
 
         {/* FAQ */}
         <div className="max-w-2xl mx-auto space-y-6 mb-16">
