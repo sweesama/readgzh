@@ -15,6 +15,26 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   const supabase = createClient(supabaseUrl, serviceKey)
 
+  // Auth: only allow callers presenting the service-role key (the DB trigger)
+  // or a valid authenticated user JWT. Blocks unauthenticated email-spam abuse.
+  const authHeader = req.headers.get('Authorization') || ''
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim()
+  if (!token) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+  if (token !== serviceKey) {
+    const { data: userData, error: userErr } = await supabase.auth.getUser(token)
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+  }
+
   try {
     const { commentId } = await req.json()
     if (!commentId) {
