@@ -184,7 +184,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("Payment error:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Internal error" }),
+      JSON.stringify({ error: "Internal server error. Please try again later." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

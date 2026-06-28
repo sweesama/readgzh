@@ -134,8 +134,9 @@ mcp.tool("readgzh.list", {
         .limit(limit);
 
       if (error) {
+        console.error("mcp-server recent articles error:", error);
         return {
-          content: [{ type: "text" as const, text: `Database error: ${error.message}` }],
+          content: [{ type: "text" as const, text: "A server error occurred. Please try again." }],
         };
       }
 
@@ -202,8 +203,9 @@ mcp.tool("readgzh.search", {
         .limit(limit);
 
       if (error) {
+        console.error("mcp-server search error:", error);
         return {
-          content: [{ type: "text" as const, text: `Search error: ${error.message}` }],
+          content: [{ type: "text" as const, text: "A server error occurred. Please try again." }],
         };
       }
 

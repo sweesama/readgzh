@@ -308,7 +308,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("request-refund error:", error);
     return json(
-      { error: error instanceof Error ? error.message : "Internal error" },
+      { error: "Internal server error. Please try again later." },
       500,
     );
   }
