@@ -179,6 +179,11 @@ const PricingPage = () => {
                   <span className="text-4xl font-bold">{tier.price}</span>
                   <span className="text-muted-foreground">{tier.period}</span>
                 </div>
+                {(tier.name === "Lite" || tier.name === "Pro") && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    按{billingInterval === "annual" && tier.name === "Pro" ? "年" : "月"}自动续费 · 随时可取消或申请退款
+                  </p>
+                )}
                 {"saving" in tier && tier.saving && (
                   <Badge variant="secondary" className="mt-2 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
                     {tier.saving}
