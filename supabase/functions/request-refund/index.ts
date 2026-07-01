@@ -63,10 +63,17 @@ async function buildQuote(
   const unitAmount = eligibleSub.items.data[0]?.price?.unit_amount ?? 0;
   const currency = eligibleSub.items.data[0]?.price?.currency ?? "cny";
 
-  // 14-day window from subscription start
+  // 14-day window applies to the MOST RECENT charge (subscription start OR latest renewal).
+  // This way an auto-renewal that the user didn't intend can still be refunded within 14 days
+  // of that renewal, even if the original signup was months ago.
   const subStartMs = eligibleSub.start_date * 1000;
+  const periodStartMsForWindow = eligibleSub.current_period_start * 1000;
   const now = Date.now();
-  if (now - subStartMs > DAYS_14_MS) {
+  const msSinceLatestCharge = Math.min(
+    now - subStartMs,
+    now - periodStartMsForWindow,
+  );
+  if (msSinceLatestCharge > DAYS_14_MS) {
     return { error: "refund_window_expired", status: 400 };
   }
 
