@@ -698,6 +698,8 @@ export type Database = {
         }[]
       }
       record_cache_hit: { Args: { p_key_hash: string }; Returns: undefined }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       validate_api_key:
         | { Args: { p_key_hash: string }; Returns: Json }
         | {
