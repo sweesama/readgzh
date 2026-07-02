@@ -123,7 +123,7 @@ async function buildQuote(
     if (!chargeId || !paymentIntentId) {
       const paymentIntents = await stripe.paymentIntents.list({
         customer: customerId,
-        limit: 20,
+        limit: 100,
         expand: ["data.latest_charge"],
       });
       const matchingPaymentIntent = paymentIntents.data.find((pi) => {
