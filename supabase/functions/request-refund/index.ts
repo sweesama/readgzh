@@ -3,12 +3,7 @@
 // Constraints: within 14 days of subscription start, max 1 self-service refund/year.
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -100,19 +95,61 @@ async function buildQuote(
     ? eligibleSub.latest_invoice
     : eligibleSub.latest_invoice?.id;
   if (latestInvoiceId) {
-    const invoice = await stripe.invoices.retrieve(latestInvoiceId);
-    if (invoice.charge) {
-      chargeId = typeof invoice.charge === "string" ? invoice.charge : invoice.charge.id;
+    const invoice = await stripe.invoices.retrieve(latestInvoiceId, {
+      expand: ["payment_intent", "charge"],
+    });
+    const invoiceAny = invoice as unknown as {
+      charge?: string | { id?: string } | null;
+      payment_intent?: string | { id?: string; latest_charge?: string | { id?: string } | null } | null;
+    };
+
+    if (invoiceAny.charge) {
+      chargeId = typeof invoiceAny.charge === "string" ? invoiceAny.charge : invoiceAny.charge.id ?? null;
     }
-    if (invoice.payment_intent) {
-      paymentIntentId = typeof invoice.payment_intent === "string"
-        ? invoice.payment_intent
-        : invoice.payment_intent.id;
+    if (invoiceAny.payment_intent) {
+      paymentIntentId = typeof invoiceAny.payment_intent === "string"
+        ? invoiceAny.payment_intent
+        : invoiceAny.payment_intent.id ?? null;
+      if (!chargeId && typeof invoiceAny.payment_intent !== "string") {
+        const latestCharge = invoiceAny.payment_intent.latest_charge;
+        chargeId = typeof latestCharge === "string" ? latestCharge : latestCharge?.id ?? null;
+      }
     }
     originalAmount = invoice.amount_paid || unitAmount;
+
+    // Newer Stripe API versions no longer expose invoice.charge/payment_intent
+    // directly. The paid PaymentIntent points back to the invoice through
+    // payment_details.order_reference, so use it as a compatibility fallback.
+    if (!chargeId || !paymentIntentId) {
+      const paymentIntents = await stripe.paymentIntents.list({
+        customer: customerId,
+        limit: 20,
+        expand: ["data.latest_charge"],
+      });
+      const matchingPaymentIntent = paymentIntents.data.find((pi) => {
+        const piAny = pi as unknown as { payment_details?: { order_reference?: string | null } | null };
+        return pi.status === "succeeded" && piAny.payment_details?.order_reference === latestInvoiceId;
+      });
+
+      if (matchingPaymentIntent) {
+        paymentIntentId = matchingPaymentIntent.id;
+        const piAny = matchingPaymentIntent as unknown as {
+          latest_charge?: string | { id?: string } | null;
+        };
+        const latestCharge = piAny.latest_charge;
+        chargeId = typeof latestCharge === "string" ? latestCharge : latestCharge?.id ?? null;
+      }
+    }
   }
 
   if (!chargeId) {
+    console.warn("No refundable charge found", {
+      userId,
+      customerId,
+      subscriptionId: eligibleSub.id,
+      latestInvoiceId,
+      paymentIntentId,
+    });
     return { error: "no_charge_found", status: 400 };
   }
 
@@ -236,6 +273,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const action = body.action || "quote"; // "quote" or "confirm"
+    if (action !== "quote" && action !== "confirm") return json({ error: "invalid_action" }, 400);
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
       apiVersion: "2025-08-27.basil",
@@ -251,8 +289,6 @@ Deno.serve(async (req) => {
     if (action === "quote") {
       return json({ quote });
     }
-
-    if (action !== "confirm") return json({ error: "invalid_action" }, 400);
 
     // Execute refund
     if (quote.refund_amount <= 0) {
@@ -307,7 +343,7 @@ Deno.serve(async (req) => {
       currency: quote.currency,
       original_amount: quote.original_amount,
       refund_type: "self_service",
-      reason: body.reason || null,
+      reason: typeof body.reason === "string" ? body.reason.slice(0, 1000) : null,
       formula_breakdown: {
         interval: quote.interval,
         used_credits: quote.used_credits_this_period,
