@@ -59,15 +59,28 @@ async function buildQuote(
     return { error: "no_active_subscription", status: 404 };
   }
 
-  const interval = eligibleSub.items.data[0]?.price?.recurring?.interval ?? "month";
-  const unitAmount = eligibleSub.items.data[0]?.price?.unit_amount ?? 0;
-  const currency = eligibleSub.items.data[0]?.price?.currency ?? "cny";
+  const firstItem = eligibleSub.items.data[0];
+  const interval = firstItem?.price?.recurring?.interval ?? "month";
+  const unitAmount = firstItem?.price?.unit_amount ?? 0;
+  const currency = firstItem?.price?.currency ?? "cny";
+
+  // Stripe API 2025-04-30+ moved current_period_start/end from the subscription
+  // root to each subscription item. Read from the item and fall back to the
+  // (deprecated) root fields for older subscriptions.
+  const subAny = eligibleSub as unknown as {
+    current_period_start?: number;
+    current_period_end?: number;
+  };
+  const itemAny = firstItem as unknown as {
+    current_period_start?: number;
+    current_period_end?: number;
+  };
+  const currentPeriodStart = itemAny?.current_period_start ?? subAny.current_period_start ?? eligibleSub.start_date;
+  const currentPeriodEnd = itemAny?.current_period_end ?? subAny.current_period_end ?? (eligibleSub.start_date + 30 * 24 * 60 * 60);
 
   // 14-day window applies to the MOST RECENT charge (subscription start OR latest renewal).
-  // This way an auto-renewal that the user didn't intend can still be refunded within 14 days
-  // of that renewal, even if the original signup was months ago.
   const subStartMs = eligibleSub.start_date * 1000;
-  const periodStartMsForWindow = eligibleSub.current_period_start * 1000;
+  const periodStartMsForWindow = currentPeriodStart * 1000;
   const now = Date.now();
   const msSinceLatestCharge = Math.min(
     now - subStartMs,
@@ -76,6 +89,7 @@ async function buildQuote(
   if (msSinceLatestCharge > DAYS_14_MS) {
     return { error: "refund_window_expired", status: 400 };
   }
+
 
   // Find the latest charge associated with this subscription via latest invoice
   let chargeId: string | null = null;
