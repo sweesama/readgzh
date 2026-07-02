@@ -46,6 +46,23 @@ const formatMoney = (amount: number, currency: string) => {
   return `${symbol}${(amount / 100).toFixed(2)}`;
 };
 
+const getFunctionErrorCode = async (error: unknown, data?: unknown) => {
+  const structuredCode = (data as { error?: string } | null)?.error;
+  if (structuredCode) return structuredCode;
+
+  const response = (error as { context?: Response })?.context;
+  if (response) {
+    try {
+      const payload = await response.clone().json();
+      if (payload?.error) return String(payload.error);
+    } catch {
+      // Fall through to the generic message below.
+    }
+  }
+
+  return error instanceof Error ? error.message : "unknown";
+};
+
 interface Props {
   onRefunded?: () => void;
 }
@@ -67,9 +84,7 @@ const RefundRequestDialog = ({ onRefunded }: Props) => {
         body: { action: "quote" },
       });
       if (error) {
-        // Try to read error from data if structured
-        const code = (data as { error?: string } | null)?.error;
-        setErrorCode(code || error.message || "unknown");
+        setErrorCode(await getFunctionErrorCode(error, data));
         return;
       }
       if ((data as { error?: string })?.error) {
@@ -101,7 +116,7 @@ const RefundRequestDialog = ({ onRefunded }: Props) => {
       const { data, error } = await supabase.functions.invoke("request-refund", {
         body: { action: "confirm", reason },
       });
-      if (error) throw error;
+      if (error) throw new Error(await getFunctionErrorCode(error, data));
       const result = data as { refunded: boolean; amount_refunded?: number; currency?: string; reason?: string };
       if (result.refunded) {
         toast({
