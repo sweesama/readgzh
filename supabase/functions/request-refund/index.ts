@@ -151,7 +151,7 @@ async function buildQuote(
   const monthlyQuota = keyRow?.daily_limit ?? 2000;
 
   // Usage in the current Stripe billing period
-  const periodStart = new Date(eligibleSub.current_period_start * 1000)
+  const periodStart = new Date(currentPeriodStart * 1000)
     .toISOString()
     .slice(0, 10);
   const { data: usageRows } = await supabase
@@ -164,10 +164,11 @@ async function buildQuote(
     0,
   );
 
-  const periodStartMs = eligibleSub.current_period_start * 1000;
-  const periodEndMs = eligibleSub.current_period_end * 1000;
+  const periodStartMs = currentPeriodStart * 1000;
+  const periodEndMs = currentPeriodEnd * 1000;
   const daysInPeriod = Math.max(1, Math.round((periodEndMs - periodStartMs) / (24 * 60 * 60 * 1000)));
   const daysElapsed = Math.max(0, (now - periodStartMs) / (24 * 60 * 60 * 1000));
+
 
   let refundAmount = 0;
   let usageRatio = 0;
