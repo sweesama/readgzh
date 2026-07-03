@@ -145,7 +145,9 @@ Deno.serve(async (req) => {
       }
 
       hasActiveSubscription = true;
-      subscriptionEnd = new Date(sub.current_period_end * 1000).toISOString();
+      const periodEndTs = sub.current_period_end
+        ?? sub.items.data.find((it: any) => it.current_period_end)?.current_period_end;
+      subscriptionEnd = periodEndTs ? new Date(periodEndTs * 1000).toISOString() : null;
       subscriptionInterval = sub.items.data[0]?.price?.recurring?.interval || null;
       subscriptionStatus = sub.status;
 
