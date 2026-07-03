@@ -180,7 +180,9 @@ Deno.serve(async (req) => {
     );
     if (cancelingSub) {
       subscriptionStatus = "canceling";
-      subscriptionEnd = new Date(cancelingSub.current_period_end * 1000).toISOString();
+      const cPeriodEnd = cancelingSub.current_period_end
+        ?? cancelingSub.items.data.find((it: any) => it.current_period_end)?.current_period_end;
+      if (cPeriodEnd) subscriptionEnd = new Date(cPeriodEnd * 1000).toISOString();
     }
 
     // ===== 2. Check legacy one-time payments =====
