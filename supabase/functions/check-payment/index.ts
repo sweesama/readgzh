@@ -145,7 +145,9 @@ Deno.serve(async (req) => {
       }
 
       hasActiveSubscription = true;
-      subscriptionEnd = new Date(sub.current_period_end * 1000).toISOString();
+      const periodEndTs = sub.current_period_end
+        ?? sub.items.data.find((it: any) => it.current_period_end)?.current_period_end;
+      subscriptionEnd = periodEndTs ? new Date(periodEndTs * 1000).toISOString() : null;
       subscriptionInterval = sub.items.data[0]?.price?.recurring?.interval || null;
       subscriptionStatus = sub.status;
 
@@ -178,7 +180,9 @@ Deno.serve(async (req) => {
     );
     if (cancelingSub) {
       subscriptionStatus = "canceling";
-      subscriptionEnd = new Date(cancelingSub.current_period_end * 1000).toISOString();
+      const cPeriodEnd = cancelingSub.current_period_end
+        ?? cancelingSub.items.data.find((it: any) => it.current_period_end)?.current_period_end;
+      if (cPeriodEnd) subscriptionEnd = new Date(cPeriodEnd * 1000).toISOString();
     }
 
     // ===== 2. Check legacy one-time payments =====
