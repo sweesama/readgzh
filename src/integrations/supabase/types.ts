@@ -383,6 +383,24 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_stats_cache: {
+        Row: {
+          key: string
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value?: number
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -698,6 +716,7 @@ export type Database = {
         }[]
       }
       record_cache_hit: { Args: { p_key_hash: string }; Returns: undefined }
+      refresh_token_stats_cache: { Args: never; Returns: undefined }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       validate_api_key:
