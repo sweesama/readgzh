@@ -254,10 +254,9 @@ function extractPictureTemplate(html: string): { contentHtml: string; textConten
 
 function isShortTextTemplate(html: string): boolean {
   if (html.includes('id="js_content"')) return false;
-  if (html.includes("picture_page_info_list") && !html.includes('id="js_content"')) return false; // let picture template handle it
-  // Primary signal: WeChat sets window.item_show_type = '10' | '17' for short posts
+  // Primary signal: WeChat sets window.item_show_type = '10' | '17' for short posts.
   if (/window\.(?:real_)?item_show_type\s*=\s*'(?:10|17)'/.test(html)) return true;
-  // Secondary signal: the inline data block field is present with content
+  // Secondary signal: the inline data block field is present with content.
   return /content_noencode\s*:\s*'[^']{20,}/.test(html);
 }
 
