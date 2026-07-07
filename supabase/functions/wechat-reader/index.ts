@@ -245,6 +245,138 @@ function extractPictureTemplate(html: string): { contentHtml: string; textConten
   return { contentHtml, textContent, images };
 }
 
+// ===== Short Text Template (公众号短文/动态) Support =====
+// Detect and extract content from WeChat short-text posts (item_show_type = 10 or 17).
+// These posts have NO #js_content — the full body lives inside an inline JS data
+// block as `content_noencode: '...'`, along with `title`, `nick_name` and an optional
+// `short_msg_pic_url` image list. Everything is present in the initial HTML, so a
+// plain direct-fetch (no Firecrawl, no headless browser) can extract it fully.
+
+function isShortTextTemplate(html: string): boolean {
+  if (html.includes('id="js_content"')) return false;
+  // Primary signal: WeChat sets window.item_show_type = '10' | '17' for short posts.
+  if (/window\.(?:real_)?item_show_type\s*=\s*'(?:10|17)'/.test(html)) return true;
+  // Secondary signal: the inline data block field is present with content.
+  return /content_noencode\s*:\s*'[^']{20,}/.test(html);
+}
+
+// Decode common JS/HTML escape sequences found inside content_noencode.
+function decodeJsStringEscapes(s: string): string {
+  return s
+    .replace(/\\\\/g, "\\")
+    .replace(/\\'/g, "'")
+    .replace(/\\"/g, '"')
+    .replace(/\\x([0-9a-fA-F]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
+// Extract the raw JS single-quoted string value for `fieldName:` starting at `fromIndex`.
+// Returns { value, endIndex } or null. Handles \' and \\ escapes.
+function readJsSingleQuotedString(html: string, fromIndex: number): { value: string; endIndex: number } | null {
+  let i = fromIndex;
+  let out = "";
+  while (i < html.length) {
+    const c = html[i];
+    if (c === "\\") {
+      // keep the backslash + next char verbatim; decode later
+      out += c + (html[i + 1] ?? "");
+      i += 2;
+      continue;
+    }
+    if (c === "'") return { value: out, endIndex: i };
+    out += c;
+    i++;
+  }
+  return null;
+}
+
+function extractJsField(html: string, fieldName: string, preferLastBefore?: number): string | null {
+  const re = new RegExp(`\\b${fieldName}\\s*:\\s*'`, "g");
+  let match: RegExpExecArray | null = null;
+  let best: RegExpExecArray | null = null;
+  while ((match = re.exec(html)) !== null) {
+    if (preferLastBefore !== undefined && match.index > preferLastBefore) break;
+    best = match;
+    if (preferLastBefore === undefined) break;
+  }
+  if (!best) return null;
+  const parsed = readJsSingleQuotedString(html, best.index + best[0].length);
+  if (!parsed) return null;
+  return decodeJsStringEscapes(parsed.value);
+}
+
+function extractShortTextTemplate(html: string): { contentHtml: string; textContent: string; title: string; author: string; images: PicturePageInfo[] } | null {
+  if (!isShortTextTemplate(html)) return null;
+
+  const contentIdx = html.search(/content_noencode\s*:\s*'/);
+  if (contentIdx < 0) return null;
+  const quoteIdx = html.indexOf("'", contentIdx);
+  const parsed = readJsSingleQuotedString(html, quoteIdx + 1);
+  if (!parsed) return null;
+  const textContent = decodeJsStringEscapes(parsed.value).trim();
+  if (!textContent || textContent.length < 10) return null;
+
+  // Title / author: use fields closest before content_noencode (same data block)
+  const title = extractJsField(html, "title", contentIdx) || "";
+  const author = extractJsField(html, "nick_name", contentIdx) || "";
+
+  // Optional pictures attached to the short post (short_msg_pic_url: [ { cdn_url: '...', w:'..', h:'..' }, ... ])
+  const images: PicturePageInfo[] = [];
+  const listMatch = html.match(/short_msg_pic_url\s*:\s*\[/);
+  if (listMatch && listMatch.index !== undefined) {
+    const startIdx = listMatch.index + listMatch[0].length;
+    let depth = 1;
+    let endIdx = startIdx;
+    for (let i = startIdx; i < html.length && depth > 0; i++) {
+      if (html[i] === "[") depth++;
+      else if (html[i] === "]") depth--;
+      if (depth === 0) { endIdx = i; break; }
+    }
+    const listContent = html.substring(startIdx, endIdx);
+    const entryRe = /\{[\s\S]*?\}/g;
+    let em: RegExpExecArray | null;
+    while ((em = entryRe.exec(listContent)) !== null) {
+      const entry = em[0];
+      const cdn = entry.match(/cdn_url\s*:\s*'([^']+)'/);
+      const w = entry.match(/\bw(?:idth)?\s*:\s*'(\d+)'/);
+      const h = entry.match(/\bh(?:eight)?\s*:\s*'(\d+)'/);
+      if (cdn) {
+        images.push({
+          cdn_url: decodeJsStringEscapes(cdn[1]),
+          width: w ? parseInt(w[1]) : 0,
+          height: h ? parseInt(h[1]) : 0,
+        });
+      }
+    }
+  }
+
+  const proxyBase = `https://api.readgzh.site/image-proxy?url=`;
+  const imgHtml = images
+    .map((img) => {
+      const proxied = `${proxyBase}${encodeURIComponent(img.cdn_url)}`;
+      const dims = img.width && img.height ? ` width="${img.width}" height="${img.height}"` : "";
+      return `<figure><img src="${proxied}"${dims} alt="图片" style="max-width:100%;height:auto;" /></figure>`;
+    })
+    .join("\n");
+
+  const textHtml = textContent
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0)
+    .map((l) => `<p>${l}</p>`)
+    .join("\n");
+
+  const contentHtml = (imgHtml ? imgHtml + "\n" : "") + `<div class="short-text-content">${textHtml}</div>`;
+
+  return { contentHtml, textContent, title, author, images };
+}
+
 // WeChat security/safety notice patterns to strip before content validation
 const WECHAT_NOISE_PATTERNS = [
   /以下内容来自[\s\S]*?的转载/g,
@@ -1607,6 +1739,19 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
           if (ogTitle) meta.title = (ogTitle as Element).getAttribute("content") || "无标题";
         }
         return { metadata: meta, contentHtml: pictureData.contentHtml, textContent: pictureData.textContent || meta.title, isPictureWithImages: pictureData.images.length > 0 };
+      }
+      // Short text template (公众号短文/动态, item_show_type = 10/17) — content lives in inline JS data
+      const shortText = extractShortTextTemplate(srcHtml);
+      if (shortText) {
+        console.log("Detected short-text template, text length:", shortText.textContent.length, "images:", shortText.images.length);
+        if (shortText.title && (meta.title === "无标题" || meta.title === shortText.author)) {
+          meta.title = shortText.title;
+        }
+        if (shortText.author && meta.author === "公众号文章") {
+          meta.author = shortText.author;
+        }
+        // Treat as "has content" so downstream doesn't trigger Firecrawl fallback
+        return { metadata: meta, contentHtml: shortText.contentHtml, textContent: shortText.textContent, isPictureWithImages: shortText.images.length > 0 };
       }
       // Standard article extraction
       const extracted = extractFormattedContent(srcHtml);
