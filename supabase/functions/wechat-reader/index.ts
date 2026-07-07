@@ -1741,6 +1741,19 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
         }
         return { metadata: meta, contentHtml: pictureData.contentHtml, textContent: pictureData.textContent || meta.title, isPictureWithImages: pictureData.images.length > 0 };
       }
+      // Short text template (公众号短文/动态, item_show_type = 10/17) — content lives in inline JS data
+      const shortText = extractShortTextTemplate(srcHtml);
+      if (shortText) {
+        console.log("Detected short-text template, text length:", shortText.textContent.length, "images:", shortText.images.length);
+        if (shortText.title && (meta.title === "无标题" || meta.title === shortText.author)) {
+          meta.title = shortText.title;
+        }
+        if (shortText.author && meta.author === "公众号文章") {
+          meta.author = shortText.author;
+        }
+        // Treat as "has content" so downstream doesn't trigger Firecrawl fallback
+        return { metadata: meta, contentHtml: shortText.contentHtml, textContent: shortText.textContent, isPictureWithImages: shortText.images.length > 0 };
+      }
       // Standard article extraction
       const extracted = extractFormattedContent(srcHtml);
       return { metadata: meta, contentHtml: extracted.contentHtml, textContent: extracted.textContent, isPictureWithImages: false };
