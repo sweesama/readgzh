@@ -11,6 +11,16 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-07-07",
+    title: "支持公众号「短文/动态」新格式",
+    tags: ["新增", "改进"],
+    items: [
+      "新增对微信公众号「短文/动态」（item_show_type = 10 / 17）的原生解析：之前这类没有 js_content 容器的短文会返回 content_too_short，现在可直接抽取标题、作者、发布时间与正文",
+      "解析走直连 HTTP + JSON 数据块反解，完全不经过 Firecrawl 兜底，零额外成本",
+      "MCP（readgzh.read / readgzh.get）、REST（/rd）、网页端三条通道均已验证同一篇短文可正常读取并入库",
+    ],
+  },
+  {
     date: "2026-06-21",
     title: "法律页面改版 + 内容下架通道上线",
     tags: ["新增", "改进"],
