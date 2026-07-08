@@ -189,47 +189,49 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
   ];
 
   return (
-    <div className="font-mono text-sm">
+    <div className="font-mono text-base">
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2 text-green-300">
-          <Shield className="h-4 w-4" />
+        <div className="flex items-center gap-2 text-green-300 text-base">
+          <Shield className="h-5 w-5" />
           <span>ADMIN CONSOLE — SYSTEM OVERVIEW</span>
         </div>
-        <button onClick={onBack} className="text-green-600 hover:text-green-400 text-xs">
+        <button onClick={onBack} className="text-green-600 hover:text-green-400 text-sm">
           [ESC] 返回终端
         </button>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {statCards.map((card) => (
-          <div key={card.label} className="border border-green-900/60 rounded bg-black/50 p-3">
-            <div className="flex items-center gap-1.5 mb-1">
-              <card.icon className={`h-3.5 w-3.5 ${card.color}`} />
-              <span className="text-green-600 text-xs">{card.label}</span>
+          <div key={card.label} className="border border-green-900/60 rounded bg-black/50 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <card.icon className={`h-4 w-4 ${card.color}`} />
+              <span className="text-green-500 text-sm">{card.label}</span>
             </div>
-            <div className={`text-xl font-bold ${card.color}`}>
+            <div className={`text-3xl font-bold ${card.color}`}>
               {(card.value ?? 0).toLocaleString()}
             </div>
             {(card as any).sub && (
-              <div className="text-green-700 text-[10px] mt-0.5">{(card as any).sub}</div>
+              <div className="text-green-600 text-xs mt-1">{(card as any).sub}</div>
             )}
           </div>
         ))}
       </div>
 
       {/* Cache hit rate */}
-      <div className="border border-green-900/60 rounded bg-black/50 p-3 mb-6">
-        <span className="text-green-600 text-xs">API 缓存命中率</span>
-        <div className="text-green-300 mt-1">
+      <div className="border border-green-900/60 rounded bg-black/50 p-4 mb-6">
+        <span className="text-green-500 text-sm">API 缓存命中率</span>
+        <div className="text-green-300 mt-1 text-lg">
           {(stats.total_api_requests ?? 0) > 0
             ? `${(((stats.total_cached ?? 0) / (stats.total_api_requests ?? 1)) * 100).toFixed(1)}%`
             : "N/A"}{" "}
-          <span className="text-green-700 text-xs">
+          <span className="text-green-600 text-sm">
             ({(stats.total_cached ?? 0).toLocaleString()} / {(stats.total_api_requests ?? 0).toLocaleString()})
           </span>
         </div>
       </div>
+
+
 
       {/* Anonymous traffic breakdown */}
       {anonBreakdown && (
