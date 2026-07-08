@@ -98,6 +98,7 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
       setRecentUsers(data.recent_users || []);
       setTopInviters(data.top_inviters || []);
       setRecentReferrals(data.recent_referrals || []);
+      setAnonBreakdown(data.anon_breakdown || null);
     }
     setLoading(false);
   };
