@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
-import { Shield, Users, FileText, Key, Activity, TrendingUp, Crown, Zap, LogIn, Globe, Eye, PlusCircle, UserPlus, Gift, Sparkles } from "lucide-react";
+import { Shield, Users, FileText, Key, Activity, TrendingUp, Crown, Zap, LogIn, Globe, Eye, PlusCircle, UserPlus, Gift, Sparkles, ShieldOff, CheckCircle2, Ban } from "lucide-react";
 
 interface AdminStats {
   total_users: number;
