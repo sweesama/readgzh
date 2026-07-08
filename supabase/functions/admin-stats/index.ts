@@ -212,6 +212,7 @@ Deno.serve(async (req) => {
           welcome_credits_granted: welcomeGrants.granted,
           welcome_credits_consumed: welcomeGrants.consumed,
         },
+        anon_breakdown: anonBreakdownRes.data || null,
         recent_users: recentUsersRes.data || [],
         top_inviters,
         recent_referrals,
