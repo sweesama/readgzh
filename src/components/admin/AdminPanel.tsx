@@ -189,56 +189,58 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
   ];
 
   return (
-    <div className="font-mono text-sm">
+    <div className="font-mono text-base">
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2 text-green-300">
-          <Shield className="h-4 w-4" />
+        <div className="flex items-center gap-2 text-green-300 text-base">
+          <Shield className="h-5 w-5" />
           <span>ADMIN CONSOLE — SYSTEM OVERVIEW</span>
         </div>
-        <button onClick={onBack} className="text-green-600 hover:text-green-400 text-xs">
+        <button onClick={onBack} className="text-green-600 hover:text-green-400 text-sm">
           [ESC] 返回终端
         </button>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {statCards.map((card) => (
-          <div key={card.label} className="border border-green-900/60 rounded bg-black/50 p-3">
-            <div className="flex items-center gap-1.5 mb-1">
-              <card.icon className={`h-3.5 w-3.5 ${card.color}`} />
-              <span className="text-green-600 text-xs">{card.label}</span>
+          <div key={card.label} className="border border-green-900/60 rounded bg-black/50 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <card.icon className={`h-4 w-4 ${card.color}`} />
+              <span className="text-green-500 text-sm">{card.label}</span>
             </div>
-            <div className={`text-xl font-bold ${card.color}`}>
+            <div className={`text-3xl font-bold ${card.color}`}>
               {(card.value ?? 0).toLocaleString()}
             </div>
             {(card as any).sub && (
-              <div className="text-green-700 text-[10px] mt-0.5">{(card as any).sub}</div>
+              <div className="text-green-600 text-xs mt-1">{(card as any).sub}</div>
             )}
           </div>
         ))}
       </div>
 
       {/* Cache hit rate */}
-      <div className="border border-green-900/60 rounded bg-black/50 p-3 mb-6">
-        <span className="text-green-600 text-xs">API 缓存命中率</span>
-        <div className="text-green-300 mt-1">
+      <div className="border border-green-900/60 rounded bg-black/50 p-4 mb-6">
+        <span className="text-green-500 text-sm">API 缓存命中率</span>
+        <div className="text-green-300 mt-1 text-lg">
           {(stats.total_api_requests ?? 0) > 0
             ? `${(((stats.total_cached ?? 0) / (stats.total_api_requests ?? 1)) * 100).toFixed(1)}%`
             : "N/A"}{" "}
-          <span className="text-green-700 text-xs">
+          <span className="text-green-600 text-sm">
             ({(stats.total_cached ?? 0).toLocaleString()} / {(stats.total_api_requests ?? 0).toLocaleString()})
           </span>
         </div>
       </div>
 
+
+
       {/* Anonymous traffic breakdown */}
       {anonBreakdown && (
         <div className="mb-6">
-          <div className="flex items-center gap-2 text-green-300 mb-2">
-            <ShieldOff className="h-4 w-4" />
+          <div className="flex items-center gap-2 text-green-300 text-base mb-3">
+            <ShieldOff className="h-5 w-5" />
             <span>今日匿名流量拆解 — ANON TRAFFIC</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
               { title: "文章读取 /rd（上限 10 次/IP/天）", data: anonBreakdown.article, top: anonBreakdown.top_article_ips, hint: "有效 = 真正进到抓取器；被拦 = 超限直接 429（不消耗积分）" },
               { title: "图片代理（上限 500 次/IP/天）", data: anonBreakdown.image, top: anonBreakdown.top_image_ips, hint: "有效 = 真正代理了图片；被拦 = 超限直接 403/429" },
@@ -246,33 +248,33 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
               const total = sec.data.attempted || 0;
               const blockRate = total > 0 ? ((sec.data.blocked / total) * 100).toFixed(1) : "0";
               return (
-                <div key={sec.title} className="border border-green-900/60 rounded bg-black/50 p-3">
-                  <div className="text-green-500 text-xs mb-2">{sec.title}</div>
-                  <div className="grid grid-cols-3 gap-2 mb-2">
+                <div key={sec.title} className="border border-green-900/60 rounded bg-black/50 p-4">
+                  <div className="text-green-400 text-sm mb-3">{sec.title}</div>
+                  <div className="grid grid-cols-3 gap-3 mb-3">
                     <div>
-                      <div className="flex items-center gap-1 text-green-700 text-[10px]"><Activity className="h-3 w-3" />尝试总数</div>
-                      <div className="text-cyan-300 text-lg font-bold tabular-nums">{sec.data.attempted.toLocaleString()}</div>
+                      <div className="flex items-center gap-1.5 text-green-600 text-xs mb-1"><Activity className="h-3.5 w-3.5" />尝试总数</div>
+                      <div className="text-cyan-300 text-2xl font-bold tabular-nums">{sec.data.attempted.toLocaleString()}</div>
                     </div>
                     <div>
-                      <div className="flex items-center gap-1 text-green-700 text-[10px]"><CheckCircle2 className="h-3 w-3" />有效放行</div>
-                      <div className="text-emerald-400 text-lg font-bold tabular-nums">{sec.data.allowed.toLocaleString()}</div>
+                      <div className="flex items-center gap-1.5 text-green-600 text-xs mb-1"><CheckCircle2 className="h-3.5 w-3.5" />有效放行</div>
+                      <div className="text-emerald-400 text-2xl font-bold tabular-nums">{sec.data.allowed.toLocaleString()}</div>
                     </div>
                     <div>
-                      <div className="flex items-center gap-1 text-green-700 text-[10px]"><Ban className="h-3 w-3" />被拦截</div>
-                      <div className="text-red-400 text-lg font-bold tabular-nums">
+                      <div className="flex items-center gap-1.5 text-green-600 text-xs mb-1"><Ban className="h-3.5 w-3.5" />被拦截</div>
+                      <div className="text-red-400 text-2xl font-bold tabular-nums">
                         {sec.data.blocked.toLocaleString()}
-                        <span className="text-red-700 text-[10px] ml-1">({blockRate}%)</span>
                       </div>
+                      <div className="text-red-600 text-xs mt-0.5">({blockRate}%)</div>
                     </div>
                   </div>
-                  <div className="text-green-800 text-[10px] mb-2">{sec.hint}</div>
+                  <div className="text-green-700 text-xs mb-3">{sec.hint}</div>
                   {sec.top.length > 0 && (
-                    <div className="border-t border-green-900/40 pt-2">
-                      <div className="text-green-600 text-[10px] mb-1">Top 5 高频 IP</div>
-                      <div className="space-y-0.5">
+                    <div className="border-t border-green-900/40 pt-3">
+                      <div className="text-green-500 text-sm mb-2">Top 5 高频 IP</div>
+                      <div className="space-y-1.5">
                         {sec.top.map((ip, i) => (
-                          <div key={ip.ip} className="flex items-center justify-between text-[11px]">
-                            <span className="text-green-700 w-4 shrink-0">#{i + 1}</span>
+                          <div key={ip.ip} className="flex items-center justify-between gap-3 text-sm">
+                            <span className="text-green-700 w-6 shrink-0">#{i + 1}</span>
                             <span className="text-green-400 truncate min-w-0 flex-1 font-mono">{ip.ip}</span>
                             <span className={`shrink-0 tabular-nums ${ip.attempts > (sec.title.startsWith("图片") ? 500 : 10) ? "text-red-400" : "text-amber-400"}`}>
                               {ip.attempts} 次
@@ -290,13 +292,14 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
       )}
 
 
+
       {/* Referral Section */}
       <div className="mb-6">
-        <div className="flex items-center gap-2 text-green-300 mb-2">
-          <Gift className="h-4 w-4" />
+        <div className="flex items-center gap-2 text-green-300 text-base mb-3">
+          <Gift className="h-5 w-5" />
           <span>邀请活动 — REFERRAL PROGRAM</span>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           {[
             { icon: UserPlus, label: "邀请关系总数", value: stats.referrals_total ?? 0, color: "text-cyan-400", sub: `今日新增: ${stats.referrals_today ?? 0}` },
             { icon: Sparkles, label: "已发放奖励笔数", value: stats.referrals_rewarded ?? 0, color: "text-emerald-400" },
@@ -307,35 +310,35 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
             { icon: TrendingUp, label: "活动总发放积分", value: (stats.referral_credits_granted ?? 0) + (stats.welcome_credits_granted ?? 0), color: "text-yellow-400" },
             { icon: Users, label: "新用户带来占比", value: (stats.total_users ?? 0) > 0 ? Math.round(((stats.referrals_total ?? 0) / stats.total_users) * 1000) / 10 : 0, color: "text-pink-400", sub: "% 注册来自邀请" },
           ].map((card) => (
-            <div key={card.label} className="border border-green-900/60 rounded bg-black/50 p-3">
-              <div className="flex items-center gap-1.5 mb-1">
-                <card.icon className={`h-3.5 w-3.5 ${card.color}`} />
-                <span className="text-green-600 text-xs">{card.label}</span>
+            <div key={card.label} className="border border-green-900/60 rounded bg-black/50 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <card.icon className={`h-4 w-4 ${card.color}`} />
+                <span className="text-green-500 text-sm">{card.label}</span>
               </div>
-              <div className={`text-xl font-bold ${card.color}`}>
+              <div className={`text-3xl font-bold ${card.color}`}>
                 {(card.value ?? 0).toLocaleString()}
               </div>
               {(card as any).sub && (
-                <div className="text-green-700 text-[10px] mt-0.5">{(card as any).sub}</div>
+                <div className="text-green-600 text-xs mt-1">{(card as any).sub}</div>
               )}
             </div>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Top inviters */}
-          <div className="border border-green-900/60 rounded bg-black/50 p-3">
-            <div className="text-green-600 text-xs mb-2">邀请排行榜 Top 10</div>
+          <div className="border border-green-900/60 rounded bg-black/50 p-4">
+            <div className="text-green-500 text-sm mb-3">邀请排行榜 Top 10</div>
             {topInviters.length === 0 ? (
-              <div className="text-green-700 text-xs">暂无数据</div>
+              <div className="text-green-700 text-sm">暂无数据</div>
             ) : (
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {topInviters.map((u, i) => (
-                  <div key={u.user_id} className="flex items-center justify-between gap-3 text-xs">
-                    <span className="text-green-700 w-5 shrink-0 tabular-nums">#{i + 1}</span>
+                  <div key={u.user_id} className="flex items-center justify-between gap-3 text-sm">
+                    <span className="text-green-700 w-6 shrink-0 tabular-nums">#{i + 1}</span>
                     <span className="text-green-400 truncate min-w-0 flex-1">{u.label}</span>
                     <span className="text-amber-400 shrink-0 tabular-nums">{u.rewarded_count} 人</span>
-                    <span className="text-fuchsia-400 shrink-0 tabular-nums w-16 text-right">{u.credits_earned} 积分</span>
+                    <span className="text-fuchsia-400 shrink-0 tabular-nums w-20 text-right">{u.credits_earned} 积分</span>
                   </div>
                 ))}
               </div>
@@ -343,25 +346,25 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
           </div>
 
           {/* Recent referrals */}
-          <div className="border border-green-900/60 rounded bg-black/50 p-3">
-            <div className="text-green-600 text-xs mb-2">最近邀请关系 ({recentReferrals.length})</div>
+          <div className="border border-green-900/60 rounded bg-black/50 p-4">
+            <div className="text-green-500 text-sm mb-3">最近邀请关系 ({recentReferrals.length})</div>
             {recentReferrals.length === 0 ? (
-              <div className="text-green-700 text-xs">暂无数据</div>
+              <div className="text-green-700 text-sm">暂无数据</div>
             ) : (
-              <div className="space-y-1 max-h-56 overflow-y-auto pr-2 scrollbar-thin">
+              <div className="space-y-2 max-h-72 overflow-y-auto pr-2 scrollbar-thin">
                 {recentReferrals.map((r) => (
-                  <div key={r.id} className="flex items-center justify-between gap-2 text-xs">
+                  <div key={r.id} className="flex items-center justify-between gap-2 text-sm">
                     <span className="text-green-400 truncate min-w-0 flex-1">
                       {r.inviter} <span className="text-green-700">→</span> {r.invitee}
                     </span>
-                    <span className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded border ${
+                    <span className={`shrink-0 text-xs px-2 py-0.5 rounded border ${
                       r.status === "rewarded" ? "text-emerald-400 border-emerald-800" :
                       r.status === "invalid" ? "text-red-400 border-red-800" :
                       "text-amber-400 border-amber-800"
                     }`}>
                       {r.status === "rewarded" ? `+${r.reward_amount ?? 0}` : r.status === "invalid" ? "作废" : "待激活"}
                     </span>
-                    <span className="text-green-700 shrink-0 tabular-nums">
+                    <span className="text-green-700 shrink-0 tabular-nums text-xs">
                       {new Date(r.created_at).toLocaleDateString("zh-CN")}
                     </span>
                   </div>
@@ -373,15 +376,15 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
       </div>
 
       {/* Recent Users */}
-      <div className="border border-green-900/60 rounded bg-black/50 p-3">
-        <div className="text-green-600 text-xs mb-2">最近注册用户 ({recentUsers.length})</div>
-        <div className="space-y-1 max-h-72 overflow-y-auto pr-3 scrollbar-thin">
+      <div className="border border-green-900/60 rounded bg-black/50 p-4">
+        <div className="text-green-500 text-sm mb-3">最近注册用户 ({recentUsers.length})</div>
+        <div className="space-y-2 max-h-80 overflow-y-auto pr-3 scrollbar-thin">
           {recentUsers.map((u) => (
-            <div key={u.id} className="flex items-center justify-between gap-3 text-xs">
+            <div key={u.id} className="flex items-center justify-between gap-3 text-sm">
               <span className="text-green-400 truncate min-w-0 flex-1">
                 {u.display_name || u.email || "匿名"}
               </span>
-              <span className="text-green-700 shrink-0 tabular-nums">
+              <span className="text-green-700 shrink-0 tabular-nums text-xs">
                 {new Date(u.created_at).toLocaleDateString("zh-CN")}
               </span>
             </div>
