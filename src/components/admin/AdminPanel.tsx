@@ -57,6 +57,25 @@ interface RecentReferral {
   rewarded_at: string | null;
 }
 
+interface AnonBreakdownBucket {
+  attempted: number;
+  allowed: number;
+  blocked: number;
+}
+interface AnonBreakdown {
+  article: AnonBreakdownBucket;
+  image: AnonBreakdownBucket;
+  top_article_ips: { ip: string; attempts: number }[];
+  top_image_ips: { ip: string; attempts: number }[];
+}
+
+export default function AdminPanel({ onBack }: { onBack: () => void }) {
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
+  const [topInviters, setTopInviters] = useState<TopInviter[]>([]);
+  const [recentReferrals, setRecentReferrals] = useState<RecentReferral[]>([]);
+  const [anonBreakdown, setAnonBreakdown] = useState<AnonBreakdown | null>(null);
+
 export default function AdminPanel({ onBack }: { onBack: () => void }) {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
