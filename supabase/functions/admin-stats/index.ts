@@ -66,6 +66,7 @@ Deno.serve(async (req) => {
       recentUsersRes,
       todayAnonRes,
       totalAnonRes,
+      anonBreakdownRes,
       todayArticlesRes,
       totalViewsRes,
       referralsAllRes,
@@ -91,6 +92,7 @@ Deno.serve(async (req) => {
       // Anonymous requests - use RPC aggregation
       svc.rpc("get_total_anon_requests", { p_date: today }),
       svc.rpc("get_total_anon_requests"),
+      svc.rpc("get_anon_request_breakdown", { p_date: today }),
       // Today's new articles
       svc.from("articles").select("*", { count: "exact", head: true }).gte("created_at", today + "T00:00:00Z"),
       // Total article views - use RPC aggregation
@@ -210,6 +212,7 @@ Deno.serve(async (req) => {
           welcome_credits_granted: welcomeGrants.granted,
           welcome_credits_consumed: welcomeGrants.consumed,
         },
+        anon_breakdown: anonBreakdownRes.data || null,
         recent_users: recentUsersRes.data || [],
         top_inviters,
         recent_referrals,
