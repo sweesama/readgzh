@@ -75,12 +75,6 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
   const [topInviters, setTopInviters] = useState<TopInviter[]>([]);
   const [recentReferrals, setRecentReferrals] = useState<RecentReferral[]>([]);
   const [anonBreakdown, setAnonBreakdown] = useState<AnonBreakdown | null>(null);
-
-export default function AdminPanel({ onBack }: { onBack: () => void }) {
-  const [stats, setStats] = useState<AdminStats | null>(null);
-  const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
-  const [topInviters, setTopInviters] = useState<TopInviter[]>([]);
-  const [recentReferrals, setRecentReferrals] = useState<RecentReferral[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [needsLogin, setNeedsLogin] = useState(false);
