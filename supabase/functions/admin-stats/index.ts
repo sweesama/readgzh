@@ -66,6 +66,7 @@ Deno.serve(async (req) => {
       recentUsersRes,
       todayAnonRes,
       totalAnonRes,
+      anonBreakdownRes,
       todayArticlesRes,
       totalViewsRes,
       referralsAllRes,
