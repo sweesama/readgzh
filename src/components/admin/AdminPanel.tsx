@@ -236,11 +236,11 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
       {/* Anonymous traffic breakdown */}
       {anonBreakdown && (
         <div className="mb-6">
-          <div className="flex items-center gap-2 text-green-300 mb-2">
-            <ShieldOff className="h-4 w-4" />
+          <div className="flex items-center gap-2 text-green-300 text-base mb-3">
+            <ShieldOff className="h-5 w-5" />
             <span>今日匿名流量拆解 — ANON TRAFFIC</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
               { title: "文章读取 /rd（上限 10 次/IP/天）", data: anonBreakdown.article, top: anonBreakdown.top_article_ips, hint: "有效 = 真正进到抓取器；被拦 = 超限直接 429（不消耗积分）" },
               { title: "图片代理（上限 500 次/IP/天）", data: anonBreakdown.image, top: anonBreakdown.top_image_ips, hint: "有效 = 真正代理了图片；被拦 = 超限直接 403/429" },
@@ -248,33 +248,33 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
               const total = sec.data.attempted || 0;
               const blockRate = total > 0 ? ((sec.data.blocked / total) * 100).toFixed(1) : "0";
               return (
-                <div key={sec.title} className="border border-green-900/60 rounded bg-black/50 p-3">
-                  <div className="text-green-500 text-xs mb-2">{sec.title}</div>
-                  <div className="grid grid-cols-3 gap-2 mb-2">
+                <div key={sec.title} className="border border-green-900/60 rounded bg-black/50 p-4">
+                  <div className="text-green-400 text-sm mb-3">{sec.title}</div>
+                  <div className="grid grid-cols-3 gap-3 mb-3">
                     <div>
-                      <div className="flex items-center gap-1 text-green-700 text-[10px]"><Activity className="h-3 w-3" />尝试总数</div>
-                      <div className="text-cyan-300 text-lg font-bold tabular-nums">{sec.data.attempted.toLocaleString()}</div>
+                      <div className="flex items-center gap-1.5 text-green-600 text-xs mb-1"><Activity className="h-3.5 w-3.5" />尝试总数</div>
+                      <div className="text-cyan-300 text-2xl font-bold tabular-nums">{sec.data.attempted.toLocaleString()}</div>
                     </div>
                     <div>
-                      <div className="flex items-center gap-1 text-green-700 text-[10px]"><CheckCircle2 className="h-3 w-3" />有效放行</div>
-                      <div className="text-emerald-400 text-lg font-bold tabular-nums">{sec.data.allowed.toLocaleString()}</div>
+                      <div className="flex items-center gap-1.5 text-green-600 text-xs mb-1"><CheckCircle2 className="h-3.5 w-3.5" />有效放行</div>
+                      <div className="text-emerald-400 text-2xl font-bold tabular-nums">{sec.data.allowed.toLocaleString()}</div>
                     </div>
                     <div>
-                      <div className="flex items-center gap-1 text-green-700 text-[10px]"><Ban className="h-3 w-3" />被拦截</div>
-                      <div className="text-red-400 text-lg font-bold tabular-nums">
+                      <div className="flex items-center gap-1.5 text-green-600 text-xs mb-1"><Ban className="h-3.5 w-3.5" />被拦截</div>
+                      <div className="text-red-400 text-2xl font-bold tabular-nums">
                         {sec.data.blocked.toLocaleString()}
-                        <span className="text-red-700 text-[10px] ml-1">({blockRate}%)</span>
                       </div>
+                      <div className="text-red-600 text-xs mt-0.5">({blockRate}%)</div>
                     </div>
                   </div>
-                  <div className="text-green-800 text-[10px] mb-2">{sec.hint}</div>
+                  <div className="text-green-700 text-xs mb-3">{sec.hint}</div>
                   {sec.top.length > 0 && (
-                    <div className="border-t border-green-900/40 pt-2">
-                      <div className="text-green-600 text-[10px] mb-1">Top 5 高频 IP</div>
-                      <div className="space-y-0.5">
+                    <div className="border-t border-green-900/40 pt-3">
+                      <div className="text-green-500 text-sm mb-2">Top 5 高频 IP</div>
+                      <div className="space-y-1.5">
                         {sec.top.map((ip, i) => (
-                          <div key={ip.ip} className="flex items-center justify-between text-[11px]">
-                            <span className="text-green-700 w-4 shrink-0">#{i + 1}</span>
+                          <div key={ip.ip} className="flex items-center justify-between gap-3 text-sm">
+                            <span className="text-green-700 w-6 shrink-0">#{i + 1}</span>
                             <span className="text-green-400 truncate min-w-0 flex-1 font-mono">{ip.ip}</span>
                             <span className={`shrink-0 tabular-nums ${ip.attempts > (sec.title.startsWith("图片") ? 500 : 10) ? "text-red-400" : "text-amber-400"}`}>
                               {ip.attempts} 次
@@ -290,6 +290,7 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
           </div>
         </div>
       )}
+
 
 
       {/* Referral Section */}
