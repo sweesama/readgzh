@@ -655,6 +655,7 @@ export type Database = {
         Returns: number
       }
       generate_referral_code: { Args: { p_user_id: string }; Returns: string }
+      get_anon_request_breakdown: { Args: { p_date?: string }; Returns: Json }
       get_api_usage_stats: { Args: { p_date?: string }; Returns: Json }
       get_comment_profiles: {
         Args: { p_user_ids: string[] }
