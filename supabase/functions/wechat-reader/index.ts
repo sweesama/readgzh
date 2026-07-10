@@ -776,7 +776,7 @@ async function handleReadMode(slug: string | null, articleId: string | null, par
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  let query = supabase.from("articles").select("id, title, author, content, source_url, publish_time, created_at, view_count, slug, summary");
+  let query = supabase.from("articles").select("id, title, author, content, raw_html, source_url, publish_time, created_at, view_count, slug, summary");
   if (slug) {
     query = query.eq("slug", `s/${slug}`);
   } else if (articleId) {
@@ -802,9 +802,11 @@ async function handleReadMode(slug: string | null, articleId: string | null, par
   const publishInfo = article.publish_time ? `<p><strong>发布时间：</strong>${escapeHtml(article.publish_time)}</p>` : "";
   const sourceLink = article.source_url ? `<p><strong>原文链接：</strong><a href="${escapeHtml(article.source_url)}">${escapeHtml(article.source_url)}</a></p>` : "";
 
-  // Use content (cleaned text) — raw_html no longer fetched to reduce egress
+  // For text/AI output, prefer raw_html (retains image positions in-line).
+  // For SSR html output, keep using cleaned text (backwards compatible).
   let contentBody: string;
   contentBody = formatContentToHtml(article.content);
+  const htmlWithImages: string | null = article.raw_html || null;
 
   // format=text: return pure Markdown
   if (formatText) {
