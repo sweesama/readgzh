@@ -808,9 +808,10 @@ async function handleReadMode(slug: string | null, articleId: string | null, par
   contentBody = formatContentToHtml(article.content);
   const htmlWithImages: string | null = article.raw_html || null;
 
-  // format=text: return pure Markdown
+  // format=text: return pure Markdown (use raw_html when available so images stay in-line)
   if (formatText) {
-    const mdContent = htmlToMarkdown(contentBody, article.title, article.author || '未知作者', article.publish_time, article.source_url);
+    const sourceForMd = htmlWithImages || contentBody;
+    const mdContent = htmlToMarkdown(sourceForMd, article.title, article.author || '未知作者', article.publish_time, article.source_url);
     const mdParts = splitIntoParts(mdContent);
     const totalParts = mdParts.length;
     const currentPart = partNum && partNum >= 1 && partNum <= totalParts ? partNum : 1;
