@@ -802,12 +802,14 @@ async function handleReadMode(slug: string | null, articleId: string | null, par
   const publishInfo = article.publish_time ? `<p><strong>发布时间：</strong>${escapeHtml(article.publish_time)}</p>` : "";
   const sourceLink = article.source_url ? `<p><strong>原文链接：</strong><a href="${escapeHtml(article.source_url)}">${escapeHtml(article.source_url)}</a></p>` : "";
 
-  // For text/AI output, prefer raw_html (retains image positions in-line).
-  // For SSR html output, keep using cleaned text (backwards compatible).
-  // For SSR html output, prefer raw_html so images render in-line (proxied through our CDN).
-  if (htmlWithImages) {
-    contentBody = proxyImagesForSsr(replaceVideoIframesForSsr(htmlWithImages, article.source_url));
-  }
+  // Prefer raw_html when available: keeps images in original position (proxied for SSR,
+  // preserved as URLs for AI text/markdown). Falls back to cleaned-text content.
+  const htmlWithImages: string | null = article.raw_html || null;
+  let contentBody: string = htmlWithImages
+    ? proxyImagesForSsr(replaceVideoIframesForSsr(htmlWithImages, article.source_url))
+    : formatContentToHtml(article.content);
+
+
 
 
   // format=text: return pure Markdown (use raw_html when available so images stay in-line)
