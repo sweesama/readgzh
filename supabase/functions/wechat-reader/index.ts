@@ -804,9 +804,11 @@ async function handleReadMode(slug: string | null, articleId: string | null, par
 
   // For text/AI output, prefer raw_html (retains image positions in-line).
   // For SSR html output, keep using cleaned text (backwards compatible).
-  let contentBody: string;
-  contentBody = formatContentToHtml(article.content);
-  const htmlWithImages: string | null = article.raw_html || null;
+  // For SSR html output, prefer raw_html so images render in-line (proxied through our CDN).
+  if (htmlWithImages) {
+    contentBody = proxyImagesForSsr(replaceVideoIframesForSsr(htmlWithImages, article.source_url));
+  }
+
 
   // format=text: return pure Markdown (use raw_html when available so images stay in-line)
   if (formatText) {
