@@ -20,7 +20,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       "AI 场景下的图片走微信 CDN 直连，不占用我们的图片代理配额；网页浏览仍走 Cloudflare 缓存，安全防线保持不变",
     ],
   },
-
+  {
     date: "2026-07-07",
     title: "公众号「短文/动态」也可以读了",
     tags: ["新增", "改进"],
