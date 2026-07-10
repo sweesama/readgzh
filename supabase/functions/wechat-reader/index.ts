@@ -776,7 +776,7 @@ async function handleReadMode(slug: string | null, articleId: string | null, par
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  let query = supabase.from("articles").select("id, title, author, content, source_url, publish_time, created_at, view_count, slug, summary");
+  let query = supabase.from("articles").select("id, title, author, content, raw_html, source_url, publish_time, created_at, view_count, slug, summary");
   if (slug) {
     query = query.eq("slug", `s/${slug}`);
   } else if (articleId) {
@@ -802,13 +802,20 @@ async function handleReadMode(slug: string | null, articleId: string | null, par
   const publishInfo = article.publish_time ? `<p><strong>发布时间：</strong>${escapeHtml(article.publish_time)}</p>` : "";
   const sourceLink = article.source_url ? `<p><strong>原文链接：</strong><a href="${escapeHtml(article.source_url)}">${escapeHtml(article.source_url)}</a></p>` : "";
 
-  // Use content (cleaned text) — raw_html no longer fetched to reduce egress
-  let contentBody: string;
-  contentBody = formatContentToHtml(article.content);
+  // Prefer raw_html when available: keeps images in original position (proxied for SSR,
+  // preserved as URLs for AI text/markdown). Falls back to cleaned-text content.
+  const htmlWithImages: string | null = article.raw_html || null;
+  let contentBody: string = htmlWithImages
+    ? proxyImagesForSsr(replaceVideoIframesForSsr(htmlWithImages, article.source_url))
+    : formatContentToHtml(article.content);
 
-  // format=text: return pure Markdown
+
+
+
+  // format=text: return pure Markdown (use raw_html when available so images stay in-line)
   if (formatText) {
-    const mdContent = htmlToMarkdown(contentBody, article.title, article.author || '未知作者', article.publish_time, article.source_url);
+    const sourceForMd = htmlWithImages || contentBody;
+    const mdContent = htmlToMarkdown(sourceForMd, article.title, article.author || '未知作者', article.publish_time, article.source_url);
     const mdParts = splitIntoParts(mdContent);
     const totalParts = mdParts.length;
     const currentPart = partNum && partNum >= 1 && partNum <= totalParts ? partNum : 1;
