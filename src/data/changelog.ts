@@ -11,6 +11,16 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-07-10",
+    title: "AI 读文章时也能看到图片了",
+    tags: ["改进"],
+    items: [
+      "AI 助手（ChatGPT / Claude / Gemini 等）通过 MCP 或 API 读取文章时，现在会在原段落之间保留图片链接，多模态模型可直接看到图片",
+      "网页版分享链接（/rd?s=xxx）的图片也重新恢复显示，方便机器抓取和搜索引擎索引",
+      "AI 场景下的图片走微信 CDN 直连，不占用我们的图片代理配额；网页浏览仍走 Cloudflare 缓存，安全防线保持不变",
+    ],
+  },
+  {
     date: "2026-07-07",
     title: "公众号「短文/动态」也可以读了",
     tags: ["新增", "改进"],
