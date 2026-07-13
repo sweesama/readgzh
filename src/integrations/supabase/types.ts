@@ -383,6 +383,54 @@ export type Database = {
         }
         Relationships: []
       }
+      manual_subscriptions: {
+        Row: {
+          amount_cny: number | null
+          created_at: string
+          daily_limit: number
+          expired_at: string | null
+          expires_at: string
+          id: string
+          note: string | null
+          payment_method: string | null
+          starts_at: string
+          status: string
+          tier: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_cny?: number | null
+          created_at?: string
+          daily_limit: number
+          expired_at?: string | null
+          expires_at: string
+          id?: string
+          note?: string | null
+          payment_method?: string | null
+          starts_at?: string
+          status?: string
+          tier: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_cny?: number | null
+          created_at?: string
+          daily_limit?: number
+          expired_at?: string | null
+          expires_at?: string
+          id?: string
+          note?: string | null
+          payment_method?: string | null
+          starts_at?: string
+          status?: string
+          tier?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       platform_stats_cache: {
         Row: {
           key: string
@@ -654,6 +702,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      expire_manual_subscriptions: { Args: never; Returns: undefined }
       generate_referral_code: { Args: { p_user_id: string }; Returns: string }
       get_anon_request_breakdown: { Args: { p_date?: string }; Returns: Json }
       get_api_usage_stats: { Args: { p_date?: string }; Returns: Json }
