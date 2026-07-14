@@ -1743,12 +1743,13 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     const wechatError = isWeChatErrorPage(html);
     if (wechatError) {
       console.log("WeChat error page detected:", wechatError);
+      const refunded = await refundCredits(keyHash, 3);
       return apiError({
         code: "wechat_article_unavailable",
         status: 404,
         message: wechatError,
         hint: "该文章已被微信侧删除或屏蔽，无法再抓取。可在我们站内搜索是否已有早先版本的缓存。",
-        extras: { source_url: url },
+        extras: { source_url: url, credits_refunded: refunded ? 3 : 0 },
       });
     }
 
@@ -1763,11 +1764,14 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
         if (firecrawlHtml && firecrawlHtml.length > 500 && !isVerificationPage(firecrawlHtml)) {
           html = firecrawlHtml;
         } else {
+          await refundCredits(keyHash, 3);
           return wechatVerificationError(url);
         }
       } else {
+        await refundCredits(keyHash, 3);
         return wechatVerificationError(url);
       }
+
     }
 
     // Helper: attempt content extraction from a given HTML string
