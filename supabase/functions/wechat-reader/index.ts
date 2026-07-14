@@ -53,6 +53,41 @@ function wechatVerificationError(sourceUrl?: string): Response {
   });
 }
 
+// ===== Video-only article detection =====
+// A WeChat article whose #js_content contains a video iframe but essentially
+// no readable text. Firecrawl fallback would only pull page-chrome noise, so
+// we short-circuit and return a clear error with a refund.
+function isVideoOnlyArticle(html: string, textContent: string): boolean {
+  const stripped = (textContent || "").replace(/\s+/g, "").trim();
+  if (stripped.length >= 120) return false; // has real text alongside the video
+  const hasVideoIframe =
+    /<iframe[^>]*class="[^"]*video_iframe/i.test(html) ||
+    /<iframe[^>]*data-mpvid=/i.test(html) ||
+    /v\.qq\.com\/(txp|iframe)/i.test(html) ||
+    /mp_video_trans_info/i.test(html);
+  return hasVideoIframe;
+}
+
+// Refund credits when a scrape fails after upfront deduction. Best-effort.
+async function refundCredits(keyHash: string | undefined, amount: number): Promise<boolean> {
+  if (!keyHash || amount <= 0) return false;
+  try {
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    const { error } = await supabase.rpc("refund_credits", { p_key_hash: keyHash, p_amount: amount });
+    if (error) {
+      console.error("Refund failed:", error);
+      return false;
+    }
+    console.log(`Refunded ${amount} credits to key ${keyHash.substring(0, 8)}...`);
+    return true;
+  } catch (err) {
+    console.error("Refund error:", err);
+    return false;
+  }
+}
 
 
 // Check if content indicates a verification/captcha page
