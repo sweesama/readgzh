@@ -53,6 +53,41 @@ function wechatVerificationError(sourceUrl?: string): Response {
   });
 }
 
+// ===== Video-only article detection =====
+// A WeChat article whose #js_content contains a video iframe but essentially
+// no readable text. Firecrawl fallback would only pull page-chrome noise, so
+// we short-circuit and return a clear error with a refund.
+function isVideoOnlyArticle(html: string, textContent: string): boolean {
+  const stripped = (textContent || "").replace(/\s+/g, "").trim();
+  if (stripped.length >= 120) return false; // has real text alongside the video
+  const hasVideoIframe =
+    /<iframe[^>]*class="[^"]*video_iframe/i.test(html) ||
+    /<iframe[^>]*data-mpvid=/i.test(html) ||
+    /v\.qq\.com\/(txp|iframe)/i.test(html) ||
+    /mp_video_trans_info/i.test(html);
+  return hasVideoIframe;
+}
+
+// Refund credits when a scrape fails after upfront deduction. Best-effort.
+async function refundCredits(keyHash: string | undefined, amount: number): Promise<boolean> {
+  if (!keyHash || amount <= 0) return false;
+  try {
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    const { error } = await supabase.rpc("refund_credits", { p_key_hash: keyHash, p_amount: amount });
+    if (error) {
+      console.error("Refund failed:", error);
+      return false;
+    }
+    console.log(`Refunded ${amount} credits to key ${keyHash.substring(0, 8)}...`);
+    return true;
+  } catch (err) {
+    console.error("Refund error:", err);
+    return false;
+  }
+}
 
 
 // Check if content indicates a verification/captcha page
@@ -1693,25 +1728,28 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     }
 
     if (!html || html.length < 500) {
+      const refunded = await refundCredits(keyHash, 3);
       return apiError({
         code: "upstream_empty",
         status: 502,
         message: "无法获取文章内容（上游返回为空或过短）。",
         hint: "请稍后重试。若链接复制自分享卡片，建议在微信里重新打开后再复制完整链接。",
-        extras: { source_url: url },
+        extras: { source_url: url, credits_refunded: refunded ? 3 : 0 },
       });
     }
+
 
     // Check if WeChat returned an error page (deleted/invalid article)
     const wechatError = isWeChatErrorPage(html);
     if (wechatError) {
       console.log("WeChat error page detected:", wechatError);
+      const refunded = await refundCredits(keyHash, 3);
       return apiError({
         code: "wechat_article_unavailable",
         status: 404,
         message: wechatError,
         hint: "该文章已被微信侧删除或屏蔽，无法再抓取。可在我们站内搜索是否已有早先版本的缓存。",
-        extras: { source_url: url },
+        extras: { source_url: url, credits_refunded: refunded ? 3 : 0 },
       });
     }
 
@@ -1726,11 +1764,14 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
         if (firecrawlHtml && firecrawlHtml.length > 500 && !isVerificationPage(firecrawlHtml)) {
           html = firecrawlHtml;
         } else {
+          await refundCredits(keyHash, 3);
           return wechatVerificationError(url);
         }
       } else {
+        await refundCredits(keyHash, 3);
         return wechatVerificationError(url);
       }
+
     }
 
     // Helper: attempt content extraction from a given HTML string
@@ -1768,9 +1809,29 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     // First extraction attempt
     let result = tryExtractContent(html);
 
+    // Video-only articles: don't waste a Firecrawl call — it would only fetch
+    // page-chrome noise. Return a clear error, refund credits, and let the
+    // reader know to visit the original for playback.
+    if (!result.isPictureWithImages && isVideoOnlyArticle(html, result.textContent || "")) {
+      console.log("Video-only article detected, skipping Firecrawl fallback");
+      const refunded = await refundCredits(keyHash, 3);
+      return apiError({
+        code: "video_only_article",
+        status: 422,
+        message: "该文章正文以视频为主，暂不支持文字化提取。",
+        hint: "视频内容无法转换为文字。请在微信内打开原文观看视频；若文章后续更新了图文说明，可稍后再试。",
+        extras: {
+          source_url: url,
+          credits_refunded: refunded ? 3 : 0,
+          video_placeholder: "📹 [视频内容 — 请在微信打开原文观看]",
+        },
+      });
+    }
+
     // If content is too short (and not a picture template with images), try Firecrawl fallback
     if (!result.isPictureWithImages && (!result.textContent || result.textContent.length < MIN_CONTENT_LENGTH)) {
       console.log(`Content too short (${result.textContent?.length || 0} chars), trying Firecrawl fallback`);
+
       const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
       if (firecrawlKey) {
         const fc = await tryFirecrawl(url, firecrawlKey);
@@ -1819,6 +1880,7 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
 
     if (!result.isPictureWithImages && (!textContent || textContent.length < MIN_CONTENT_LENGTH || substantiveText.length < MIN_SUBSTANTIVE_LENGTH)) {
       console.log(`Content validation failed: raw=${textContent?.length || 0}, substantive=${substantiveText.length}`);
+      const refunded = await refundCredits(keyHash, 3);
       return apiError({
         code: "content_too_short",
         status: 422,
@@ -1829,9 +1891,11 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
           raw_length: textContent?.length || 0,
           substantive_length: substantiveText.length,
           bookmarklet_url: "https://readgzh.site/#bookmarklet",
+          credits_refunded: refunded ? 3 : 0,
         },
       });
     }
+
 
     // Save to database - content stores plain text for AI, raw_html stores formatted HTML for display
     const { data: saved, error: dbError } = await supabase

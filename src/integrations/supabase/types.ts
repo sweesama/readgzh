@@ -767,6 +767,10 @@ export type Database = {
       }
       record_cache_hit: { Args: { p_key_hash: string }; Returns: undefined }
       refresh_token_stats_cache: { Args: never; Returns: undefined }
+      refund_credits: {
+        Args: { p_amount: number; p_key_hash: string }
+        Returns: Json
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       validate_api_key:
