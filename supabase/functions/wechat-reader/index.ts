@@ -1805,9 +1805,29 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     // First extraction attempt
     let result = tryExtractContent(html);
 
+    // Video-only articles: don't waste a Firecrawl call — it would only fetch
+    // page-chrome noise. Return a clear error, refund credits, and let the
+    // reader know to visit the original for playback.
+    if (!result.isPictureWithImages && isVideoOnlyArticle(html, result.textContent || "")) {
+      console.log("Video-only article detected, skipping Firecrawl fallback");
+      const refunded = await refundCredits(keyHash, 3);
+      return apiError({
+        code: "video_only_article",
+        status: 422,
+        message: "该文章正文以视频为主，暂不支持文字化提取。",
+        hint: "视频内容无法转换为文字。请在微信内打开原文观看视频；若文章后续更新了图文说明，可稍后再试。",
+        extras: {
+          source_url: url,
+          credits_refunded: refunded ? 3 : 0,
+          video_placeholder: "📹 [视频内容 — 请在微信打开原文观看]",
+        },
+      });
+    }
+
     // If content is too short (and not a picture template with images), try Firecrawl fallback
     if (!result.isPictureWithImages && (!result.textContent || result.textContent.length < MIN_CONTENT_LENGTH)) {
       console.log(`Content too short (${result.textContent?.length || 0} chars), trying Firecrawl fallback`);
+
       const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
       if (firecrawlKey) {
         const fc = await tryFirecrawl(url, firecrawlKey);
