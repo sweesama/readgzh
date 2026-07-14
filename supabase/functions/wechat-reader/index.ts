@@ -1876,6 +1876,7 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
 
     if (!result.isPictureWithImages && (!textContent || textContent.length < MIN_CONTENT_LENGTH || substantiveText.length < MIN_SUBSTANTIVE_LENGTH)) {
       console.log(`Content validation failed: raw=${textContent?.length || 0}, substantive=${substantiveText.length}`);
+      const refunded = await refundCredits(keyHash, 3);
       return apiError({
         code: "content_too_short",
         status: 422,
@@ -1886,9 +1887,11 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
           raw_length: textContent?.length || 0,
           substantive_length: substantiveText.length,
           bookmarklet_url: "https://readgzh.site/#bookmarklet",
+          credits_refunded: refunded ? 3 : 0,
         },
       });
     }
+
 
     // Save to database - content stores plain text for AI, raw_html stores formatted HTML for display
     const { data: saved, error: dbError } = await supabase
