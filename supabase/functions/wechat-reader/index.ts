@@ -1728,14 +1728,16 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     }
 
     if (!html || html.length < 500) {
+      const refunded = await refundCredits(keyHash, 3);
       return apiError({
         code: "upstream_empty",
         status: 502,
         message: "无法获取文章内容（上游返回为空或过短）。",
         hint: "请稍后重试。若链接复制自分享卡片，建议在微信里重新打开后再复制完整链接。",
-        extras: { source_url: url },
+        extras: { source_url: url, credits_refunded: refunded ? 3 : 0 },
       });
     }
+
 
     // Check if WeChat returned an error page (deleted/invalid article)
     const wechatError = isWeChatErrorPage(html);
