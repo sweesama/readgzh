@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.get_token_stats() TO anon, authenticated;
