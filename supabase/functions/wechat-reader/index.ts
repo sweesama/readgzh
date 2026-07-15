@@ -591,77 +591,98 @@ function extractMetadata(html: string) {
   };
 }
 
+// fetch with an AbortController timeout. Never throws — returns null on any failure.
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (err) {
+    console.error(`fetchWithTimeout(${url}) failed:`, err instanceof Error ? err.message : err);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // Direct fetch with browser-like headers
 async function tryDirectFetch(url: string): Promise<string | null> {
   console.log("Attempting direct fetch with browser headers");
+  const response = await fetchWithTimeout(url, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      Accept:
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+      "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+      "Cache-Control": "no-cache",
+      "Sec-Ch-Ua": '"Chromium";v="131", "Not_A Brand";v="24"',
+      "Sec-Ch-Ua-Mobile": "?0",
+      "Sec-Ch-Ua-Platform": '"Windows"',
+      "Sec-Fetch-Dest": "document",
+      "Sec-Fetch-Mode": "navigate",
+      "Sec-Fetch-Site": "none",
+      "Sec-Fetch-User": "?1",
+      "Upgrade-Insecure-Requests": "1",
+    },
+    redirect: "follow",
+  }, 15000);
+
+  if (!response) return null;
+  if (!response.ok) {
+    console.log("Direct fetch failed:", response.status);
+    try { await response.body?.cancel(); } catch { /* ignore */ }
+    return null;
+  }
   try {
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-        "Cache-Control": "no-cache",
-        "Sec-Ch-Ua": '"Chromium";v="131", "Not_A Brand";v="24"',
-        "Sec-Ch-Ua-Mobile": "?0",
-        "Sec-Ch-Ua-Platform": '"Windows"',
-        "Sec-Fetch-Dest": "document",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "none",
-        "Sec-Fetch-User": "?1",
-        "Upgrade-Insecure-Requests": "1",
-      },
-      redirect: "follow",
-    });
-
-    if (!response.ok) {
-      console.log("Direct fetch failed:", response.status);
-      return null;
-    }
-
     const html = await response.text();
     console.log("Direct fetch HTML length:", html.length);
     return html;
-  } catch (error) {
-    console.error("Direct fetch error:", error);
+  } catch (err) {
+    console.error("Direct fetch body read error:", err);
     return null;
   }
 }
 
-// Firecrawl fallback - returns { html, markdown } for maximum extraction
+// Firecrawl fallback - returns { html, markdown } for maximum extraction.
+// Bounded by an outer timeout so a stuck proxy tunnel can't consume the whole
+// edge invocation (which used to cause 502s at the gateway).
 async function tryFirecrawl(url: string, apiKey: string): Promise<{ html: string | null; markdown: string | null }> {
   console.log("Attempting Firecrawl fallback");
+  const response = await fetchWithTimeout("https://api.firecrawl.dev/v1/scrape", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      url,
+      formats: ["html", "markdown"],
+      onlyMainContent: true,
+      waitFor: 8000,
+      timeout: 25000,
+      location: { country: "CN", languages: ["zh-CN", "zh"] },
+    }),
+  }, 30000);
+
+  if (!response) return { html: null, markdown: null };
+
+  let data: { data?: { html?: string; markdown?: string }; html?: string; markdown?: string; error?: unknown } = {};
   try {
-    const response = await fetch("https://api.firecrawl.dev/v1/scrape", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        url,
-        formats: ["html", "markdown"],
-        onlyMainContent: true,
-        waitFor: 15000,
-        location: { country: "CN", languages: ["zh-CN", "zh"] },
-      }),
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-      console.error("Firecrawl error:", data);
-      return { html: null, markdown: null };
-    }
-
-    const html = data.data?.html || data.html || "";
-    const markdown = data.data?.markdown || data.markdown || "";
-    console.log("Firecrawl HTML length:", html.length, "Markdown length:", markdown.length);
-    return { html: html || null, markdown: markdown || null };
-  } catch (error) {
-    console.error("Firecrawl error:", error);
+    data = await response.json();
+  } catch (err) {
+    console.error("Firecrawl JSON parse error:", err);
     return { html: null, markdown: null };
   }
+  if (!response.ok) {
+    console.error("Firecrawl error:", response.status, data);
+    return { html: null, markdown: null };
+  }
+
+  const html = data.data?.html || data.html || "";
+  const markdown = data.data?.markdown || data.markdown || "";
+  console.log("Firecrawl HTML length:", html.length, "Markdown length:", markdown.length);
+  return { html: html || null, markdown: markdown || null };
 }
 
 // ===== Article Read Mode: Return static HTML for AI bots =====
