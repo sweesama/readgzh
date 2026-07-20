@@ -1542,6 +1542,23 @@ function isWeixinUrl(rawUrl: string): boolean {
   }
 }
 
+// Normalize URLs from AI/tool clients: trim, strip wrapping quotes/brackets,
+// decode double-encoded values, add missing https:// scheme. Tolerates common
+// mistakes (n8n / Zapier / shell templating) that would otherwise fall into
+// the "链接无效" branch even for legitimate mp.weixin.qq.com links.
+function normalizeInputUrl(raw: string | null | undefined): string {
+  if (!raw) return "";
+  let u = String(raw).trim();
+  u = u.replace(/^[<"'\s]+|[>"'\s]+$/g, "");
+  if (/^https?%3a/i.test(u)) {
+    try { u = decodeURIComponent(u); } catch { /* ignore */ }
+  }
+  if (/^(mp\.)?weixin\.qq\.com\//i.test(u)) {
+    u = "https://" + u;
+  }
+  return u;
+}
+
 // ===== Handle direct article submission (from bookmarklet) =====
 async function handleDirectSubmit(body: Record<string, unknown>): Promise<Response> {
   const title = typeof body.title === "string" ? body.title.trim().substring(0, 500) : "";
