@@ -1434,6 +1434,18 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Validate URL BEFORE any credit deduction so bad URLs never cost credits.
+      if (!isWeixinUrl(url)) {
+        console.log("[wechat-reader] invalid_url (pre-credit) rejected:", JSON.stringify({ url, len: url.length }));
+        return apiError({
+          code: "invalid_url",
+          status: 400,
+          message: "请提供有效的微信公众号文章链接（域名需为 mp.weixin.qq.com 或 weixin.qq.com）。",
+          hint: "示例：https://mp.weixin.qq.com/s/AbCdEf123。请确认 url 参数已进行 URL 编码，且未被工具拼接引号/空格。",
+          extras: { received: url },
+        });
+      }
+
       // Check cache FIRST before deducting credits
       if (isWeixinUrl(url)) {
         const cacheSupabase = createClient(
