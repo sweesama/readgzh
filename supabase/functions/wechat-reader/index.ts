@@ -1424,7 +1424,7 @@ Deno.serve(async (req) => {
         return new Response(null, { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
-      const url = params.get("url");
+      const url = normalizeInputUrl(params.get("url"));
       if (!url) {
         return apiError({
           code: "missing_url",
