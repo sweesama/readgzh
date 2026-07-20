@@ -1495,7 +1495,7 @@ Deno.serve(async (req) => {
       }
 
       // Handle URL scraping - rate limit applies
-      const url = body.url;
+      const url = normalizeInputUrl(typeof body.url === "string" ? body.url : "");
       if (!url) {
         return apiError({
           code: "missing_url",
