@@ -114,17 +114,50 @@ Deno.serve(async (req) => {
     if (key !== "host") headers.set(key, value);
   }
 
-  const response = await fetch(targetUrl, {
-    method: req.method,
-    headers,
-    body: req.method !== "GET" && req.method !== "HEAD" ? await req.text() : undefined,
-  });
+  // Guard the upstream call so wechat-reader crashes / timeouts don't surface
+  // as opaque 502s to end users. Cap below the edge runtime wall-clock (~60s).
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 55000);
 
-  const responseHeaders = new Headers(response.headers);
-  responseHeaders.set("Access-Control-Allow-Origin", "*");
+  try {
+    const response = await fetch(targetUrl, {
+      method: req.method,
+      headers,
+      body: req.method !== "GET" && req.method !== "HEAD" ? await req.text() : undefined,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
 
-  return new Response(response.body, {
-    status: response.status,
-    headers: responseHeaders,
-  });
+    const responseHeaders = new Headers(response.headers);
+    responseHeaders.set("Access-Control-Allow-Origin", "*");
+
+    return new Response(response.body, {
+      status: response.status,
+      headers: responseHeaders,
+    });
+  } catch (err) {
+    clearTimeout(timeoutId);
+    const isAbort = err instanceof Error && err.name === "AbortError";
+    console.error(`[rd] upstream fetch failed (${isAbort ? "timeout" : "error"}):`, err);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        code: isAbort ? "upstream_timeout" : "upstream_unavailable",
+        error: isAbort ? "upstream_timeout" : "upstream_unavailable",
+        message: isAbort
+          ? "Article reader timed out. The source page may be slow or temporarily blocked."
+          : "Article reader is temporarily unavailable. Please retry in a moment.",
+        hint: "This request did not consume credits. Retry the same URL — most transient failures resolve on the next attempt.",
+        retry_after: 5,
+      }),
+      {
+        status: 503,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+          "Retry-After": "5",
+        },
+      }
+    );
+  }
 });
