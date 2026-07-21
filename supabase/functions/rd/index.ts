@@ -33,12 +33,37 @@ function hasUserApiKey(req: Request): boolean {
   return true;
 }
 
+function queryKeyNotSupportedResponse(): Response {
+  return new Response(
+    JSON.stringify({
+      success: false,
+      code: "query_key_not_supported",
+      error: "query_key_not_supported",
+      message: "为避免 API Key 出现在浏览器历史、服务器日志或分享链接中，ReadGZH 已不再接受 URL 参数 ?key=...。",
+      hint: "请把 Key 放到请求头：Authorization: Bearer sk_live_...。注意：Stripe 等第三方密钥不能作为 ReadGZH API Key 使用；请在 ReadGZH 控制台创建 sk_live_ 开头的 Key。",
+      dashboard_url: "https://readgzh.site/dashboard",
+      docs_url: "https://readgzh.site/docs",
+    }),
+    {
+      status: 400,
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   const url = new URL(req.url);
+
+  if (url.searchParams.has("key")) {
+    return queryKeyNotSupportedResponse();
+  }
 
   // P0: Cache-hit bypass. If ?s=slug points to an already-cached article,
   // skip the IP rate limit entirely — serving cache is zero-cost.
@@ -82,7 +107,7 @@ Deno.serve(async (req) => {
                 error: "rate_limited",
                 message: `Anonymous limit reached (${ANON_DAILY_LIMIT}/IP/day).`,
                 retry_after: 86400,
-                hint: "Pass an API Key in the Authorization header (Bearer sk_live_...) or as ?key=sk_live_... to bypass IP limits. Cached articles can be fetched via /rd?s={slug}&format=text without consuming the IP quota. If you are on shared infrastructure (Replit/Vercel/ChatGPT/etc.), the IP pool may already be exhausted by other users.",
+                hint: "Pass an API Key in the Authorization header (Bearer sk_live_...) to bypass IP limits. Cached articles can be fetched via /rd?s={slug}&format=text without consuming the IP quota. If you are on shared infrastructure (Replit/Vercel/ChatGPT/etc.), the IP pool may already be exhausted by other users.",
                 dashboard_url: "https://readgzh.site/dashboard",
                 upgrade_url: "https://readgzh.site/pricing",
                 use_api_key: "https://readgzh.site/dashboard",

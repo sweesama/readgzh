@@ -55,7 +55,7 @@
     "description": "Optional API Key. Public access available with daily IP rate limit (10/day). API Key bypasses IP limits and unlocks higher quotas.",
     "key_url": "https://readgzh.site/dashboard",
     "header": "Authorization",
-    "format": "Bearer rgz_..."
+    "format": "Bearer sk_live_..."
   },
   "pricing": {
     "model": "freemium",
