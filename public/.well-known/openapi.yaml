@@ -65,12 +65,6 @@ paths:
           schema:
             type: string
             enum: [text, html]
-        - name: key
-          in: query
-          required: false
-          description: API Key (sk_live_...) as URL parameter, for environments where Authorization header is unavailable
-          schema:
-            type: string
       responses:
         '200':
           description: Article content (HTML or Markdown depending on format parameter)
@@ -214,7 +208,7 @@ components:
         API Key authentication. Get a free key at https://readgzh.site/dashboard.
         Format: `Authorization: Bearer sk_live_your_key`
         
-        **Fallback**: If HTTP headers are stripped by proxy, use URL parameter: `?key=sk_live_your_key`
+        API keys are accepted in the Authorization header only. Do not put API keys in URLs.
   schemas:
     Error:
       type: object

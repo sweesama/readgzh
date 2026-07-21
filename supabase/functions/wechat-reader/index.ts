@@ -1127,13 +1127,18 @@ async function checkRateLimit(req: Request): Promise<{ allowed: boolean; current
 function rateLimitResponse(rateInfo: { current: number; remaining: number; limit?: number; isApiKey?: boolean }): Response {
   const limit = rateInfo.limit || DAILY_LIMIT;
   const isCreditsExhausted = rateInfo.isApiKey;
-  const statusCode = isCreditsExhausted ? 402 : 429;
-  const errorCode = isCreditsExhausted ? "insufficient_credits" : "rate_limit_exceeded";
+  const isInvalidApiKey = rateInfo.isApiKey && rateInfo.limit === 0;
+  const statusCode = isInvalidApiKey ? 401 : isCreditsExhausted ? 402 : 429;
+  const errorCode = isInvalidApiKey ? "invalid_api_key" : isCreditsExhausted ? "insufficient_credits" : "rate_limit_exceeded";
   const errorMsg = isCreditsExhausted
-    ? `API Key 积分已用完（已使用 ${rateInfo.current}/${limit} 积分）`
+    ? isInvalidApiKey
+      ? "API Key 无效或未找到。"
+      : `API Key 积分已用完（已使用 ${rateInfo.current}/${limit} 积分）`
     : `未授权请求已达每日上限（${DAILY_LIMIT} 积分/天）。注册免费获取每天 30 积分。`;
   const hint = isCreditsExhausted
-    ? "本月账号额度已用完。可购买加量包继续使用（Pro ¥9/500积分，Free ¥15/500积分，可一次购买多份）→ readgzh.site/dashboard"
+    ? isInvalidApiKey
+      ? "请确认使用的是 ReadGZH 控制台生成的 sk_live_... API Key，并放在请求头 Authorization: Bearer sk_live_...；Stripe 等第三方密钥不能用于调用 ReadGZH。"
+      : "本月账号额度已用完。可购买加量包继续使用（Pro ¥9/500积分，Free ¥15/500积分，可一次购买多份）→ readgzh.site/dashboard"
     : "立即注册：readgzh.site/dashboard — 免费创建 API Key，每日 30 积分，告别 IP 限制。如果你来自 Replit / Vercel / Cloudflare Workers 等共享出口 IP，该 IP 的额度可能已被其他用户用完，请务必带上 API Key (Authorization: Bearer sk_live_...) 调用。";
 
   return new Response(
@@ -1161,6 +1166,15 @@ function rateLimitResponse(rateInfo: { current: number; remaining: number; limit
       },
     }
   );
+}
+
+function queryKeyNotSupportedResponse(): Response {
+  return apiError({
+    code: "query_key_not_supported",
+    status: 400,
+    message: "为避免 API Key 出现在浏览器历史、服务器日志或分享链接中，ReadGZH 已不再接受 URL 参数 ?key=...。",
+    hint: "请把 Key 放到请求头：Authorization: Bearer sk_live_...。注意：Stripe 等第三方密钥不能作为 ReadGZH API Key 使用；请在 ReadGZH 控制台创建 sk_live_ 开头的 Key。",
+  });
 }
 
 // ===== Summary Mode: AI-generated structured summary =====
@@ -1312,6 +1326,9 @@ Deno.serve(async (req) => {
     // GET and HEAD requests: check if this is a "read mode" request (?s= or ?id=)
     if (req.method === "GET" || req.method === "HEAD") {
       const params = new URL(req.url).searchParams;
+      if (params.has("key")) {
+        return queryKeyNotSupportedResponse();
+      }
       const slug = params.get("s");
       const articleId = params.get("id");
 
@@ -1703,12 +1720,9 @@ async function handleScrapeAndRedirect(url: string, keyHash?: string): Promise<R
   const resultData = await scrapeResult.json();
 
   if (!resultData.success) {
-    return apiError({
-      code: "scrape_failed",
-      status: 502,
-      message: "抓取失败：" + (resultData.error || "未知错误"),
-      hint: "请稍后重试。若该链接长期失败，可在微信内打开文章，使用首页推荐的「书签提取工具」手动提交。",
-      extras: { source_url: url, upstream_error: resultData.error },
+    return new Response(JSON.stringify(resultData), {
+      status: scrapeResult.status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
@@ -1968,12 +1982,27 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
 
     if (dbError) {
       console.error("DB error:", dbError);
+      if (slug) {
+        const { data: existingAfterConflict } = await supabase
+          .from("articles")
+          .select("id, slug")
+          .eq("slug", slug)
+          .maybeSingle();
+        if (existingAfterConflict) {
+          console.log("DB save conflict recovered from cache:", existingAfterConflict.id, existingAfterConflict.slug);
+          return new Response(
+            JSON.stringify({ success: true, cached: true, articleId: existingAfterConflict.id, slug: existingAfterConflict.slug, creditCost: 0 }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+      const refunded = await refundCredits(keyHash, 3);
       return apiError({
         code: "db_save_failed",
-        status: 500,
-        message: "保存文章失败：" + (dbError.message || "数据库异常"),
-        hint: "请稍后重试。若持续出现，请在反馈渠道附上文章 URL，我们会人工排查。",
-        extras: { source_url: url },
+        status: 503,
+        message: "文章内容已抓到，但保存缓存时临时失败。",
+        hint: "这类问题通常是数据库短暂忙碌或并发写入造成的；本次失败已自动退回积分，请稍后重试同一链接。",
+        extras: { source_url: url, credits_refunded: refunded ? 3 : 0 },
       });
     }
 

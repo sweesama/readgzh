@@ -144,11 +144,11 @@ All API responses include these headers:
 
 ## Authentication
 
-**Method 1 (Recommended)**: Include `Authorization: Bearer sk_live_...` in request headers.
+Include `Authorization: Bearer sk_live_...` in request headers.
 
-**Method 2 (Fallback, for AI Agents)**: Add `?key=sk_live_...` as a URL parameter. Use this when HTTP headers are stripped by proxy/CDN.
+Do not put API keys in URLs. The old `?key=...` fallback is no longer accepted because URL keys can leak into logs, browser history, and shared links.
 
-Example: `GET /rd?url=WECHAT_URL&key=sk_live_ABC123&format=text`
+Example: `GET /rd?url=WECHAT_URL&format=text` with header `Authorization: Bearer sk_live_ABC123`
 
 Without a key, the public endpoint is used with daily rate limits.
 
