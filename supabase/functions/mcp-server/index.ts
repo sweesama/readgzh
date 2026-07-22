@@ -383,6 +383,25 @@ app.all("/*", async (c) => {
     }
   }
 
+  // mcp-lite handlers do not expose the original Request to tool callbacks, so
+  // authenticated read calls would otherwise lose the user's sk_live_... header
+  // before reaching wechat-reader. Intercept that single write path and forward
+  // the real Authorization header; leave list/search/get on the normal handler.
+  if (c.req.method === "POST" && hasUserApiKey(c.req.raw)) {
+    try {
+      const rpcBody = await c.req.raw.clone().json();
+      const toolName = rpcBody?.params?.name;
+      const toolArgs = rpcBody?.params?.arguments;
+      const isReadTool = ["readgzh.read", "readgzh-read", "readgzh__readgzh-read", "read_wechat_article"].includes(toolName);
+      if (rpcBody?.method === "tools/call" && isReadTool && typeof toolArgs?.url === "string") {
+        const result = await readWechatArticle(toolArgs.url, c.req.raw);
+        return c.json({ jsonrpc: "2.0", id: rpcBody.id ?? null, result });
+      }
+    } catch {
+      // Non-JSON or non-tool MCP transport requests should continue normally.
+    }
+  }
+
   const response = await httpHandler(c.req.raw);
   return response;
 });
