@@ -1976,20 +1976,41 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     }
 
 
-    // Save to database - content stores plain text for AI, raw_html stores formatted HTML for display
-    const { data: saved, error: dbError } = await supabase
-      .from("articles")
-      .insert({
-        title: metadata.title.substring(0, 500),
-        author: metadata.author,
-        content: textContent,
-        raw_html: contentHtml.substring(0, 500000),
-        source_url: url,
-        publish_time: metadata.publishTime,
+    const articlePayload = {
+      title: metadata.title.substring(0, 500),
+      author: metadata.author,
+      content: truncateForStorage(textContent, MAX_STORED_CONTENT_LENGTH, "content"),
+      raw_html: truncateForStorage(contentHtml, MAX_STORED_HTML_LENGTH, "raw_html"),
+      source_url: url,
+      publish_time: metadata.publishTime,
+      slug,
+    };
+
+    async function insertArticle(payload: typeof articlePayload) {
+      return await supabase
+        .from("articles")
+        .insert(payload)
+        .select("id, slug")
+        .single();
+    }
+
+    // Save to database - content stores plain text for AI, raw_html stores formatted HTML for display.
+    // Very large WeChat pages can make GIN index maintenance exceed the DB statement timeout;
+    // retry once with a smaller cache body so users still get a stable read result.
+    let { data: saved, error: dbError } = await insertArticle(articlePayload);
+
+    if (dbError?.code === "57014") {
+      console.error("DB insert timed out; retrying with compact article payload:", {
         slug,
-      })
-      .select("id, slug")
-      .single();
+        content_length: articlePayload.content.length,
+        raw_html_length: articlePayload.raw_html.length,
+      });
+      ({ data: saved, error: dbError } = await insertArticle({
+        ...articlePayload,
+        content: truncateForStorage(textContent, RETRY_STORED_CONTENT_LENGTH, "retry_content"),
+        raw_html: truncateForStorage(contentHtml, RETRY_STORED_HTML_LENGTH, "retry_raw_html"),
+      }));
+    }
 
     if (dbError) {
       console.error("DB error:", dbError);
