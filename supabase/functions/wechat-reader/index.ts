@@ -9,6 +9,17 @@ const corsHeaders = {
   "X-Powered-By": "ReadGZH (readgzh.site)",
 };
 
+const MAX_STORED_CONTENT_LENGTH = 200_000;
+const MAX_STORED_HTML_LENGTH = 300_000;
+const RETRY_STORED_CONTENT_LENGTH = 80_000;
+const RETRY_STORED_HTML_LENGTH = 80_000;
+
+function truncateForStorage(value: string, maxLength: number, label: string): string {
+  if (value.length <= maxLength) return value;
+  console.log(`[wechat-reader] truncating ${label} for storage: ${value.length} -> ${maxLength}`);
+  return `${value.substring(0, maxLength)}\n\n[内容过长，ReadGZH 已截断缓存正文以保证保存稳定。]`;
+}
+
 // ===== Standardized API error response with actionable guidance =====
 // Every user-facing error should go through this helper so clients always
 // see a `code`, a human-readable `message`, a `hint`, and links to docs /
