@@ -7,6 +7,93 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+function getWechatReaderAuth(req?: Request): string {
+  const inboundAuth = req?.headers.get("authorization") || "";
+  if (inboundAuth.toLowerCase().startsWith("bearer sk_live_")) {
+    return inboundAuth;
+  }
+  return `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`;
+}
+
+async function readWechatArticle(url: string, req?: Request) {
+  console.log(`[MCP] read_wechat_article called with url: ${url}`);
+
+  try {
+    const scrapeResponse = await fetch(
+      `${SUPABASE_URL}/functions/v1/wechat-reader`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: getWechatReaderAuth(req),
+        },
+        body: JSON.stringify({ url }),
+      }
+    );
+
+    const scrapeResult = await scrapeResponse.json();
+
+    if (!scrapeResult.success) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `Failed to read article: ${scrapeResult.error || "Unknown error"}${scrapeResult.hint ? `\n\nHint: ${scrapeResult.hint}` : ""}`,
+          },
+        ],
+      };
+    }
+
+    const { data: article, error } = await supabase
+      .from("articles")
+      .select("title, author, content, publish_time, source_url, slug")
+      .eq("id", scrapeResult.articleId)
+      .single();
+
+    if (error || !article) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: "Article was scraped but could not be retrieved from database.",
+          },
+        ],
+      };
+    }
+
+    const parts: string[] = [];
+    parts.push(`# ${article.title}`);
+    parts.push("");
+    if (article.author) parts.push(`**Author:** ${article.author}`);
+    if (article.publish_time) parts.push(`**Published:** ${article.publish_time}`);
+    if (article.source_url) parts.push(`**Original URL:** ${article.source_url}`);
+    if (article.slug) parts.push(`**Readable Link:** https://readgzh.site/${article.slug}`);
+    parts.push("");
+    parts.push("---");
+    parts.push("");
+    parts.push(article.content);
+    parts.push("");
+    parts.push("---");
+    parts.push("_Powered by [ReadGZH](https://readgzh.site) · [开发者文档](https://readgzh.site/docs) · [升级套餐](https://readgzh.site/pricing)_");
+    parts.push("");
+    parts.push("💡 免费注册获取每天 30 积分 · Lite ¥9/月 · Pro ¥39/月 → [readgzh.site/dashboard](https://readgzh.site/dashboard)");
+
+    return {
+      content: [{ type: "text" as const, text: parts.join("\n") }],
+    };
+  } catch (err) {
+    console.error("[MCP] Error:", err);
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: `Error reading article: ${err instanceof Error ? err.message : "Unknown error"}`,
+        },
+      ],
+    };
+  }
+}
+
 // Create MCP server
 const mcp = new McpServer({
   name: "readgzh",
@@ -29,83 +116,7 @@ mcp.tool("readgzh.read", {
     required: ["url"],
   },
   handler: async (args: { url: string }) => {
-    const { url } = args;
-    console.log(`[MCP] read_wechat_article called with url: ${url}`);
-
-    try {
-      const scrapeResponse = await fetch(
-        `${SUPABASE_URL}/functions/v1/wechat-reader`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-          },
-          body: JSON.stringify({ url }),
-        }
-      );
-
-      const scrapeResult = await scrapeResponse.json();
-
-      if (!scrapeResult.success) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Failed to read article: ${scrapeResult.error || "Unknown error"}${scrapeResult.hint ? `\n\nHint: ${scrapeResult.hint}` : ""}`,
-            },
-          ],
-        };
-      }
-
-      const { data: article, error } = await supabase
-        .from("articles")
-        .select("title, author, content, publish_time, source_url, slug")
-        .eq("id", scrapeResult.articleId)
-        .single();
-
-      if (error || !article) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: "Article was scraped but could not be retrieved from database.",
-            },
-          ],
-        };
-      }
-
-      const parts: string[] = [];
-      parts.push(`# ${article.title}`);
-      parts.push("");
-      if (article.author) parts.push(`**Author:** ${article.author}`);
-      if (article.publish_time) parts.push(`**Published:** ${article.publish_time}`);
-      if (article.source_url) parts.push(`**Original URL:** ${article.source_url}`);
-      if (article.slug) parts.push(`**Readable Link:** https://readgzh.site/${article.slug}`);
-      parts.push("");
-      parts.push("---");
-      parts.push("");
-      parts.push(article.content);
-      parts.push("");
-      parts.push("---");
-      parts.push("_Powered by [ReadGZH](https://readgzh.site) · [开发者文档](https://readgzh.site/docs) · [升级套餐](https://readgzh.site/pricing)_");
-      parts.push("");
-      parts.push("💡 免费注册获取每天 30 积分 · Lite ¥9/月 · Pro ¥39/月 → [readgzh.site/dashboard](https://readgzh.site/dashboard)");
-
-      return {
-        content: [{ type: "text" as const, text: parts.join("\n") }],
-      };
-    } catch (err) {
-      console.error("[MCP] Error:", err);
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Error reading article: ${err instanceof Error ? err.message : "Unknown error"}`,
-          },
-        ],
-      };
-    }
+    return await readWechatArticle(args.url);
   },
 });
 
