@@ -9,10 +9,12 @@ const corsHeaders = {
   "X-Powered-By": "ReadGZH (readgzh.site)",
 };
 
-const MAX_STORED_CONTENT_LENGTH = 200_000;
-const MAX_STORED_HTML_LENGTH = 300_000;
-const RETRY_STORED_CONTENT_LENGTH = 80_000;
-const RETRY_STORED_HTML_LENGTH = 80_000;
+// content 有 GIN trigram 索引，是 DB statement timeout 的真正元凶 → 保守一点
+// raw_html 无索引，可以放宽很多，只挡住微信内嵌 base64 图片撑爆的极端情况
+const MAX_STORED_CONTENT_LENGTH = 600_000;
+const MAX_STORED_HTML_LENGTH = 2_000_000;
+const RETRY_STORED_CONTENT_LENGTH = 200_000;
+const RETRY_STORED_HTML_LENGTH = 400_000;
 
 function truncateForStorage(value: string, maxLength: number, label: string): string {
   if (value.length <= maxLength) return value;
