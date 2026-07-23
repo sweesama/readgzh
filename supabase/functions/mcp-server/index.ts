@@ -19,19 +19,30 @@ async function readWechatArticle(url: string, req?: Request) {
   console.log(`[MCP] read_wechat_article called with url: ${url}`);
 
   try {
-    const scrapeResponse = await fetch(
-      `${SUPABASE_URL}/functions/v1/wechat-reader`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: getWechatReaderAuth(req),
-        },
-        body: JSON.stringify({ url }),
-      }
-    );
+    // Bound the upstream call so a slow wechat-reader can't push us past the
+    // edge gateway timeout (which surfaces as a 502 to the MCP client).
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 55_000);
+    let scrapeResponse: Response;
+    try {
+      scrapeResponse = await fetch(
+        `${SUPABASE_URL}/functions/v1/wechat-reader`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: getWechatReaderAuth(req),
+          },
+          body: JSON.stringify({ url }),
+          signal: controller.signal,
+        }
+      );
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     const scrapeResult = await scrapeResponse.json();
+
 
     if (!scrapeResult.success) {
       return {
