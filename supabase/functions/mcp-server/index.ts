@@ -19,19 +19,30 @@ async function readWechatArticle(url: string, req?: Request) {
   console.log(`[MCP] read_wechat_article called with url: ${url}`);
 
   try {
-    const scrapeResponse = await fetch(
-      `${SUPABASE_URL}/functions/v1/wechat-reader`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: getWechatReaderAuth(req),
-        },
-        body: JSON.stringify({ url }),
-      }
-    );
+    // Bound the upstream call so a slow wechat-reader can't push us past the
+    // edge gateway timeout (which surfaces as a 502 to the MCP client).
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 55_000);
+    let scrapeResponse: Response;
+    try {
+      scrapeResponse = await fetch(
+        `${SUPABASE_URL}/functions/v1/wechat-reader`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: getWechatReaderAuth(req),
+          },
+          body: JSON.stringify({ url }),
+          signal: controller.signal,
+        }
+      );
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     const scrapeResult = await scrapeResponse.json();
+
 
     if (!scrapeResult.success) {
       return {
@@ -360,50 +371,75 @@ const app = new Hono();
 app.all("/*", async (c) => {
   console.log(`[MCP] ${c.req.method} ${c.req.url}`);
 
-  // Rate limit anonymous MCP requests; authenticated requests bypass IP limit.
-  if (c.req.method === "POST" && !hasUserApiKey(c.req.raw)) {
-    const ip = getClientIp(c.req.raw);
-    if (ip !== "unknown") {
-      const rateCheck = await checkMcpRateLimit(ip);
-      if (!rateCheck.allowed) {
-        console.log(`[MCP] Anon rate limit exceeded for IP: ${ip}, current: ${rateCheck.current}`);
-        return c.json({
-          jsonrpc: "2.0",
-          error: {
-            code: -32000,
-            message: `Anonymous MCP limit reached (${MCP_ANON_DAILY_LIMIT}/IP/day). If you are calling from shared infrastructure (Replit, Vercel, Cloudflare Workers, etc.), the IP quota may already be exhausted by other users — use an API Key in the Authorization header (Bearer sk_live_...) to bypass IP limits. Get a free key at https://readgzh.site/dashboard.`,
-            data: {
-              dashboard_url: "https://readgzh.site/dashboard",
-              retry_after_seconds: 86400,
+  try {
+    // Rate limit anonymous MCP requests; authenticated requests bypass IP limit.
+    if (c.req.method === "POST" && !hasUserApiKey(c.req.raw)) {
+      const ip = getClientIp(c.req.raw);
+      if (ip !== "unknown") {
+        const rateCheck = await checkMcpRateLimit(ip);
+        if (!rateCheck.allowed) {
+          console.log(`[MCP] Anon rate limit exceeded for IP: ${ip}, current: ${rateCheck.current}`);
+          return c.json({
+            jsonrpc: "2.0",
+            error: {
+              code: -32000,
+              message: `Anonymous MCP limit reached (${MCP_ANON_DAILY_LIMIT}/IP/day). If you are calling from shared infrastructure (Replit, Vercel, Cloudflare Workers, etc.), the IP quota may already be exhausted by other users — use an API Key in the Authorization header (Bearer sk_live_...) to bypass IP limits. Get a free key at https://readgzh.site/dashboard.`,
+              data: {
+                dashboard_url: "https://readgzh.site/dashboard",
+                retry_after_seconds: 86400,
+              },
             },
-          },
-          id: null,
-        }, 429, { "Retry-After": "86400" });
+            id: null,
+          }, 429, { "Retry-After": "86400" });
+        }
       }
     }
-  }
 
-  // mcp-lite handlers do not expose the original Request to tool callbacks, so
-  // authenticated read calls would otherwise lose the user's sk_live_... header
-  // before reaching wechat-reader. Intercept that single write path and forward
-  // the real Authorization header; leave list/search/get on the normal handler.
-  if (c.req.method === "POST" && hasUserApiKey(c.req.raw)) {
+    // mcp-lite handlers do not expose the original Request to tool callbacks, so
+    // authenticated read calls would otherwise lose the user's sk_live_... header
+    // before reaching wechat-reader. Intercept that single write path and forward
+    // the real Authorization header; leave list/search/get on the normal handler.
+    if (c.req.method === "POST" && hasUserApiKey(c.req.raw)) {
+      try {
+        const rpcBody = await c.req.raw.clone().json();
+        const toolName = rpcBody?.params?.name;
+        const toolArgs = rpcBody?.params?.arguments;
+        const isReadTool = ["readgzh.read", "readgzh-read", "readgzh__readgzh-read", "read_wechat_article"].includes(toolName);
+        if (rpcBody?.method === "tools/call" && isReadTool && typeof toolArgs?.url === "string") {
+          const result = await readWechatArticle(toolArgs.url, c.req.raw);
+          return c.json({ jsonrpc: "2.0", id: rpcBody.id ?? null, result });
+        }
+      } catch {
+        // Non-JSON or non-tool MCP transport requests should continue normally.
+      }
+    }
+
+    const response = await httpHandler(c.req.raw);
+    return response;
+  } catch (err) {
+    // Never let an exception bubble up to the edge gateway (which turns into a
+    // 502 for the MCP client). Always return a JSON-RPC error so clients can
+    // recover gracefully.
+    console.error("[MCP] Unhandled error:", err);
+    let rpcId: string | number | null = null;
     try {
-      const rpcBody = await c.req.raw.clone().json();
-      const toolName = rpcBody?.params?.name;
-      const toolArgs = rpcBody?.params?.arguments;
-      const isReadTool = ["readgzh.read", "readgzh-read", "readgzh__readgzh-read", "read_wechat_article"].includes(toolName);
-      if (rpcBody?.method === "tools/call" && isReadTool && typeof toolArgs?.url === "string") {
-        const result = await readWechatArticle(toolArgs.url, c.req.raw);
-        return c.json({ jsonrpc: "2.0", id: rpcBody.id ?? null, result });
+      if (c.req.method === "POST") {
+        const body = await c.req.raw.clone().json();
+        rpcId = body?.id ?? null;
       }
     } catch {
-      // Non-JSON or non-tool MCP transport requests should continue normally.
+      // ignore parse failures
     }
+    return c.json({
+      jsonrpc: "2.0",
+      error: {
+        code: -32000,
+        message: `Internal MCP error: ${err instanceof Error ? err.message : "unknown"}`,
+      },
+      id: rpcId,
+    }, 500);
   }
-
-  const response = await httpHandler(c.req.raw);
-  return response;
 });
+
 
 Deno.serve(app.fetch);
