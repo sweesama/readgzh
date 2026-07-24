@@ -1898,7 +1898,7 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     // Video-only articles: don't waste a Firecrawl call — it would only fetch
     // page-chrome noise. Return a clear error, refund credits, and let the
     // reader know to visit the original for playback.
-    if (!result.isPictureWithImages && isVideoOnlyArticle(html, result.textContent || "")) {
+    if (!result.isPictureWithImages && isVideoOnlyArticle(html, result.textContent || "", result.contentHtml || "")) {
       console.log("Video-only article detected, skipping Firecrawl fallback");
       const refunded = await refundCredits(keyHash, 3);
       return apiError({
