@@ -70,9 +70,14 @@ function wechatVerificationError(sourceUrl?: string): Response {
 // A WeChat article whose #js_content contains a video iframe but essentially
 // no readable text. Firecrawl fallback would only pull page-chrome noise, so
 // we short-circuit and return a clear error with a refund.
-function isVideoOnlyArticle(html: string, textContent: string): boolean {
+function isVideoOnlyArticle(html: string, textContent: string, contentHtml: string = ""): boolean {
   const stripped = (textContent || "").replace(/\s+/g, "").trim();
   if (stripped.length >= 120) return false; // has real text alongside the video
+  // If extracted content contains multiple images, it's a picture/photo article,
+  // not video-only — even if the raw HTML has WeChat's boilerplate video markers
+  // (picture_page_info_list scripts, share templates, etc.).
+  const imgCount = (contentHtml.match(/<img\b/gi) || []).length;
+  if (imgCount >= 2) return false;
   const hasVideoIframe =
     /<iframe[^>]*class="[^"]*video_iframe/i.test(html) ||
     /<iframe[^>]*data-mpvid=/i.test(html) ||
@@ -1893,7 +1898,7 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     // Video-only articles: don't waste a Firecrawl call — it would only fetch
     // page-chrome noise. Return a clear error, refund credits, and let the
     // reader know to visit the original for playback.
-    if (!result.isPictureWithImages && isVideoOnlyArticle(html, result.textContent || "")) {
+    if (!result.isPictureWithImages && isVideoOnlyArticle(html, result.textContent || "", result.contentHtml || "")) {
       console.log("Video-only article detected, skipping Firecrawl fallback");
       const refunded = await refundCredits(keyHash, 3);
       return apiError({
