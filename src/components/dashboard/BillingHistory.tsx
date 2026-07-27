@@ -232,8 +232,43 @@ const BillingHistory = () => {
           )}
         </div>
 
+        {/* Credit Packs */}
+        <div>
+          <h3 className="text-sm font-semibold mb-2 text-muted-foreground flex items-center gap-1">
+            <Package className="h-3.5 w-3.5" /> 加量包订单
+          </h3>
+          {creditPacks.length === 0 ? (
+            <p className="text-sm text-muted-foreground">暂无加量包购买记录</p>
+          ) : (
+            <div className="space-y-1">
+              {creditPacks.map((p) => {
+                const expired = p.expires_at && new Date(p.expires_at).getTime() < Date.now();
+                const remaining = p.amount != null && p.consumed_amount != null
+                  ? Math.max(0, p.amount - p.consumed_amount)
+                  : null;
+                return (
+                  <div key={p.id} className="flex items-center justify-between py-2 px-3 rounded-md hover:bg-muted/50 flex-wrap gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">加量包 · {p.credits_added} 积分</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(p.created_at).toLocaleDateString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit" })}
+                        {remaining != null && ` · 剩余 ${remaining} / ${p.amount}`}
+                        {p.expires_at && ` · ${expired ? "已过期" : "有效期至 " + new Date(p.expires_at).toLocaleDateString("zh-CN")}`}
+                      </p>
+                    </div>
+                    <Badge variant={expired ? "secondary" : "default"} className="text-xs">
+                      {expired ? "已过期" : "有效"}
+                    </Badge>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
         {/* Invoices */}
         <div>
+
           <h3 className="text-sm font-semibold mb-2 text-muted-foreground">发票记录</h3>
           {invoices.length === 0 ? (
             <p className="text-sm text-muted-foreground">暂无发票</p>
