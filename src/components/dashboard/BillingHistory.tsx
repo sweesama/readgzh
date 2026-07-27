@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Receipt, ExternalLink, RotateCcw } from "lucide-react";
+import { Loader2, Receipt, ExternalLink, RotateCcw, Package } from "lucide-react";
 import RefundRequestDialog from "./RefundRequestDialog";
 
 interface Invoice {
@@ -79,8 +79,19 @@ const statusLabel: Record<string, string> = {
   failed: "失败",
 };
 
+interface CreditPack {
+  id: string;
+  stripe_session_id: string;
+  credits_added: number;
+  created_at: string;
+  expires_at: string | null;
+  consumed_amount: number | null;
+  amount: number | null;
+}
+
 const BillingHistory = () => {
   const [data, setData] = useState<BillingData | null>(null);
+  const [creditPacks, setCreditPacks] = useState<CreditPack[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,9 +99,39 @@ const BillingHistory = () => {
     setLoading(true);
     setError(null);
     try {
-      const { data: res, error: err } = await supabase.functions.invoke("billing-history");
+      const [{ data: res, error: err }, { data: user }] = await Promise.all([
+        supabase.functions.invoke("billing-history"),
+        supabase.auth.getUser(),
+      ]);
       if (err) throw err;
       setData(res as BillingData);
+
+      if (user?.user?.id) {
+        const { data: claims } = await supabase
+          .from("credit_pack_claims")
+          .select("id, stripe_session_id, credits_added, created_at")
+          .eq("user_id", user.user.id)
+          .order("created_at", { ascending: false });
+        const { data: grants } = await supabase
+          .from("bonus_grants")
+          .select("source_ref, amount, consumed_amount, expires_at")
+          .eq("user_id", user.user.id)
+          .eq("source", "credit_pack");
+        const grantMap = new Map(
+          (grants ?? []).map((g) => [g.source_ref, g])
+        );
+        setCreditPacks(
+          (claims ?? []).map((c) => {
+            const g = grantMap.get(c.stripe_session_id);
+            return {
+              ...c,
+              expires_at: g?.expires_at ?? null,
+              consumed_amount: g?.consumed_amount ?? null,
+              amount: g?.amount ?? null,
+            };
+          })
+        );
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -101,6 +142,7 @@ const BillingHistory = () => {
   useEffect(() => {
     load();
   }, []);
+
 
   if (loading) {
     return (
@@ -190,8 +232,43 @@ const BillingHistory = () => {
           )}
         </div>
 
+        {/* Credit Packs */}
+        <div>
+          <h3 className="text-sm font-semibold mb-2 text-muted-foreground flex items-center gap-1">
+            <Package className="h-3.5 w-3.5" /> 加量包订单
+          </h3>
+          {creditPacks.length === 0 ? (
+            <p className="text-sm text-muted-foreground">暂无加量包购买记录</p>
+          ) : (
+            <div className="space-y-1">
+              {creditPacks.map((p) => {
+                const expired = p.expires_at && new Date(p.expires_at).getTime() < Date.now();
+                const remaining = p.amount != null && p.consumed_amount != null
+                  ? Math.max(0, p.amount - p.consumed_amount)
+                  : null;
+                return (
+                  <div key={p.id} className="flex items-center justify-between py-2 px-3 rounded-md hover:bg-muted/50 flex-wrap gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">加量包 · {p.credits_added} 积分</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(p.created_at).toLocaleDateString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit" })}
+                        {remaining != null && ` · 剩余 ${remaining} / ${p.amount}`}
+                        {p.expires_at && ` · ${expired ? "已过期" : "有效期至 " + new Date(p.expires_at).toLocaleDateString("zh-CN")}`}
+                      </p>
+                    </div>
+                    <Badge variant={expired ? "secondary" : "default"} className="text-xs">
+                      {expired ? "已过期" : "有效"}
+                    </Badge>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
         {/* Invoices */}
         <div>
+
           <h3 className="text-sm font-semibold mb-2 text-muted-foreground">发票记录</h3>
           {invoices.length === 0 ? (
             <p className="text-sm text-muted-foreground">暂无发票</p>
