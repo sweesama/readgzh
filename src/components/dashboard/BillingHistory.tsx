@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Receipt, ExternalLink, RotateCcw } from "lucide-react";
+import { Loader2, Receipt, ExternalLink, RotateCcw, Package } from "lucide-react";
 import RefundRequestDialog from "./RefundRequestDialog";
 
 interface Invoice {
