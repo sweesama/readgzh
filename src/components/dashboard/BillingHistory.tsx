@@ -79,8 +79,19 @@ const statusLabel: Record<string, string> = {
   failed: "失败",
 };
 
+interface CreditPack {
+  id: string;
+  stripe_session_id: string;
+  credits_added: number;
+  created_at: string;
+  expires_at: string | null;
+  consumed_amount: number | null;
+  amount: number | null;
+}
+
 const BillingHistory = () => {
   const [data, setData] = useState<BillingData | null>(null);
+  const [creditPacks, setCreditPacks] = useState<CreditPack[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,9 +99,39 @@ const BillingHistory = () => {
     setLoading(true);
     setError(null);
     try {
-      const { data: res, error: err } = await supabase.functions.invoke("billing-history");
+      const [{ data: res, error: err }, { data: user }] = await Promise.all([
+        supabase.functions.invoke("billing-history"),
+        supabase.auth.getUser(),
+      ]);
       if (err) throw err;
       setData(res as BillingData);
+
+      if (user?.user?.id) {
+        const { data: claims } = await supabase
+          .from("credit_pack_claims")
+          .select("id, stripe_session_id, credits_added, created_at")
+          .eq("user_id", user.user.id)
+          .order("created_at", { ascending: false });
+        const { data: grants } = await supabase
+          .from("bonus_grants")
+          .select("source_ref, amount, consumed_amount, expires_at")
+          .eq("user_id", user.user.id)
+          .eq("source", "credit_pack");
+        const grantMap = new Map(
+          (grants ?? []).map((g) => [g.source_ref, g])
+        );
+        setCreditPacks(
+          (claims ?? []).map((c) => {
+            const g = grantMap.get(c.stripe_session_id);
+            return {
+              ...c,
+              expires_at: g?.expires_at ?? null,
+              consumed_amount: g?.consumed_amount ?? null,
+              amount: g?.amount ?? null,
+            };
+          })
+        );
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -101,6 +142,7 @@ const BillingHistory = () => {
   useEffect(() => {
     load();
   }, []);
+
 
   if (loading) {
     return (
