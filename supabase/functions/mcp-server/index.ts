@@ -342,6 +342,12 @@ async function checkMcpRateLimit(ip: string): Promise<{ allowed: boolean; curren
 }
 
 function getClientIp(req: Request): string {
+  // Cloudflare-connected clients: the Worker should forward the real eyeball IP
+  // via CF-Connecting-IP. Prefer it over X-Forwarded-For to avoid bucketing all
+  // anonymous MCP traffic behind the Worker's egress IP.
+  const cfConnectingIp = req.headers.get("cf-connecting-ip");
+  if (cfConnectingIp) return cfConnectingIp.trim();
+
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) return forwarded.split(",")[0].trim();
   const realIp = req.headers.get("x-real-ip");
