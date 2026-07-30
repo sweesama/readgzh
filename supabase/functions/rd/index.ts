@@ -16,6 +16,10 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 const ANON_DAILY_LIMIT = 10;
 
 function getClientIp(req: Request): string {
+  // Cloudflare rewrites CF-Connecting-IP on Worker subrequests; the Worker
+  // forwards the real eyeball IP in this custom header.
+  const realClientIp = req.headers.get("x-real-client-ip");
+  if (realClientIp) return realClientIp.trim();
   const fwd = req.headers.get("x-forwarded-for");
   if (fwd) return fwd.split(",")[0].trim();
   const real = req.headers.get("x-real-ip");
