@@ -771,6 +771,10 @@ export type Database = {
         Args: { p_amount: number; p_key_hash: string }
         Returns: Json
       }
+      search_public_articles: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: Json
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       validate_api_key:

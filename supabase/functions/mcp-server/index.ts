@@ -214,15 +214,14 @@ mcp.tool("readgzh.search", {
     const limit = Math.min(args.limit || 5, 20);
 
     try {
-      // Search in title first
-      // Strip PostgREST filter metacharacters to prevent .or() filter injection.
-      const safeQuery = String(query).replace(/[,.()'"\\:*]/g, "").slice(0, 100);
-      const { data: articles, error } = await supabase
-        .from("articles")
-        .select("id, title, author, publish_time, slug, source_url")
-        .or(`title.ilike.%${safeQuery}%,content.ilike.%${safeQuery}%`)
-        .order("created_at", { ascending: false })
-        .limit(limit);
+      // Index-friendly search RPC (avoids the seq-scan + detoast that caused
+      // Postgres statement timeouts on rare keywords).
+      const safeQuery = String(query).slice(0, 100);
+      const { data: searchResult, error } = await supabase.rpc("search_public_articles", {
+        p_query: safeQuery,
+        p_limit: limit,
+      });
+      const articles = ((searchResult as { articles?: Array<Record<string, string>> } | null)?.articles ?? []);
 
       if (error) {
         console.error("mcp-server search error:", error);
