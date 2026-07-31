@@ -133,14 +133,15 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Strip PostgREST filter metacharacters to prevent .or() filter injection.
-      const safeQuery = query.replace(/[,.()'"\\:*]/g, "").slice(0, 100);
-      const { data: articles, error } = await supabase
-        .from("articles")
-        .select("title, author, publish_time, slug, source_url, view_count, created_at")
-        .or(`title.ilike.%${safeQuery}%,content.ilike.%${safeQuery}%`)
-        .order("created_at", { ascending: false })
-        .limit(limit);
+      // Index-friendly search RPC (forces trigram index usage; a plain
+      // `.or(title.ilike,content.ilike)` seq-scans + detoasts every article
+      // body and hits the Postgres statement timeout on rare keywords).
+      const safeQuery = query.slice(0, 100);
+      const { data: searchResult, error } = await supabase.rpc("search_public_articles", {
+        p_query: safeQuery,
+        p_limit: limit,
+      });
+      const articles = (searchResult as { articles?: unknown[] } | null)?.articles ?? [];
 
       if (error) {
         console.error("[articles-api] search db_error:", error);
