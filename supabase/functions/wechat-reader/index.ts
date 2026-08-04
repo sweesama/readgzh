@@ -1628,10 +1628,10 @@ async function handleDirectSubmit(body: Record<string, unknown>): Promise<Respon
     );
   }
 
-  // Validate sourceUrl format if provided
-  if (sourceUrl && !sourceUrl.startsWith("http")) {
+  // Require a valid WeChat source URL (same allowlist as the scrape path)
+  if (!sourceUrl || !isWeixinUrl(sourceUrl)) {
     return new Response(
-      JSON.stringify({ success: false, error: "无效的来源链接" }),
+      JSON.stringify({ success: false, error: "无效的来源链接：仅支持 mp.weixin.qq.com 文章链接" }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
