@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("billing-history error:", error);
     return json(
-      { error: error instanceof Error ? error.message : "Internal error" },
+      { error: "Internal server error. Please try again later." },
       500
     );
   }
