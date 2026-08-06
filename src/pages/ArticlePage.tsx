@@ -37,8 +37,10 @@ function decodeHtmlEntities(str: string): string {
 
 function proxyWechatImages(html: string): string {
   const proxyBase = `${IMAGE_PROXY_BASE}?url=`;
+  // Cover every WeChat image CDN host (mmbiz / mmecoa / sz_* mirrors, qlogo),
+  // not just mmbiz.qpic.cn — unproxied hosts return WeChat's anti-hotlink placeholder.
   return html.replace(
-    /src="(https?:\/\/mmbiz\.qpic\.cn[^"]*)"/g,
+    /src="(https?:\/\/[a-z0-9.-]+\.(?:qpic|qlogo)\.cn[^"]*)"/gi,
     (_, url) => `src="${proxyBase}${encodeURIComponent(decodeHtmlEntities(url))}"`
   );
 }
