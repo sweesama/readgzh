@@ -755,8 +755,9 @@ function replaceVideoIframesForSsr(html: string, sourceUrl?: string | null): str
 // Proxy WeChat image URLs for SSR output
 function proxyImagesForSsr(html: string): string {
   const proxyBase = `https://api.readgzh.site/image-proxy?url=`;
+  // Match every WeChat image CDN host (mmbiz / mmecoa / sz_* mirrors, qlogo).
   return html.replace(
-    /src="(https?:\/\/mmbiz\.qpic\.cn[^"]*)"/g,
+    /src="(https?:\/\/[a-z0-9.-]+\.(?:qpic|qlogo)\.cn[^"]*)"/gi,
     (_, url: string) => {
       const decoded = url.replace(/&amp;/g, "&");
       return `src="${proxyBase}${encodeURIComponent(decoded)}"`;
