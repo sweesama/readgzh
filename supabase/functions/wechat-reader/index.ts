@@ -1607,6 +1607,66 @@ function normalizeInputUrl(raw: string | null | undefined): string {
   return u;
 }
 
+// ===== Clean bookmarklet-submitted content =====
+// Clients that grab the whole rendered page also capture WeChat's page chrome
+// (赞赏面板 / 留言区 / 二维码 / 作者头像 / 小程序提示). Strip it server-side so
+// stored articles only keep the real body.
+function cleanSubmittedContent(raw: string): string {
+  if (!raw) return raw;
+  let text = raw;
+
+  // 1. Cut everything after the first page-chrome marker (body always precedes it).
+  const cutMarkers = [
+    "预览时标签不可点",
+    "微信扫一扫赞赏作者",
+    "轻点两下取消赞",
+    "继续访问取消",
+    "微信公众平台广告规范指引",
+    "当前内容可能存在未经审核的第三方商业营销信息",
+  ];
+  for (const marker of cutMarkers) {
+    const idx = text.indexOf(marker);
+    if (idx > 200) text = text.substring(0, idx);
+  }
+
+  // 2. Drop non-content images: QR codes, author avatars, share thumbnails.
+  text = text.replace(/!\[[^\]]*\]\((https?:\/\/mp\.weixin\.qq\.com[^)]*)\)/gi, "");
+  text = text.replace(
+    /!\[(?:cover_image|作者头像|跳转二维码|二维码|头像|公众号二维码|logo)[^\]]*\]\([^)]*\)/gi,
+    ""
+  );
+  // Avatar-sized thumbnails (/0? or /64, /96, /132, /300 with wxfrom) from qlogo/qpic
+  text = text.replace(
+    /!\[[^\]]*\]\(https?:\/\/[a-z0-9.-]+\.(?:qpic|qlogo)\.cn[^)]*\/(?:0|64|96|132|300)\?[^)]*\)/gi,
+    ""
+  );
+
+  // 3. Remove standalone boilerplate lines.
+  const noiseLines = new Set([
+    "预览时标签不可点", "关闭", "更多", "名称已清空", "喜欢作者", "其它金额", "确定", "返回",
+    "赞赏金额", "最低赞赏 ¥0", "阅读原文", "留言", "暂无留言", "已无更多数据", "发消息",
+    "写留言:", "微信扫一扫", "关注该公众号", "使用小程序", "取消允许", "知道了", "已关注",
+    "作品", "暂无作品", "赞赏后展示我的头像", "在小说阅读器读本章", "去阅读",
+    "在小说阅读器中沉浸阅读", "使用完整服务", "微信扫一扫可打开此内容，", "×分析", "¥", "​",
+    "调整当前正文文字大小", "100%", "继续访问取消",
+  ]);
+  text = text
+    .split("\n")
+    .filter((line) => {
+      const t = line.trim();
+      if (!t) return true;
+      if (noiseLines.has(t)) return false;
+      if (/^\d$|^\.$/.test(t)) return false; // 赞赏键盘 0-9 和小数点
+      if (/^\*\*(?:其它金额|微信扫一扫赞赏作者|调整当前正文文字大小)\*\*$/.test(t)) return false;
+      if (/^搜索「.*」网络结果$/.test(t)) return false;
+      return true;
+    })
+    .join("\n");
+
+  // 4. Collapse the blank lines the removals leave behind.
+  return text.replace(/\n{3,}/g, "\n\n").trim();
+}
+
 // ===== Handle direct article submission (from bookmarklet) =====
 async function handleDirectSubmit(body: Record<string, unknown>): Promise<Response> {
   const title = typeof body.title === "string" ? body.title.trim().substring(0, 500) : "";
