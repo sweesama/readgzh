@@ -1610,7 +1610,9 @@ function normalizeInputUrl(raw: string | null | undefined): string {
 // ===== Handle direct article submission (from bookmarklet) =====
 async function handleDirectSubmit(body: Record<string, unknown>): Promise<Response> {
   const title = typeof body.title === "string" ? body.title.trim().substring(0, 500) : "";
-  const content = typeof body.content === "string" ? body.content.trim().substring(0, 500000) : "";
+  const content = cleanSubmittedContent(
+    typeof body.content === "string" ? body.content.trim().substring(0, 500000) : ""
+  );
   const author = typeof body.author === "string" ? body.author.trim().substring(0, 100) : "未知作者";
   const sourceUrl = typeof body.sourceUrl === "string" ? body.sourceUrl.trim().substring(0, 2000) : null;
   const publishTime = typeof body.publishTime === "string" ? body.publishTime.trim().substring(0, 100) : null;
