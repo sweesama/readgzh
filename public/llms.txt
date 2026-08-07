@@ -73,6 +73,7 @@ ReadGZH operates a seven-stage extraction pipeline purpose-built for WeChat's un
 ## Optional
 
 - [OpenAPI spec](https://readgzh.site/.well-known/openapi.yaml): Machine-readable API description for plugin / GPT-Action import.
+- [Agent Plugin](https://readgzh.site/plugin/plugin.json): Agent Plugins 1.0.0 package (manifest, `mcp.json`, and skill) — vendor-neutral, installable in any conformant AI editor.
 - [SKILL.md](https://readgzh.site/.well-known/SKILL.md): ClawHub skill descriptor.
 - [Privacy policy](https://readgzh.site/privacy): How ReadGZH handles user data.
 - [Terms of service](https://readgzh.site/terms): Acceptable use and disclaimers.
