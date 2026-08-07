@@ -1635,11 +1635,18 @@ function cleanSubmittedContent(raw: string): string {
     /!\[(?:cover_image|作者头像|跳转二维码|二维码|头像|公众号二维码|logo)[^\]]*\]\([^)]*\)/gi,
     ""
   );
-  // Avatar-sized thumbnails (/0? or /64, /96, /132, /300 with wxfrom) from qlogo/qpic
+  // Avatar/thumbnail images. qlogo.cn is avatar-only, so any size can go.
   text = text.replace(
-    /!\[[^\]]*\]\(https?:\/\/[a-z0-9.-]+\.(?:qpic|qlogo)\.cn[^)]*\/(?:0|64|96|132|300)\?[^)]*\)/gi,
+    /!\[[^\]]*\]\(https?:\/\/[a-z0-9.-]+\.qlogo\.cn[^)]*\)/gi,
     ""
   );
+  // On qpic.cn only the small fixed sizes are avatars/thumbnails —
+  // "/0?" is WeChat's ORIGINAL-size body image and must be kept.
+  text = text.replace(
+    /!\[[^\]]*\]\(https?:\/\/[a-z0-9.-]+\.qpic\.cn[^)]*\/(?:64|96|132|300)\?[^)]*\)/gi,
+    ""
+  );
+
 
   // 3. Remove standalone boilerplate lines.
   const noiseLines = new Set([
