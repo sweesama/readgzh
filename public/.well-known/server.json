@@ -111,6 +111,7 @@
     "openapi": "https://readgzh.site/.well-known/openapi.yaml",
     "skill": "https://readgzh.site/.well-known/SKILL.md",
     "ai_plugin": "https://readgzh.site/.well-known/ai-plugin.json",
+    "agent_plugin": "https://readgzh.site/plugin/plugin.json",
     "llms_txt": "https://readgzh.site/llms.txt"
   },
   "contact": {
