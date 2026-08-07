@@ -1797,12 +1797,16 @@ async function handleDirectSubmit(body: Record<string, unknown>): Promise<Respon
     }
   }
 
+  // Submitted bodies are markdown-ish text; keep an HTML rendition so images render.
+  const submittedHtml = /!\[[^\]]*\]\(/.test(content) ? markdownToHtml(content) : null;
+
   const { data: saved, error: dbError } = await supabase
     .from("articles")
     .insert({
       title,
       author: author || "未知作者",
       content,
+      raw_html: submittedHtml,
       source_url: sourceUrl,
       publish_time: publishTime,
       slug,
