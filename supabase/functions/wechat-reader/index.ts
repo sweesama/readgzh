@@ -2011,18 +2011,22 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
           if (isVerificationPage(fc.markdown)) {
             console.log(`Firecrawl markdown is verification page text (${fc.markdown.length} chars), rejecting`);
           } else {
-            console.log(`Using Firecrawl markdown as content: ${fc.markdown.length} chars`);
+            // Markdown from a full-page render carries WeChat's page chrome
+            // (赞赏面板 / 键盘数字 / 二维码 / 头像) — reuse the bookmarklet cleaner.
+            const cleanedMd = cleanSubmittedContent(fc.markdown);
+            console.log(`Using Firecrawl markdown as content: ${fc.markdown.length} -> ${cleanedMd.length} chars after cleaning`);
             const meta = extractMetadata(html);
-            const mdTitleMatch = fc.markdown.match(/^#\s+(.+)/m);
+            const mdTitleMatch = cleanedMd.match(/^#\s+(.+)/m);
             if (mdTitleMatch && meta.title === "无标题") {
               meta.title = mdTitleMatch[1].trim();
             }
             result = {
               metadata: meta,
-              contentHtml: fc.markdown.split("\n").filter(l => l.trim()).map(l => `<p>${l}</p>`).join("\n"),
-              textContent: fc.markdown,
+              contentHtml: cleanedMd.split("\n").filter(l => l.trim()).map(l => `<p>${l}</p>`).join("\n"),
+              textContent: cleanedMd,
             };
           }
+
         }
       }
     }
