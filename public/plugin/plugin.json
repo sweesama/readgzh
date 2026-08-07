@@ -1,0 +1,27 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "readgzh",
+  "version": "1.3.0",
+  "description": "Let AI read full-text WeChat Official Account (微信公众号) articles. Cloud-based, zero-install: bundles the ReadGZH remote MCP server plus a skill that teaches agents how to read, search, and summarize mp.weixin.qq.com articles.",
+  "author": {
+    "name": "ReadGZH",
+    "email": "support@readgzh.site",
+    "url": "https://readgzh.site"
+  },
+  "homepage": "https://readgzh.site",
+  "repository": "https://github.com/sweesama/readgzh",
+  "license": "AGPL-3.0",
+  "keywords": [
+    "wechat",
+    "weixin",
+    "微信",
+    "公众号",
+    "mp.weixin.qq.com",
+    "article",
+    "reader",
+    "scraper",
+    "chinese",
+    "content-extraction",
+    "mcp"
+  ]
+}
