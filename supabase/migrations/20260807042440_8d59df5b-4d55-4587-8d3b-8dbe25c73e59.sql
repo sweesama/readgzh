@@ -1,0 +1,1 @@
+delete from public.articles where source_url like '%\_ut6Hg-lgCGV44HM17AL5A%';
