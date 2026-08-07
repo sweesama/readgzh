@@ -1,0 +1,1 @@
+DELETE FROM public.articles WHERE id = '9844e17f-2ab2-480c-94cc-736dc979fba0';
