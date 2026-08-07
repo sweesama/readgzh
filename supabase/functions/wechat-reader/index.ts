@@ -1612,6 +1612,61 @@ function normalizeInputUrl(raw: string | null | undefined): string {
   return u;
 }
 
+// ===== Minimal Markdown -> HTML =====
+// The Firecrawl-markdown fallback used to wrap raw markdown lines in <p>, so
+// `![图片](url)` stayed literal text and readers saw no images at all.
+// This converts the markdown constructs WeChat pages actually produce.
+function markdownLineToHtml(line: string): string {
+  const proxyBase = `https://api.readgzh.site/image-proxy?url=`;
+  let out = line;
+
+  // Standalone image line -> <figure><img>
+  const imgOnly = out.match(/^!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)$/);
+  if (imgOnly) {
+    const src = imgOnly[1].replace(/#imgIndex=\d+$/, "").replace(/&amp;/g, "&");
+    const proxied = /(?:qpic|qlogo)\.cn/i.test(src)
+      ? `${proxyBase}${encodeURIComponent(src)}`
+      : src;
+    return `<figure><img src="${proxied}" alt="图片" style="max-width:100%;height:auto;" /></figure>`;
+  }
+
+  // Inline images
+  out = out.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (_m, alt, url) => {
+    const src = String(url).replace(/#imgIndex=\d+$/, "").replace(/&amp;/g, "&");
+    const proxied = /(?:qpic|qlogo)\.cn/i.test(src)
+      ? `${proxyBase}${encodeURIComponent(src)}`
+      : src;
+    return `<img src="${proxied}" alt="${alt || "图片"}" style="max-width:100%;height:auto;" />`;
+  });
+  // Links
+  out = out.replace(
+    /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
+    (_m, text, url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`
+  );
+  // Emphasis
+  out = out.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  out = out.replace(/(?:^|\s)_([^_]+)_(?=\s|$)/g, (m, t) => m.replace(`_${t}_`, `<em>${t}</em>`));
+
+  // Headings
+  const h = out.match(/^(#{1,6})\s+(.*)$/);
+  if (h) return `<h${h[1].length}>${h[2]}</h${h[1].length}>`;
+  // Blockquote / list
+  if (/^>\s+/.test(out)) return `<blockquote><p>${out.replace(/^>\s+/, "")}</p></blockquote>`;
+  if (/^[-*+]\s+/.test(out)) return `<li>${out.replace(/^[-*+]\s+/, "")}</li>`;
+  if (/^-{3,}$/.test(out.trim())) return "<hr />";
+
+  return `<p>${out}</p>`;
+}
+
+function markdownToHtml(md: string): string {
+  return md
+    .split("\n")
+    .filter((l) => l.trim())
+    .map(markdownLineToHtml)
+    .join("\n");
+}
+
+
 // ===== Clean bookmarklet-submitted content =====
 // Clients that grab the whole rendered page also capture WeChat's page chrome
 // (赞赏面板 / 留言区 / 二维码 / 作者头像 / 小程序提示). Strip it server-side so
@@ -1742,12 +1797,16 @@ async function handleDirectSubmit(body: Record<string, unknown>): Promise<Respon
     }
   }
 
+  // Submitted bodies are markdown-ish text; keep an HTML rendition so images render.
+  const submittedHtml = /!\[[^\]]*\]\(/.test(content) ? markdownToHtml(content) : null;
+
   const { data: saved, error: dbError } = await supabase
     .from("articles")
     .insert({
       title,
       author: author || "未知作者",
       content,
+      raw_html: submittedHtml,
       source_url: sourceUrl,
       publish_time: publishTime,
       slug,
@@ -1964,7 +2023,17 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
       }
       // Standard article extraction
       const extracted = extractFormattedContent(srcHtml);
-      return { metadata: meta, contentHtml: extracted.contentHtml, textContent: extracted.textContent, isPictureWithImages: false };
+      // Image-only posters: #js_content holds real <img> tags but almost no text.
+      // Treat them as valid picture articles so we don't fall through to the
+      // video-only check or the Firecrawl markdown path (which loses the images).
+      const imgCount = (extracted.contentHtml.match(/<img\b/gi) || []).length;
+      const hasImages = imgCount > 0;
+      return {
+        metadata: meta,
+        contentHtml: extracted.contentHtml,
+        textContent: extracted.textContent || (hasImages ? meta.title : ""),
+        isPictureWithImages: hasImages,
+      };
     }
 
     // First extraction attempt
@@ -2022,7 +2091,7 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
             }
             result = {
               metadata: meta,
-              contentHtml: cleanedMd.split("\n").filter(l => l.trim()).map(l => `<p>${l}</p>`).join("\n"),
+              contentHtml: markdownToHtml(cleanedMd),
               textContent: cleanedMd,
             };
           }
