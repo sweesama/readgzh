@@ -78,13 +78,18 @@ function isVideoOnlyArticle(html: string, textContent: string, contentHtml: stri
   // (picture_page_info_list scripts, share templates, etc.).
   const imgCount = (contentHtml.match(/<img\b/gi) || []).length;
   if (imgCount >= 2) return false;
+  // Only look for video markers inside the extracted article body when we have it.
+  // The full page HTML always ships WeChat's boilerplate players/share templates,
+  // which caused single-image posters to be misflagged as video-only.
+  const scope = contentHtml && contentHtml.length > 100 ? contentHtml : html;
   const hasVideoIframe =
-    /<iframe[^>]*class="[^"]*video_iframe/i.test(html) ||
-    /<iframe[^>]*data-mpvid=/i.test(html) ||
-    /v\.qq\.com\/(txp|iframe)/i.test(html) ||
-    /mp_video_trans_info/i.test(html);
+    /<iframe[^>]*class="[^"]*video_iframe/i.test(scope) ||
+    /<iframe[^>]*data-mpvid=/i.test(scope) ||
+    /v\.qq\.com\/(txp|iframe)/i.test(scope) ||
+    /mp_video_trans_info/i.test(scope);
   return hasVideoIframe;
 }
+
 
 // Refund credits when a scrape fails after upfront deduction. Best-effort.
 async function refundCredits(keyHash: string | undefined, amount: number): Promise<boolean> {
