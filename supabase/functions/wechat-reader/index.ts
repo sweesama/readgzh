@@ -2087,7 +2087,7 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
             }
             result = {
               metadata: meta,
-              contentHtml: cleanedMd.split("\n").filter(l => l.trim()).map(l => `<p>${l}</p>`).join("\n"),
+              contentHtml: markdownToHtml(cleanedMd),
               textContent: cleanedMd,
             };
           }
