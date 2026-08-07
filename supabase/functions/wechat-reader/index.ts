@@ -1964,7 +1964,17 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
       }
       // Standard article extraction
       const extracted = extractFormattedContent(srcHtml);
-      return { metadata: meta, contentHtml: extracted.contentHtml, textContent: extracted.textContent, isPictureWithImages: false };
+      // Image-only posters: #js_content holds real <img> tags but almost no text.
+      // Treat them as valid picture articles so we don't fall through to the
+      // video-only check or the Firecrawl markdown path (which loses the images).
+      const imgCount = (extracted.contentHtml.match(/<img\b/gi) || []).length;
+      const hasImages = imgCount > 0;
+      return {
+        metadata: meta,
+        contentHtml: extracted.contentHtml,
+        textContent: extracted.textContent || (hasImages ? meta.title : ""),
+        isPictureWithImages: hasImages,
+      };
     }
 
     // First extraction attempt
