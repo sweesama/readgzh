@@ -21,10 +21,17 @@ const ALLOWED_REFERER_HOSTS = [
   "mp.weixin.qq.com",
 ];
 
-// Higher daily ceiling — a single article page can pull dozens of images.
-const IMG_DAILY_LIMIT = 500;
+// A single image-heavy article can pull 50+ images, and readers open many
+// articles per day. Keep a ceiling for abuse, but well above normal reading.
+const IMG_DAILY_LIMIT = 5000;
 
 function getClientIp(req: Request): string {
+  // Our Cloudflare Worker forwards the true visitor IP here; Cloudflare rewrites
+  // cf-connecting-ip on subrequests, so this header must win.
+  const realClient = req.headers.get("x-real-client-ip");
+  if (realClient) return realClient.trim();
+  const cf = req.headers.get("cf-connecting-ip");
+  if (cf) return cf.trim();
   const fwd = req.headers.get("x-forwarded-for");
   if (fwd) return fwd.split(",")[0].trim();
   const real = req.headers.get("x-real-ip");
