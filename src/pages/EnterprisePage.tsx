@@ -70,7 +70,9 @@ const EnterprisePage = () => {
     }
     setSubmitting(true);
     const { error } = await supabase.from("enterprise_inquiries").insert({
-      ...parsed.data,
+      company_name: parsed.data.company_name,
+      contact_name: parsed.data.contact_name,
+      email: parsed.data.email,
       phone: parsed.data.phone || null,
       tax_id: parsed.data.tax_id || null,
       note: parsed.data.note || null,
