@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, ArrowLeft, Zap, Gift, Loader2, Sparkles, Package, Clock, Infinity as InfinityIcon } from "lucide-react";
+import { Check, ArrowLeft, Zap, Gift, Loader2, Sparkles, Package, Clock, Building2, Infinity as InfinityIcon } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import Footer from "@/components/home/Footer";
 import SEO from "@/components/SEO";
@@ -295,6 +295,87 @@ const PricingPage = () => {
           </p>
         </div>
 
+        {/* 企业采购 */}
+        <div className="max-w-5xl mx-auto mb-20">
+          <div className="text-center mb-8">
+            <Badge variant="secondary" className="mb-3">公司报销 / 团队共用</Badge>
+            <h2 className="text-3xl font-bold mb-3">企业版：对公转账 · 可开发票</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              团队共享一份积分池，不按人头收费。支持银行对公转账，可开具增值税电子普通发票，并提供简版订单确认书。
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                name: "团队版",
+                annual: "¥1,380",
+                monthly: "¥149",
+                credits: "每月 3,000 积分",
+                articles: "约 1,000 篇新文章 / 月",
+                highlight: false,
+                features: ["团队共享积分池，不限成员数", "电子增值税普通发票", "对公转账 / 支付宝 / 微信", "邮件支持（1 个工作日内响应）"],
+              },
+              {
+                name: "企业版",
+                annual: "¥3,980",
+                monthly: "¥429",
+                credits: "每月 12,000 积分",
+                articles: "约 4,000 篇新文章 / 月",
+                highlight: true,
+                features: ["团队共享积分池，不限成员数", "电子增值税普通发票 + 订单确认书", "AI 智能摘要、优先抓取队列", "更高 API 并发与限流额度", "优先邮件支持"],
+              },
+              {
+                name: "旗舰版",
+                annual: "¥9,800",
+                monthly: "¥1,080",
+                credits: "每月 40,000 积分",
+                articles: "约 13,000 篇新文章 / 月",
+                highlight: false,
+                features: ["以上全部权益", "额度可按实际用量定制", "专属对接人，问题优先处理", "可签署简版服务协议"],
+              },
+            ].map((tier) => (
+              <Card key={tier.name} className={`relative flex flex-col ${tier.highlight ? "border-primary shadow-lg" : ""}`}>
+                {tier.highlight && (
+                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">最受欢迎</Badge>
+                )}
+                <CardHeader>
+                  <Building2 className={`h-8 w-8 mb-2 ${tier.highlight ? "text-primary" : "text-muted-foreground"}`} />
+                  <CardTitle className="text-xl">{tier.name}</CardTitle>
+                  <div className="flex items-baseline gap-1 mt-2">
+                    <span className="text-3xl font-bold">{tier.annual}</span>
+                    <span className="text-muted-foreground">/年</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">月付 {tier.monthly}/月（仅开普票）</p>
+                  <CardDescription className="mt-2">
+                    {tier.credits} · {tier.articles}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1 flex flex-col">
+                  <ul className="space-y-2 mb-6 flex-1">
+                    {tier.features.map((f) => (
+                      <li key={f} className="flex items-start gap-2 text-sm">
+                        <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />{f}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    className="w-full"
+                    variant={tier.highlight ? "default" : "outline"}
+                    onClick={() => navigate("/enterprise")}
+                  >
+                    联系采购
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <p className="text-center text-xs text-muted-foreground mt-6">
+            * 价格均为含税价，已包含开票成本。年付更划算；月付需人工按月开票与对账，因此价格更高且仅提供普通发票。
+            专用发票请在<button onClick={() => navigate("/enterprise")} className="text-primary underline mx-1">采购咨询</button>中说明，我们个案确认。
+          </p>
+        </div>
 
 
         {/* FAQ */}
@@ -344,6 +425,14 @@ const PricingPage = () => {
             {
               q: "支持哪些支付方式？",
               a: "我们通过 Stripe 支持：信用卡（Visa / Mastercard / 银联 UnionPay）、Link、支付宝、微信支付。注意：订阅套餐（Lite / Pro 月付 / 年付）由于需要按周期自动扣款，仅支持信用卡和 Link；支付宝、微信支付仅支持加量包等一次性付款。如需其他支付方式，欢迎联系我们。",
+            },
+            {
+              q: "可以开发票吗？能对公转账吗？",
+              a: "个人订阅（Lite / Pro）通过 Stripe 收款，只能提供 Stripe 电子收据，无法开具中国增值税发票。如果需要正规发票或走公司账户付款，请选择「企业版」：支持银行对公转账、支付宝、微信，可开具增值税电子普通发票（类目：信息技术服务*技术服务费），到账后 3 个工作日内发送到你的邮箱。专用发票请在采购咨询中说明，我们个案确认。",
+            },
+            {
+              q: "企业版和 Pro 有什么区别？",
+              a: "功能上企业版包含 Pro 的全部能力，区别在于：积分额度更高、团队共享同一份积分池（不按人头收费）、支持对公转账与开票、提供订单确认书与优先支持。企业版由人工开通，年付更划算。",
             },
           ].map(({ q, a }) => (
             <div key={q} className="border rounded-lg p-4">

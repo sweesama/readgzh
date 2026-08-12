@@ -22,6 +22,7 @@ import CommentsPage from "./pages/CommentsPage";
 import UnsubscribePage from "./pages/UnsubscribePage";
 import ChangelogPage from "./pages/ChangelogPage";
 import InvitePage from "./pages/InvitePage";
+import EnterprisePage from "./pages/EnterprisePage";
 import ReferralCatcher from "./components/ReferralCatcher";
 
 // Error boundary to prevent WebMCP from crashing the app
@@ -66,6 +67,7 @@ const App = () => (
           <Route path="/faq" element={<FAQPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/enterprise" element={<EnterprisePage />} />
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
           <Route path="/comments" element={<CommentsPage />} />
           <Route path="/unsubscribe" element={<UnsubscribePage />} />
