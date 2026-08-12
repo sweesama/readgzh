@@ -383,6 +383,54 @@ export type Database = {
         }
         Relationships: []
       }
+      enterprise_inquiries: {
+        Row: {
+          billing_cycle: string | null
+          company_name: string
+          contact_name: string
+          created_at: string
+          email: string
+          id: string
+          invoice_type: string | null
+          note: string | null
+          phone: string | null
+          plan: string | null
+          status: string
+          tax_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          billing_cycle?: string | null
+          company_name: string
+          contact_name: string
+          created_at?: string
+          email: string
+          id?: string
+          invoice_type?: string | null
+          note?: string | null
+          phone?: string | null
+          plan?: string | null
+          status?: string
+          tax_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          billing_cycle?: string | null
+          company_name?: string
+          contact_name?: string
+          created_at?: string
+          email?: string
+          id?: string
+          invoice_type?: string | null
+          note?: string | null
+          phone?: string | null
+          plan?: string | null
+          status?: string
+          tax_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       manual_subscriptions: {
         Row: {
           amount_cny: number | null
