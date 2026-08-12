@@ -22,6 +22,7 @@ import CommentsPage from "./pages/CommentsPage";
 import UnsubscribePage from "./pages/UnsubscribePage";
 import ChangelogPage from "./pages/ChangelogPage";
 import InvitePage from "./pages/InvitePage";
+import EnterprisePage from "./pages/EnterprisePage";
 import ReferralCatcher from "./components/ReferralCatcher";
 
 // Error boundary to prevent WebMCP from crashing the app
