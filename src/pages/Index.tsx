@@ -228,7 +228,7 @@ const MatrixView = ({ onExit }: { onExit: () => void }) => {
     "  ✓ Claude     (Anthropic)",
     "  ✓ Perplexity (Perplexity AI)",
     "  ✓ Gemini     (Google DeepMind)",
-    "  ✓ DeepSeek / 豆包 / Kimi (web-access dependent)
+    "  ✓ DeepSeek / 豆包 / Kimi (web-access dependent)",
     "  ✓ Any HTTP-capable LLM agent",
     "",
     "> API ENDPOINT:",
