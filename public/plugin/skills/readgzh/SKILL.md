@@ -31,7 +31,7 @@ All tools come from the bundled `readgzh` MCP server.
 
 - `url` (required) — the full `https://mp.weixin.qq.com/s/...` link.
 - `format` (optional) — pass `"text"` for Markdown. **Prefer `text`**: it cuts
-  token use by roughly half versus the default HTML.
+  token use noticeably versus the default HTML.
 
 Returns the title, author, publish time, and the article body.
 
@@ -61,7 +61,7 @@ Returns the title, author, publish time, and the article body.
    chunk is the whole article.
 3. User asks about a topic rather than a specific link → `readgzh.search` first,
    then `readgzh.get` on the most relevant slug.
-4. Only the article's own images are returned as permanent proxied CDN links;
+4. Only the article's own images are returned as proxied CDN links;
    quote them as-is rather than rewriting the URLs.
 
 ## Rules
@@ -71,7 +71,7 @@ Returns the title, author, publish time, and the article body.
   that is exactly what these tools solve.
 - Only `mp.weixin.qq.com` / `weixin.qq.com` article links are supported. For any
   other site, use the normal web tools.
-- Reading an article costs credits; reading a cached article costs nothing.
+- Reading an uncached article costs 3 credits; reading a cached article costs nothing.
   Re-read via `readgzh.get` with the slug instead of calling `readgzh.read` on
   the same URL twice in one session.
 

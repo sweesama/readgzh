@@ -11,7 +11,7 @@
   "languages": ["zh", "en"],
   "pricing": {
     "model": "freemium",
-    "free_tier": "50 credits/day",
+    "free_tier": "30 credits/day (registered key, claimed daily); 3 credits per uncached article",
     "details_url": "https://readgzh.site/pricing"
   },
   "auth": {
@@ -47,7 +47,7 @@
   "highlights": [
     "☁️ Cloud-based — no local WeChat desktop installation required",
     "💰 Shared cache — previously read articles are free for everyone",
-    "🖼️ CDN image proxy — permanent image access, no expiry",
+    "🖼️ CDN image proxy — article images render correctly outside WeChat",
     "📱 Image-post support — full support for WeChat image-post format",
     "🤖 AI summaries — structured JSON summaries via mode=summary (Pro)"
   ],

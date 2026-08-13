@@ -10,10 +10,11 @@ info:
     Register and get a free API Key at https://readgzh.site/dashboard.
     
     ## Credits
-    - Simple article (text only, < 5 images): 1 credit
-    - Complex article (≥ 5 images or image template): 2 credits
+    - Any uncached article: 3 credits
     - Cached article read: Free
-    - Free tier: 50 credits/day
+    - Free tier (registered API Key): 30 credits/day, claimed daily
+    - Anonymous (no API Key): 10 credits per IP per day
+    - Lite: 300 credits/month; Pro: 2,000 credits/month
   version: 1.3.0
   contact:
     url: https://readgzh.site

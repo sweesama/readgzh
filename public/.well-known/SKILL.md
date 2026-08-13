@@ -83,7 +83,7 @@ When a user shares a WeChat article link (`mp.weixin.qq.com`), use the `readgzh.
 
 - **Zero Installation** — Cloud-based API, no local WeChat desktop required
 - **Shared Cache** — Previously read articles cost 0 credits for everyone
-- **Image Proxy** — CDN-proxied images with permanent access (no expiry)
+- **Image Proxy** — CDN-proxied images that render correctly outside WeChat
 - **Image Posts** — Full support for WeChat image-post format
 - **AI Summaries** — Structured JSON summaries via `mode=summary` (Pro)
 
@@ -152,16 +152,17 @@ Example: `GET /rd?url=WECHAT_URL&format=text` with header `Authorization: Bearer
 
 Without a key, the public endpoint is used with daily rate limits.
 
-Get a free API Key: https://readgzh.site/dashboard (50 credits/day)
+Get a free API Key: https://readgzh.site/dashboard (30 credits/day, claimed daily)
 
 ## Credits & Pricing
 
 | Action | Cost |
 |--------|------|
-| Simple article (text only, < 5 images) | 1 credit |
-| Complex article (≥ 5 images or image template) | 2 credits |
+| Any uncached article | 3 credits |
 | Cached article read | **Free** |
-| Free tier | 50 credits/day |
+| Free tier (registered key) | 30 credits/day, claimed daily |
+| Anonymous (no API Key) | 10 credits per IP per day |
+| Lite / Pro | 300 / 2,000 credits per month |
 
 ## Learn More
 
