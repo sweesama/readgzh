@@ -1,6 +1,6 @@
 # ReadGZH — WeChat Article AI Reader
 
-> ReadGZH is a cloud-based API service that makes WeChat Official Account (微信公众号) articles fully readable by AI systems. It exists because WeChat's anti-bot defenses block all external HTTP requests — including those from ChatGPT, Claude, Gemini, and Perplexity — making it impossible for AI to access the content behind `mp.weixin.qq.com` links.
+> ReadGZH is a cloud-based API service that makes WeChat Official Account (微信公众号) articles fully readable by AI systems. It exists because WeChat heavily restricts off-platform access: requests from AI tools such as ChatGPT, Claude, Gemini and Perplexity usually cannot retrieve the body text behind `mp.weixin.qq.com` links.
 
 ## What ReadGZH Does
 
