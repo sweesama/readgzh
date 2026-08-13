@@ -660,27 +660,62 @@ const DashboardPage = () => {
 
         {/* Upgrade Banner - only show for free users */}
         {!isPro && !proLoading && (
-          <Card className="border-primary/40 bg-gradient-to-r from-primary/10 to-primary/5">
-            <CardContent className="pt-6 flex items-center justify-between flex-wrap gap-3">
-              <div className="flex items-center gap-3">
-                <Zap className="h-8 w-8 text-primary" />
-                <div>
-                  <p className="font-semibold">升级到 Pro</p>
-                  <p className="text-sm text-muted-foreground">每月 2,000 积分 · 无需每日领取 · 优先抓取队列</p>
+          isActiveFreeUser ? (
+            <Card className="border-primary/40 bg-gradient-to-r from-primary/10 to-primary/5">
+              <CardContent className="pt-6 space-y-4">
+                <div className="flex items-start gap-3">
+                  <Zap className="h-8 w-8 text-primary shrink-0" />
+                  <div className="space-y-1">
+                    <p className="font-semibold">你已经在稳定使用 ReadGZH 了</p>
+                    <p className="text-sm text-muted-foreground">
+                      近 30 天约消耗 {last30Credits} 积分 · 活跃 {last30ActiveDays} 天。
+                      订阅后积分每月自动发放，<strong className="text-foreground">不用每天回来手动领取</strong>。
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Lite ¥9/月，每月 300 积分，适合每月读 100 篇以内；Pro ¥39/月，每月 2,000 积分，另含 AI 智能摘要与优先抓取队列。
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex gap-2">
-                <Button onClick={() => handleUpgrade("pro")} disabled={upgradeLoading} size="sm">
-                  {upgradeLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
-                  ¥39/月
-                </Button>
-                <Button onClick={() => handleUpgrade("pro_annual")} disabled={upgradeLoading} variant="outline" size="sm">
-                  ¥299/年 <Badge variant="secondary" className="ml-1 text-xs">省¥169</Badge>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" onClick={() => navigate("/pricing")}>
+                    <Sparkles className="mr-2 h-4 w-4" />对比 Lite 与 Pro
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleUpgrade("pro")}
+                    disabled={upgradeLoading}
+                  >
+                    {upgradeLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    直接订阅 Pro ¥39/月
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-primary/40 bg-gradient-to-r from-primary/10 to-primary/5">
+              <CardContent className="pt-6 flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-3">
+                  <Zap className="h-8 w-8 text-primary" />
+                  <div>
+                    <p className="font-semibold">升级到 Pro</p>
+                    <p className="text-sm text-muted-foreground">每月 2,000 积分 · 无需每日领取 · 优先抓取队列</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={() => handleUpgrade("pro")} disabled={upgradeLoading} size="sm">
+                    {upgradeLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+                    ¥39/月
+                  </Button>
+                  <Button onClick={() => handleUpgrade("pro_annual")} disabled={upgradeLoading} variant="outline" size="sm">
+                    ¥299/年 <Badge variant="secondary" className="ml-1 text-xs">省¥169</Badge>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )
         )}
+
 
         {/* Pro Status Banner */}
         {isPro && (
