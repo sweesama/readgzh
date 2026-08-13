@@ -199,7 +199,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   // Handle credit pack purchases (supports quantity > 1)
   const type = session.metadata?.type;
-  if (type === "credits" || type === "credits_free") {
+  if (type === "credits" || type === "credits_free" || type === "credits_crypto") {
     const qty = Math.max(1, parseInt(session.metadata?.quantity || "1", 10) || 1);
     await ensureCreditPackGrant(userId, session.id, 500 * qty);
     return;

@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
 
     const user = userData.user;
     const body = await req.json().catch(() => ({}));
-    const type = body.type || "pro"; // "pro", "pro_annual", "lite", "credits", or "credits_free"
+    const type = body.type || "pro"; // "pro", "pro_annual", "lite", "credits", "credits_free", or "credits_crypto"
     const rawQty = Number(body.quantity);
     const quantity = Number.isFinite(rawQty) ? Math.min(20, Math.max(1, Math.floor(rawQty))) : 1;
 

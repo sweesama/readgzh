@@ -106,14 +106,15 @@ const DashboardPage = () => {
     setBuyDialogOpen(true);
   };
 
-  const handleConfirmBuyCredits = async () => {
+  const handleConfirmBuyCredits = async (method: "card" | "crypto" = "card") => {
     setUpgradeLoading(true);
     try {
-      const creditType = isPro ? "credits" : "credits_free";
+      const creditType = method === "crypto" ? "credits_crypto" : isPro ? "credits" : "credits_free";
       const { data, error } = await supabase.functions.invoke("create-payment", {
         body: { type: creditType, quantity: buyQuantity },
       });
       if (error) throw error;
+      if (data?.error) throw new Error(data.message || data.error);
       if (data?.url) {
         setBuyDialogOpen(false);
         window.open(data.url, "_blank");
@@ -123,6 +124,7 @@ const DashboardPage = () => {
     }
     setUpgradeLoading(false);
   };
+
 
   const fetchKeys = useCallback(async () => {
     setKeysLoading(true);
