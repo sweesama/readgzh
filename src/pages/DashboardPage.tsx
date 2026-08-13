@@ -437,10 +437,8 @@ const DashboardPage = () => {
     const d = new Date(u.usage_date);
     return d >= new Date(Date.now() - 30 * 86400000);
   });
-  const last30Requests = last30Days.reduce((sum, u) => sum + u.request_count, 0);
-  const last30Cached = last30Days.reduce((sum, u) => sum + u.cached_count, 0);
-  // Cached reads don't consume credits; uncached articles cost 3 credits each.
-  const last30Credits = Math.max(0, last30Requests - last30Cached) * 3;
+  // request_count already stores the credit cost per validate_api_key call.
+  const last30Credits = last30Days.reduce((sum, u) => sum + u.request_count, 0);
   const last30ActiveDays = new Set(
     last30Days.filter((u) => u.request_count > 0).map((u) => u.usage_date)
   ).size;
@@ -668,7 +666,7 @@ const DashboardPage = () => {
                   <div className="space-y-1">
                     <p className="font-semibold">你已经在稳定使用 ReadGZH 了</p>
                     <p className="text-sm text-muted-foreground">
-                      近 30 天约消耗 {last30Credits} 积分 · 活跃 {last30ActiveDays} 天。
+                      近 30 天已消耗 {last30Credits} 积分 · 活跃 {last30ActiveDays} 天。
                       订阅后积分每月自动发放，<strong className="text-foreground">不用每天回来手动领取</strong>。
                     </p>
                     <p className="text-sm text-muted-foreground">
