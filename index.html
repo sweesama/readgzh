@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ReadGZH - 微信文章 AI 阅读器 | 让 AI 读懂微信公众号</title>
-    <meta name="description" content="ReadGZH: 微信公众号文章 AI 协议级转换器。自研 7 阶段提取管线，99.89% 穿透反爬，Token 消耗降低 50–87%。支持 API / MCP 协议，ChatGPT、Claude、Perplexity、Gemini 无缝引用。全球共享缓存，缓存文章永久免费读取。">
+    <meta name="description" content="ReadGZH：把微信公众号文章转换成 AI 可直接读取的精简页面。支持 REST API 与 MCP 协议，可配合 ChatGPT、Claude、DeepSeek、豆包等工具使用。命中缓存的文章不扣积分。">
     <meta name="author" content="ReadGZH" />
     <meta name="keywords" content="微信文章,AI阅读器,公众号,ChatGPT,Claude,Perplexity,微信公众号,AI读取" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
@@ -37,15 +37,15 @@
       "@type": "WebApplication",
       "name": "ReadGZH",
       "url": "https://readgzh.site",
-      "description": "ReadGZH 是一款微信公众号文章 AI 阅读工具。通过服务端代理自动抓取并优化文章内容，生成 AI 可直接访问的公开链接，Token 消耗减少 50% 以上。支持 ChatGPT、Claude、Perplexity、Gemini 等所有 AI 平台。",
+      "description": "ReadGZH 是一款微信公众号文章 AI 阅读工具。通过服务端代理抓取并清理文章内容，生成 AI 可直接访问的公开链接，输出比原始微信 HTML 更精简。支持 ChatGPT、Claude、DeepSeek、豆包等能访问网页的 AI 工具。",
       "applicationCategory": "UtilityApplication",
       "operatingSystem": "Web",
       "inLanguage": ["zh-CN", "en"],
       "featureList": [
-        "7-stage extraction pipeline with 99.89% anti-bot bypass rate",
-        "Token optimization engine: 50–87% reduction",
-        "Persistent CDN image proxy (no WeChat expiry)",
-        "Cross-agent shared global cache",
+        "Server-side extraction pipeline for WeChat articles",
+        "Strips inline styles, class and data attributes to reduce tokens",
+        "CDN image proxy for article images",
+        "Cross-agent shared cache (cached reads cost no credits)",
         "Image-post (小绿书) full parsing",
         "Smart chunking for long articles (40KB+ auto-split)",
         "AI-generated structured summaries (Pro)",
@@ -57,8 +57,9 @@
         "@type": "Offer",
         "price": "0",
         "priceCurrency": "CNY",
-        "description": "免费套餐：每日 50 积分，缓存文章免费读取"
+        "description": "免费套餐：注册后每日可领取 30 积分，每篇未缓存文章 3 积分，缓存文章读取不扣积分"
       },
+
       "potentialAction": {
         "@type": "UseAction",
         "target": {
@@ -77,8 +78,9 @@
     </script>
     <meta property="og:title" content="ReadGZH - 微信文章 AI 阅读器 | 让 AI 读懂微信公众号">
   <meta name="twitter:title" content="ReadGZH - 微信文章 AI 阅读器 | 让 AI 读懂微信公众号">
-    <meta property="og:description" content="ReadGZH: 微信公众号文章 AI 协议级转换器。99.89% 穿透反爬，Token 消耗降低 50–87%。支持 API / MCP 协议，ChatGPT、Claude、Perplexity、Gemini 无缝引用。">
-  <meta name="twitter:description" content="ReadGZH: 微信公众号文章 AI 协议级转换器。99.89% 穿透反爬，Token 消耗降低 50–87%。支持 API / MCP 协议，ChatGPT、Claude、Perplexity、Gemini 无缝引用。">
+    <meta property="og:description" content="ReadGZH：把微信公众号文章转换成 AI 可直接读取的精简页面。支持 REST API 与 MCP 协议，可配合 ChatGPT、Claude、DeepSeek、豆包等工具使用。">
+  <meta name="twitter:description" content="ReadGZH：把微信公众号文章转换成 AI 可直接读取的精简页面。支持 REST API 与 MCP 协议，可配合 ChatGPT、Claude、DeepSeek、豆包等工具使用。">
+
 </head>
 
   <body>
@@ -86,32 +88,32 @@
     <noscript>
       <header>
         <h1>ReadGZH - 微信文章 AI 阅读器</h1>
-        <p>ReadGZH 是微信公众号文章的协议级 AI 转换器。自研 7 阶段提取管线，99.89% 穿透微信反爬隔离，Token 消耗降低 50–87%。支持 ChatGPT、Claude、Perplexity、Gemini 等所有 AI 平台无缝引用。全球共享缓存，缓存文章永久免费读取。</p>
+        <p>ReadGZH 把微信公众号文章转换成更适合 AI 读取的精简内容：服务端抓取后剥离样式与私有标签，生成 AI 可直接访问的公开链接。可配合 ChatGPT、Claude、DeepSeek、豆包等能访问网页的 AI 工具使用；命中缓存的文章读取不扣积分。</p>
       </header>
       <main>
         <section id="why-readgzh">
           <h2>为什么需要 ReadGZH？</h2>
-          <p>微信公众号对外部 HTTP 请求实施严格的客户端指纹检测与反爬虫拦截。所有 AI 工具（ChatGPT、Claude、Gemini、Perplexity）发出的请求均被拒绝，无法读取 mp.weixin.qq.com 域名下的任何内容。ReadGZH 通过服务端代理发起请求，完全绕过微信的反爬机制，99.89% 成功率，生成一个 AI 可直接访问的公开链接。</p>
+          <p>微信公众号对外部 HTTP 请求有严格的访问限制，AI 工具直接请求 mp.weixin.qq.com 链接通常拿不到正文。ReadGZH 通过服务端代理抓取文章，清理后生成一个 AI 可直接访问的公开链接。部分文章（已删除、仅视频、需要授权）可能无法提取，这种情况会明确报错。</p>
         </section>
         <section id="how-it-works">
-          <h2>工作原理：七阶段提取管线</h2>
+          <h2>工作原理</h2>
           <ol>
-            <li><strong>拦截</strong> — 服务端代理请求微信服务器，绕过客户端指纹检测</li>
-            <li><strong>清洗</strong> — 剥离所有 inline style、class、data-* 属性</li>
+            <li><strong>抓取</strong> — 服务端代理请求微信文章页面</li>
+            <li><strong>清洗</strong> — 剥离 inline style、class、data-* 属性</li>
             <li><strong>过滤</strong> — 移除 mp-common-profile、mp-style 等微信私有标签</li>
-            <li><strong>优化</strong> — 压缩空标签与嵌套容器，Token 消耗降低 50–87%</li>
-            <li><strong>代理</strong> — 图片通过边缘 CDN 永久代理，解决微信图片 2 小时过期问题</li>
-            <li><strong>缓存</strong> — 文章存入全局持久化数据库，后续读取免费</li>
-            <li><strong>输出</strong> — 纯 SSR HTML 直出，零 JavaScript 依赖，兼容所有 AI 爬虫</li>
+            <li><strong>精简</strong> — 压缩空标签与嵌套容器，减少 AI 读取时的 token 开销</li>
+            <li><strong>代理</strong> — 图片通过 CDN 代理转发，缓解微信图片链接过期问题</li>
+            <li><strong>缓存</strong> — 文章存入共享缓存，后续读取不扣积分</li>
+            <li><strong>输出</strong> — 纯 SSR HTML 直出，零 JavaScript 依赖</li>
           </ol>
         </section>
         <section id="feature-cache">
-          <h2>全球共享缓存</h2>
-          <p>任何用户读过的文章会被永久缓存。后续任何人或 AI Agent 再次读取该文章完全免费，零积分消耗。这构成了一个不断增长的微信内容开放知识库，所有 AI 系统均可访问。</p>
+          <h2>共享缓存</h2>
+          <p>任何用户读过的文章都会进入共享缓存。后续任何人或 AI Agent 再次读取该文章不消耗积分（仍有基础的频率与滥用保护）。</p>
         </section>
         <section id="feature-image-proxy">
-          <h2>CDN 图片永久代理</h2>
-          <p>微信文章图片链接通常在 2 小时后过期。ReadGZH 将所有图片路由至持久化 CDN 代理，确保图片永久可访问，不受微信过期策略影响。</p>
+          <h2>CDN 图片代理</h2>
+          <p>微信文章的图片直链在站外经常失效。ReadGZH 将图片路由至 CDN 代理转发，让文章中的图片在 ReadGZH 页面上正常显示。</p>
         </section>
         <section id="feature-mcp">
           <h2>MCP 服务协议</h2>
@@ -120,8 +122,9 @@
         <section id="core-api">
           <h2>核心 API</h2>
           <p>基础用法：GET https://api.readgzh.site/rd?url={微信文章链接}。添加 &amp;format=text 获取 Markdown 输出（推荐）。通过 &amp;part=N 分块读取长文章。Pro 用户可使用 &amp;mode=summary 获取 AI 结构化摘要。</p>
-          <p>认证方式：请求头携带 Authorization: Bearer sk_live_... 可获得更高配额。免费用户每日 50 积分。</p>
+          <p>认证方式：请求头携带 Authorization: Bearer sk_live_... 可获得更高配额。未缓存文章每篇 3 积分；免费注册用户每日可领取 30 积分；未携带 Key 的匿名请求为每 IP 每天 10 积分。</p>
         </section>
+
         <section>
           <h2>如何使用</h2>
           <p>复制以下提示词发给任何 AI 工具即可：「请帮我阅读这篇微信公众号文章，你可以通过访问以下链接获取内容：https://api.readgzh.site/rd?url=（把微信链接粘贴在这里）」</p>
