@@ -120,8 +120,8 @@ const AiReadWechatPage = () => (
 
       {/* Scenario A */}
       <section className="mb-12">
-        <div className="flex items-center gap-2 mb-3">
-          <Link2 className="h-5 w-5 text-primary" />
+        <div className="flex items-start gap-2 mb-3">
+          <Link2 className="h-5 w-5 text-primary shrink-0 mt-1.5" />
           <h2 className="text-2xl font-bold">方案 A：AI 能访问网页时，直接给它可读链接</h2>
         </div>
         <p className="text-muted-foreground mb-6 text-sm leading-relaxed">
@@ -148,8 +148,8 @@ const AiReadWechatPage = () => (
 
       {/* Scenario B */}
       <section className="mb-12">
-        <div className="flex items-center gap-2 mb-3">
-          <ClipboardCopy className="h-5 w-5 text-primary" />
+        <div className="flex items-start gap-2 mb-3">
+          <ClipboardCopy className="h-5 w-5 text-primary shrink-0 mt-1.5" />
           <h2 className="text-2xl font-bold">方案 B：AI 不能联网时，复制正文粘贴过去</h2>
         </div>
         <p className="text-muted-foreground mb-6 text-sm leading-relaxed">
@@ -177,8 +177,8 @@ const AiReadWechatPage = () => (
 
       {/* Scenario C */}
       <section className="mb-12">
-        <div className="flex items-center gap-2 mb-3">
-          <Code className="h-5 w-5 text-primary" />
+        <div className="flex items-start gap-2 mb-3">
+          <Code className="h-5 w-5 text-primary shrink-0 mt-1.5" />
           <h2 className="text-2xl font-bold">方案 C：开发者与自动化，用 REST API / MCP</h2>
         </div>
         <p className="text-muted-foreground mb-6 text-sm leading-relaxed">
