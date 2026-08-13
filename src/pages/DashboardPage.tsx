@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Copy, Key, Plus, Trash2, Gift, LogOut, ArrowLeft, Eye, EyeOff, BarChart3, Coins, Zap, Loader2, Crown, Mail, Pencil, CreditCard, CalendarClock, AlertTriangle, X, Minus, Sparkles } from "lucide-react";
+import { Copy, Key, Plus, Trash2, Gift, LogOut, ArrowLeft, Eye, EyeOff, BarChart3, Coins, Zap, Loader2, Crown, Mail, Pencil, CreditCard, CalendarClock, AlertTriangle, X, Minus, Sparkles, Bitcoin } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import Footer from "@/components/home/Footer";
 import SEO from "@/components/SEO";
@@ -106,14 +106,15 @@ const DashboardPage = () => {
     setBuyDialogOpen(true);
   };
 
-  const handleConfirmBuyCredits = async () => {
+  const handleConfirmBuyCredits = async (method: "card" | "crypto" = "card") => {
     setUpgradeLoading(true);
     try {
-      const creditType = isPro ? "credits" : "credits_free";
+      const creditType = method === "crypto" ? "credits_crypto" : isPro ? "credits" : "credits_free";
       const { data, error } = await supabase.functions.invoke("create-payment", {
         body: { type: creditType, quantity: buyQuantity },
       });
       if (error) throw error;
+      if (data?.error) throw new Error(data.message || data.error);
       if (data?.url) {
         setBuyDialogOpen(false);
         window.open(data.url, "_blank");
@@ -123,6 +124,7 @@ const DashboardPage = () => {
     }
     setUpgradeLoading(false);
   };
+
 
   const fetchKeys = useCallback(async () => {
     setKeysLoading(true);
@@ -1108,14 +1110,32 @@ const DashboardPage = () => {
               <span className="text-sm text-muted-foreground">合计</span>
               <span className="text-xl font-bold">¥{buyQuantity * unitPrice}</span>
             </div>
+            <div className="rounded-lg border border-dashed p-3 space-y-1">
+              <p className="text-sm font-medium">也可用加密货币支付（USDC 稳定币）</p>
+              <p className="text-xs text-muted-foreground">
+                合计 ${(buyQuantity * 2.49).toFixed(2)} USD · 支持 Ethereum / Solana / Polygon / Base 网络
+              </p>
+              <p className="text-xs text-muted-foreground">
+                加密支付一经完成不支持退款，请确认后再付款。
+              </p>
+            </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
             <Button variant="ghost" onClick={() => setBuyDialogOpen(false)}>取消</Button>
-            <Button onClick={handleConfirmBuyCredits} disabled={upgradeLoading}>
+            <Button
+              variant="outline"
+              onClick={() => handleConfirmBuyCredits("crypto")}
+              disabled={upgradeLoading}
+            >
+              {upgradeLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bitcoin className="mr-2 h-4 w-4" />}
+              加密货币支付
+            </Button>
+            <Button onClick={() => handleConfirmBuyCredits("card")} disabled={upgradeLoading}>
               {upgradeLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
               去支付
             </Button>
           </DialogFooter>
+
         </DialogContent>
       </Dialog>
 

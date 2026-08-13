@@ -235,8 +235,9 @@ Deno.serve(async (req) => {
 
       // Process credit packs (using credit_pack_claims table for idempotency)
       const creditSessions = completedSessions.filter(
-        (s) => s.metadata?.type === "credits" || s.metadata?.type === "credits_free"
+        (s) => s.metadata?.type === "credits" || s.metadata?.type === "credits_free" || s.metadata?.type === "credits_crypto"
       );
+
       for (const session of creditSessions) {
         const qty = Math.max(1, parseInt(session.metadata?.quantity || "1", 10) || 1);
         await ensureCreditPackGrant(serviceClient, userId, session.id, 500 * qty);

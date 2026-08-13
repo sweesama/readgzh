@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
 
     const user = userData.user;
     const body = await req.json().catch(() => ({}));
-    const type = body.type || "pro"; // "pro", "pro_annual", "lite", "credits", or "credits_free"
+    const type = body.type || "pro"; // "pro", "pro_annual", "lite", "credits", "credits_free", or "credits_crypto"
     const rawQty = Number(body.quantity);
     const quantity = Number.isFinite(rawQty) ? Math.min(20, Math.max(1, Math.floor(rawQty))) : 1;
 
@@ -94,6 +94,7 @@ Deno.serve(async (req) => {
     let priceId: string;
     let successUrl: string;
     let mode: "payment" | "subscription";
+    let paymentMethodTypes: string[] | undefined;
 
     if (type === "credits") {
       priceId = "price_1T7tEZB04cx1cwwsvtQBDXY5"; // 500 credits ¥9 one-time (Pro users)
@@ -103,6 +104,11 @@ Deno.serve(async (req) => {
       priceId = "price_1T8d04B04cx1cwwsvwrVBAfC"; // 500 credits ¥15 one-time (Free users)
       successUrl = `${origin}/dashboard?credits_purchased=${500 * quantity}`;
       mode = "payment";
+    } else if (type === "credits_crypto") {
+      priceId = "price_1U40UiB04cx1cwwspDU8QQVu"; // 500 credits $2.49 one-time, stablecoin
+      successUrl = `${origin}/dashboard?credits_purchased=${500 * quantity}`;
+      mode = "payment";
+      paymentMethodTypes = ["crypto"];
     } else if (type === "lite") {
       priceId = "price_1TJvhYB04cx1cwwsUmFUZwDr"; // Lite monthly ¥9/month
       successUrl = `${origin}/payment-success`;
@@ -116,6 +122,7 @@ Deno.serve(async (req) => {
       successUrl = `${origin}/payment-success`;
       mode = "subscription";
     }
+
 
     // ===== Subscription upgrade/switch path =====
     // If user already has an active subscription and is buying another subscription,
@@ -168,11 +175,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    const isCreditPack = type === "credits" || type === "credits_free";
+    const isCreditPack = type === "credits" || type === "credits_free" || type === "credits_crypto";
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       line_items: [{ price: priceId, quantity: isCreditPack ? quantity : 1 }],
       mode,
+      ...(paymentMethodTypes ? { payment_method_types: paymentMethodTypes as any } : {}),
       success_url: successUrl,
       cancel_url: `${origin}/pricing`,
       metadata: { user_id: user.id, type, quantity: String(quantity) },
@@ -183,9 +191,20 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error("Payment error:", error);
+    const msg = error instanceof Error ? error.message : String(error);
+    if (msg.toLowerCase().includes("crypto")) {
+      return new Response(
+        JSON.stringify({
+          error: "crypto_unavailable",
+          message: "加密货币支付暂未开通，请稍后再试或改用其他支付方式。",
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     return new Response(
       JSON.stringify({ error: "Internal server error. Please try again later." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
+
 });
