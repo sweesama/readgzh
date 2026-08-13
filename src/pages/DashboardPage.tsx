@@ -432,6 +432,21 @@ const DashboardPage = () => {
   });
   const weekTotal = last7Days.reduce((sum, u) => sum + u.request_count, 0);
 
+  // Last-30-day activity (used to tailor the free-tier upgrade prompt)
+  const last30Days = usage.filter((u) => {
+    const d = new Date(u.usage_date);
+    return d >= new Date(Date.now() - 30 * 86400000);
+  });
+  const last30Requests = last30Days.reduce((sum, u) => sum + u.request_count, 0);
+  const last30Cached = last30Days.reduce((sum, u) => sum + u.cached_count, 0);
+  // Cached reads don't consume credits; uncached articles cost 3 credits each.
+  const last30Credits = Math.max(0, last30Requests - last30Cached) * 3;
+  const last30ActiveDays = new Set(
+    last30Days.filter((u) => u.request_count > 0).map((u) => u.usage_date)
+  ).size;
+  const isActiveFreeUser = last30Credits >= 90 || last30ActiveDays >= 4;
+
+
   const hasClaimed = balance?.claimed_today ?? false;
   const remainingCredits = balance?.remaining_credits ?? 0;
   const totalCredits = balance?.total_credits ?? 0;
