@@ -175,11 +175,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    const isCreditPack = type === "credits" || type === "credits_free";
+    const isCreditPack = type === "credits" || type === "credits_free" || type === "credits_crypto";
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       line_items: [{ price: priceId, quantity: isCreditPack ? quantity : 1 }],
       mode,
+      ...(paymentMethodTypes ? { payment_method_types: paymentMethodTypes as any } : {}),
       success_url: successUrl,
       cancel_url: `${origin}/pricing`,
       metadata: { user_id: user.id, type, quantity: String(quantity) },
@@ -190,9 +191,20 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error("Payment error:", error);
+    const msg = error instanceof Error ? error.message : String(error);
+    if (msg.toLowerCase().includes("crypto")) {
+      return new Response(
+        JSON.stringify({
+          error: "crypto_unavailable",
+          message: "加密货币支付暂未开通，请稍后再试或改用其他支付方式。",
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     return new Response(
       JSON.stringify({ error: "Internal server error. Please try again later." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
+
 });
