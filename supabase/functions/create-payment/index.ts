@@ -94,6 +94,7 @@ Deno.serve(async (req) => {
     let priceId: string;
     let successUrl: string;
     let mode: "payment" | "subscription";
+    let paymentMethodTypes: string[] | undefined;
 
     if (type === "credits") {
       priceId = "price_1T7tEZB04cx1cwwsvtQBDXY5"; // 500 credits ¥9 one-time (Pro users)
@@ -103,6 +104,11 @@ Deno.serve(async (req) => {
       priceId = "price_1T8d04B04cx1cwwsvwrVBAfC"; // 500 credits ¥15 one-time (Free users)
       successUrl = `${origin}/dashboard?credits_purchased=${500 * quantity}`;
       mode = "payment";
+    } else if (type === "credits_crypto") {
+      priceId = "price_1U40UiB04cx1cwwspDU8QQVu"; // 500 credits $2.49 one-time, stablecoin
+      successUrl = `${origin}/dashboard?credits_purchased=${500 * quantity}`;
+      mode = "payment";
+      paymentMethodTypes = ["crypto"];
     } else if (type === "lite") {
       priceId = "price_1TJvhYB04cx1cwwsUmFUZwDr"; // Lite monthly ¥9/month
       successUrl = `${origin}/payment-success`;
@@ -116,6 +122,7 @@ Deno.serve(async (req) => {
       successUrl = `${origin}/payment-success`;
       mode = "subscription";
     }
+
 
     // ===== Subscription upgrade/switch path =====
     // If user already has an active subscription and is buying another subscription,
