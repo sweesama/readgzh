@@ -368,6 +368,20 @@ const ArticlePage = () => {
                 💡 <strong>使用方法：</strong>点击"复制链接给 AI"，然后粘贴到 ChatGPT、Claude 或其他 AI 对话中，AI 即可直接阅读此文章。
               </p>
             </div>
+
+            <div className="mt-3 p-4 rounded-lg border border-dashed">
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                偶尔用一下，直接继续使用网页版就够了，不需要注册。
+                如果你经常给 AI 读文章、或者想做批量与自动化，可以到
+                <Link to="/dashboard" className="text-primary hover:underline mx-1">控制台</Link>
+                创建免费 API Key（每天可领 30 积分），接入方式见
+                <Link to="/docs" className="text-primary hover:underline mx-1">开发者文档</Link>；
+                用量稳定之后再看
+                <Link to="/pricing" className="text-primary hover:underline mx-1">套餐</Link>
+                也不迟。未缓存文章 3 积分/篇，已缓存文章读取不扣积分。
+              </p>
+            </div>
+
           </footer>
         </article>
       </div>
