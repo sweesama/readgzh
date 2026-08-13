@@ -666,7 +666,7 @@ const DashboardPage = () => {
                   <div className="space-y-1">
                     <p className="font-semibold">你已经在稳定使用 ReadGZH 了</p>
                     <p className="text-sm text-muted-foreground">
-                      近 30 天约消耗 {last30Credits} 积分 · 活跃 {last30ActiveDays} 天。
+                      近 30 天已消耗 {last30Credits} 积分 · 活跃 {last30ActiveDays} 天。
                       订阅后积分每月自动发放，<strong className="text-foreground">不用每天回来手动领取</strong>。
                     </p>
                     <p className="text-sm text-muted-foreground">
