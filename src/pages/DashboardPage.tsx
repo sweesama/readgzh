@@ -651,7 +651,7 @@ const DashboardPage = () => {
                 <Zap className="h-8 w-8 text-primary" />
                 <div>
                   <p className="font-semibold">升级到 Pro</p>
-                  <p className="text-sm text-muted-foreground">每日 2,000 积分 · 无需每日领取 · 优先抓取队列</p>
+                  <p className="text-sm text-muted-foreground">每月 2,000 积分 · 无需每日领取 · 优先抓取队列</p>
                 </div>
               </div>
               <div className="flex gap-2">

@@ -54,7 +54,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <SEO
         title="ReadGZH - 微信文章 AI 阅读器 | 让 AI 读懂微信公众号"
-        description="ReadGZH: 微信公众号文章 AI 协议级转换器。99.89% 穿透反爬，Token 消耗降低 50–87%。支持 API / MCP 协议，ChatGPT、Claude、Perplexity、Gemini 无缝引用。"
+        description="ReadGZH：粘贴微信公众号文章链接，一键生成 AI 可直接读取的精简页面。支持 REST API 与 MCP 协议，可配合 ChatGPT、Claude、DeepSeek、豆包等工具使用；缓存文章读取不扣积分。"
         path="/"
         ogType="website"
       />
@@ -212,14 +212,13 @@ const MatrixView = ({ onExit }: { onExit: () => void }) => {
     "┌─────────────────────────────────────────┐",
     "│  SYSTEM: ReadGZH — 微信文章 AI 阅读器    │",
     "│  STATUS: ONLINE                         │",
-    "│  UPTIME: 99.97%                         │",
     "└─────────────────────────────────────────┘",
     "",
     "> PIPELINE SEQUENCE:",
     "  [1] INTERCEPT  → Fetch WeChat HTML payload",
     "  [2] SANITIZE   → Strip <style>, class=, data-*",
     "  [3] FILTER     → Remove <mp-*> proprietary tags",
-    "  [4] OPTIMIZE   → Reduce token count by ~50%",
+    "  [4] OPTIMIZE   → Collapse empty tags and wrappers",
     "  [5] PROXY      → Route images via edge CDN",
     "  [6] CACHE      → Store in persistent DB layer",
     "  [7] SERVE      → Output SSR HTML (no JS required)",
@@ -229,6 +228,7 @@ const MatrixView = ({ onExit }: { onExit: () => void }) => {
     "  ✓ Claude     (Anthropic)",
     "  ✓ Perplexity (Perplexity AI)",
     "  ✓ Gemini     (Google DeepMind)",
+    "  ✓ DeepSeek / 豆包 / Kimi (web-access dependent)
     "  ✓ Any HTTP-capable LLM agent",
     "",
     "> API ENDPOINT:",
@@ -238,7 +238,7 @@ const MatrixView = ({ onExit }: { onExit: () => void }) => {
     "> CONTENT TRANSFORMATION SAMPLE:",
     "  INPUT:  <div class=\"rich_media\" data-id=\"x\" style=\"...\">",
     "  OUTPUT: <div>",
-    "  REDUCTION: 87% fewer tokens",
+    "  RESULT: markup noise removed, fewer tokens",
     "",
     "> READY. Paste a WeChat URL to begin extraction._",
   ];
