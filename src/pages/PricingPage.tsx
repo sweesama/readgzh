@@ -129,11 +129,12 @@ const PricingPage = () => {
             免费开始使用，随业务增长升级。缓存文章免费读取。
           </p>
           <p className="text-sm text-muted-foreground mt-2">
-            支持信用卡（Visa / Mastercard / 银联）、Link、支付宝、微信 · 随时取消
+            支持信用卡（Visa / Mastercard / 银联）、Link、支付宝、微信、加密货币（USDC 稳定币）· 随时取消
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            订阅套餐仅支持信用卡 / Link；支付宝与微信仅支持加量包等一次性付款
+            订阅套餐仅支持信用卡 / Link；支付宝、微信与加密货币仅支持加量包等一次性付款，加密支付不支持退款
           </p>
+
 
           {/* Billing interval toggle */}
           <div className="flex items-center justify-center gap-2 mt-6">
