@@ -40,7 +40,7 @@ The MCP server is remote — nothing runs locally:
 ## Auth and pricing
 
 Works anonymously with a per-IP daily cap. A free API key
-(https://readgzh.site/dashboard) removes the cap and adds a monthly credit
+(https://readgzh.site/dashboard) raises the cap to 30 credits/day and adds a monthly credit
 allowance; paid tiers at https://readgzh.site/pricing. Articles already in the
 shared cache cost nothing for everyone.
 

@@ -99,7 +99,7 @@
   "highlights": [
     "Cloud-based — no local WeChat desktop installation required",
     "Shared cache — previously read articles cost 0 credits for everyone",
-    "CDN image proxy — permanent image access, no expiry",
+    "CDN image proxy — article images render correctly outside WeChat",
     "Image-post (图文) format support",
     "AI structured summaries via mode=summary (Pro tier)"
   ],

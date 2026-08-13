@@ -23,6 +23,7 @@ import UnsubscribePage from "./pages/UnsubscribePage";
 import ChangelogPage from "./pages/ChangelogPage";
 import InvitePage from "./pages/InvitePage";
 import EnterprisePage from "./pages/EnterprisePage";
+import AiReadWechatPage from "./pages/guides/AiReadWechatPage";
 import ReferralCatcher from "./components/ReferralCatcher";
 
 // Error boundary to prevent WebMCP from crashing the app
@@ -65,6 +66,7 @@ const App = () => (
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/cookies" element={<CookiesPage />} />
           <Route path="/faq" element={<FAQPage />} />
+          <Route path="/guides/ai-read-wechat" element={<AiReadWechatPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/enterprise" element={<EnterprisePage />} />

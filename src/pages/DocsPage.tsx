@@ -532,7 +532,7 @@ curl -o ~/.openclaw/workspace/skills/readgzh/SKILL.md \\
             <p className="text-muted-foreground">
               API 调用需持有有效授权（API Key）。未授权请求受严格 IP 频率限制（每日仅 10 次），
               且不保证服务稳定性。前往{" "}
-              <Link to="/dashboard" className="text-primary hover:underline">开发者控制台</Link> 免费创建 Key，即享每日 30 积分。
+              <Link to="/dashboard" className="text-primary hover:underline">开发者控制台</Link> 免费创建 Key，即享每日 30 积分。不写代码的用法见 <Link to="/guides/ai-read-wechat" className="text-primary hover:underline">如何让 AI 读取微信公众号文章</Link>。
             </p>
 
             <div className="space-y-3">

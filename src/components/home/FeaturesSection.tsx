@@ -2,7 +2,7 @@ import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/ca
 import { Zap, BookOpen, Code } from "lucide-react";
 
 const features = [
-  { icon: Zap, title: "微信链接被封锁", desc: "AI 工具（ChatGPT、Claude 等）无法直接访问微信公众号文章，会被反爬虫拦截" },
+  { icon: Zap, title: "微信链接被封锁", desc: "AI 工具（ChatGPT、Claude 等）直接打开微信公众号链接时，通常拿不到文章正文" },
   { icon: BookOpen, title: "自动提取内容", desc: "粘贴链接后自动抓取文章内容，支持普通图文和图片消息（小绿书），生成 AI 可访问的公开链接" },
   { icon: Code, title: "分享给 AI", desc: "把生成的链接发给 ChatGPT、Claude、Perplexity，AI 就能读取文章内容" },
 ];
