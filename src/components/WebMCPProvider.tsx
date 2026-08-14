@@ -231,9 +231,61 @@ function useGetArticleBySlugTool() {
   });
 }
 
+// ─── Tool 5: List Articles by Official Account ──────────────────
+function useListByAccountTool() {
+  useWebMCP({
+    name: 'list_articles_by_account',
+    description:
+      'List cached WeChat articles published by one Official Account (公众号), newest first. Scope is limited to articles already cached by ReadGZH — WeChat provides no public API for a full account archive, so the result is not exhaustive.',
+    inputSchema: {
+      account: z
+        .string()
+        .min(1)
+        .describe('The WeChat Official Account name (author), partial match supported'),
+      limit: z
+        .number()
+        .min(1)
+        .max(50)
+        .default(10)
+        .describe('Number of articles to return (default 10, max 50)'),
+    },
+    annotations: {
+      readOnlyHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    handler: async (input) => {
+      const res = await fetch(
+        `${SUPABASE_URL}/functions/v1/mcp-server`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 4,
+            method: 'tools/call',
+            params: {
+              name: 'readgzh.list_by_account',
+              arguments: { account: input.account, limit: input.limit },
+            },
+          }),
+        }
+      );
+      const data = await res.json();
+      const text =
+        data?.result?.content?.[0]?.text ||
+        `No cached articles found for account "${input.account}".`;
+      return { success: true, message: text };
+    },
+  });
+}
+
 // ─── Combined Provider Component ────────────────────────────────
 /**
- * WebMCPProvider registers all 4 tools via the WebMCP standard.
+ * WebMCPProvider registers all 5 tools via the WebMCP standard.
  * In Chrome 146+, this enables the "Agent Menu" for AI-native discovery.
  * In older browsers, the polyfill ensures no errors.
  */
@@ -242,6 +294,8 @@ const WebMCPProvider = () => {
   useListRecentArticlesTool();
   useSearchArticlesTool();
   useGetArticleBySlugTool();
+  useListByAccountTool();
+
 
   return null; // Headless component — registers tools only
 };
