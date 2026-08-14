@@ -261,9 +261,10 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: false, code: "not_found", error: "not_found",
-        message: "未知接口。可用端点：/search?q=keyword、/recent?limit=10。",
+        message: "未知接口。可用端点：/search?q=keyword、/by-account?account=公众号名、/recent?limit=10。",
         hint: "完整接口列表见开发者文档。",
-        available_endpoints: ["/search?q=keyword&limit=10", "/recent?limit=10"],
+        available_endpoints: ["/search?q=keyword&limit=10", "/by-account?account=name&limit=20", "/recent?limit=10"],
+
         docs_url: "https://readgzh.site/docs", dashboard_url: "https://readgzh.site/dashboard",
       }),
       { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
