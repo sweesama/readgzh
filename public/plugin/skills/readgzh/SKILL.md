@@ -5,7 +5,7 @@ license: AGPL-3.0
 compatibility: Requires network access and the bundled readgzh MCP server (remote, streamable-http). An optional free API key raises rate limits.
 metadata:
   author: readgzh
-  version: "1.3.0"
+  version: "1.4.0"
   homepage: "https://readgzh.site"
 ---
 
