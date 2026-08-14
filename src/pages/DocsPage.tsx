@@ -344,6 +344,13 @@ GET ${API_URL}/rd?s=article-title&part=2`}
                     params: "limit: 返回数量（可选）",
                   },
                   {
+                    icon: Globe,
+                    name: "readgzh.list_by_account",
+                    desc: "列出某个公众号已缓存的文章（仅限 ReadGZH 缓存范围，非全量存档）",
+                    params: "account: 公众号名称；limit: 返回数量（可选）",
+                  },
+
+                  {
                     icon: Code,
                     name: "readgzh.get",
                     desc: "通过 slug 获取文章详情",
