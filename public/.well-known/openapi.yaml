@@ -171,7 +171,46 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /articles-api/by-account:
+    get:
+      operationId: readgzh.listByAccount
+      summary: List cached articles from one WeChat Official Account
+      description: |
+        Returns cached articles whose author matches the given Official Account name
+        (partial match, newest first). Scope is limited to articles already cached by
+        ReadGZH — WeChat exposes no public API for a full account archive, so the list
+        is not exhaustive. Does not consume credits.
+      parameters:
+        - name: account
+          in: query
+          required: true
+          description: WeChat Official Account name (author), partial match supported
+          schema:
+            type: string
+            example: 机器之心
+        - name: limit
+          in: query
+          required: false
+          description: Max results to return (default 10, max 50)
+          schema:
+            type: integer
+            default: 10
+            maximum: 50
+      responses:
+        '200':
+          description: Cached articles from this account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleListResponse'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /articles-api/recent:
+
     get:
       operationId: readgzh.list
       summary: List recently cached WeChat articles
