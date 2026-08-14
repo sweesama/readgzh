@@ -11,6 +11,19 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-08-14",
+    title: "支持按公众号查看已缓存文章 + 加量包支持 USDC 支付",
+    tags: ["新增"],
+    items: [
+      "新增「按公众号列出文章」能力：REST 接口 /articles-api/by-account、MCP 工具 readgzh.list_by_account，浏览器内的 AI 助手也能直接调用",
+      "输入公众号名称（支持部分匹配）即可列出该号在 ReadGZH 已缓存的文章，按发布时间倒序，不消耗积分",
+      "结果仅覆盖 ReadGZH 已缓存范围，微信没有公开的全量文章接口，我们不会假装能拿到全部历史",
+      "加量包现在支持 Stripe 原生 USDC 稳定币支付（一次性付款、按美元计价），订阅暂不支持",
+      "同步更新 openapi.yaml、SKILL.md、server-card.json、llms.txt 与开发者文档页",
+    ],
+  },
+  {
+
     date: "2026-08-12",
     title: "企业采购上线：支持对公转账与开具发票",
     tags: ["新增", "计费"],
