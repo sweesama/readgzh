@@ -25,7 +25,9 @@ All tools come from the bundled `readgzh` MCP server.
 | `readgzh.read` | Read an article from its `mp.weixin.qq.com` URL |
 | `readgzh.search` | Find cached articles by keyword |
 | `readgzh.list` | List recently cached articles |
+| `readgzh.list_by_account` | List cached articles from one Official Account (公众号) |
 | `readgzh.get` | Re-read a cached article by slug, page long ones, or get a summary |
+
 
 ### readgzh.read
 
