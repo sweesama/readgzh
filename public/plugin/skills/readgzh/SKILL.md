@@ -46,6 +46,15 @@ Returns the title, author, publish time, and the article body.
 
 - `limit` (optional) — default 10, max 50.
 
+### readgzh.list_by_account
+
+- `account` (required) — the Official Account name (author); partial match works.
+- `limit` (optional) — default 10, max 50.
+
+Returns only articles already cached by ReadGZH. WeChat exposes no public API for
+a full account archive, so never present the result as the account's complete
+list — say it covers cached articles only.
+
 ### readgzh.get
 
 - `slug` (required) — the article slug (the `...` in `/s/...`).
@@ -63,8 +72,12 @@ Returns the title, author, publish time, and the article body.
    chunk is the whole article.
 3. User asks about a topic rather than a specific link → `readgzh.search` first,
    then `readgzh.get` on the most relevant slug.
-4. Only the article's own images are returned as proxied CDN links;
+4. User asks what else an account has published → `readgzh.list_by_account`,
+   then `readgzh.get` on the slugs of interest. State that the result is limited
+   to cached articles.
+5. Only the article's own images are returned as proxied CDN links;
    quote them as-is rather than rewriting the URLs.
+
 
 ## Rules
 
