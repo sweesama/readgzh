@@ -135,6 +135,8 @@ All tools call the ReadGZH API (`https://api.readgzh.site`):
 - **Read article**: `GET /rd?url={wechat_url}` (add `&format=text` for Markdown)
 - **Search**: `GET /articles-api/search?q={query}&limit={n}`
 - **List recent**: `GET /articles-api/recent?limit={n}`
+- **List by account**: `GET /articles-api/by-account?account={name}&limit={n}` (cached articles only)
+
 - **Get by slug**: `GET /rd?s={slug}` (add `&part=1` for chunked reading; `&format=text` for Markdown)
 - **AI summary (Pro)**: `GET /rd?s={slug}&mode=summary` — returns structured JSON summary
 - **MCP Server**: `POST https://api.readgzh.site/mcp-server`
