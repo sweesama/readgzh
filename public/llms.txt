@@ -17,6 +17,8 @@ ReadGZH acts as a server-side proxy that fetches, sanitizes, and re-serves WeCha
 | `/rd?s={slug}&mode=summary` | GET | Get an AI-generated structured JSON summary (Pro feature). |
 | `/articles-api/search?q={query}` | GET | Search cached articles by keyword. |
 | `/articles-api/recent?limit={n}` | GET | List recently cached articles. |
+| `/articles-api/by-account?account={name}&limit={n}` | GET | List cached articles from one Official Account (cache scope only, not a full archive). |
+
 
 **Authentication**: Optional but strongly recommended for AI agents. Include `Authorization: Bearer sk_live_...` for higher rate limits (a free key gives 30 credits/day, claimed daily, at https://readgzh.site/dashboard). Without a key, the public endpoint applies daily IP-based rate limits.
 
