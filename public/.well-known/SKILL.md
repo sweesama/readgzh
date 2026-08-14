@@ -117,6 +117,13 @@ User: "Search WeChat articles about AI"
 User: "What articles are available recently?"
 → Call `readgzh.list`
 
+### Browse articles from one Official Account
+User: "这个公众号还写过什么？"
+→ Call `readgzh.list_by_account`, account = the author name.
+Always tell the user the result only covers articles already cached by ReadGZH.
+
+
+
 ### Get article by slug
 User: "Read the article minicpm-o-4-5"
 → Call `readgzh.get`, slug = "minicpm-o-4-5"
