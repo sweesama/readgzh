@@ -40,6 +40,18 @@ tools:
         type: number
         description: "Number of articles to return (default 10, max 50)"
         required: false
+  - name: readgzh.list_by_account
+    description: "List cached articles from one WeChat Official Account (公众号) via ReadGZH. Scope is limited to articles already cached — WeChat has no public API for a full account archive, so the list is not exhaustive"
+    parameters:
+      account:
+        type: string
+        description: "Official Account name (author); partial match supported"
+        required: true
+      limit:
+        type: number
+        description: "Number of articles to return (default 10, max 50)"
+        required: false
+
   - name: readgzh.get
     description: "Get a cached article by slug via ReadGZH. Long articles are auto-chunked (~40KB/chunk); use 'part' to paginate"
     parameters:
