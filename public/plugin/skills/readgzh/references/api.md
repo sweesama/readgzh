@@ -12,7 +12,9 @@ Base URL: `https://api.readgzh.site`
 | `GET /rd?s={slug}&part=N` | Read chunk N of a long article |
 | `GET /rd?s={slug}&mode=summary` | Structured JSON summary (paid tier) |
 | `GET /articles-api/search?q={query}&limit={n}` | Search cached articles |
+| `GET /articles-api/by-account?account={name}&limit={n}` | List cached articles from one Official Account (cache scope only) |
 | `GET /articles-api/recent?limit={n}` | List recent cached articles |
+
 
 ## Authentication
 

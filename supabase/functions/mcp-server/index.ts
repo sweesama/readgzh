@@ -258,7 +258,86 @@ mcp.tool("readgzh.search", {
   },
 });
 
-// Tool 4: Get article by slug
+// Tool 4: List cached articles from one WeChat official account
+mcp.tool("readgzh.list_by_account", {
+  description:
+    "List cached WeChat articles published by one Official Account (公众号) via ReadGZH. IMPORTANT: this only covers articles already cached by ReadGZH — WeChat has no public API for a full account archive, so the result is not exhaustive. Use it to find other articles by the same author after reading one.",
+  inputSchema: {
+    type: "object" as const,
+    properties: {
+      account: {
+        type: "string",
+        description: "The WeChat Official Account name (author), e.g. '机器之心'. Partial match is supported.",
+      },
+      limit: {
+        type: "number",
+        description: "Max results to return (default 10, max 50)",
+      },
+    },
+    required: ["account"],
+  },
+  handler: async (args: { account: string; limit?: number }) => {
+    const limit = Math.min(args.limit || 10, 50);
+    const account = String(args.account || "").trim().slice(0, 100).replace(/[%_,]/g, "");
+
+    if (!account) {
+      return { content: [{ type: "text" as const, text: "Missing required argument: account." }] };
+    }
+
+    try {
+      const { data: articles, error } = await supabase
+        .from("articles")
+        .select("title, author, publish_time, slug, view_count")
+        .ilike("author", `%${account}%`)
+        .order("publish_time", { ascending: false, nullsFirst: false })
+        .limit(limit);
+
+      if (error) {
+        console.error("mcp-server list_by_account error:", error);
+        return { content: [{ type: "text" as const, text: "A server error occurred. Please try again." }] };
+      }
+
+      if (!articles || articles.length === 0) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `No cached articles found for account "${args.account}". ReadGZH only indexes articles that were read at least once — read a link with \`readgzh.read\` to add it to the cache.`,
+            },
+          ],
+        };
+      }
+
+      const lines: string[] = [
+        `# Cached articles by "${args.account}" (${articles.length})`,
+        "",
+        "_Scope: ReadGZH cache only. WeChat provides no public API for a full account archive, so this list is not exhaustive._",
+        "",
+      ];
+      articles.forEach((a, i) => {
+        lines.push(`## ${i + 1}. ${a.title}`);
+        if (a.author) lines.push(`- **Account:** ${a.author}`);
+        if (a.publish_time) lines.push(`- **Published:** ${a.publish_time}`);
+        if (a.slug) {
+          lines.push(`- **Link:** https://readgzh.site/${a.slug}`);
+          lines.push(`  Use \`readgzh.get\` with slug "${a.slug.replace(/^s\//, "")}" to read full content.`);
+        }
+        lines.push("");
+      });
+
+      return { content: [{ type: "text" as const, text: lines.join("\n") }] };
+    } catch (err) {
+      return {
+        content: [
+          { type: "text" as const, text: `Error: ${err instanceof Error ? err.message : "Unknown"}` },
+        ],
+      };
+    }
+  },
+});
+
+// Tool 5: Get article by slug
+
 mcp.tool("readgzh.get", {
   description:
     "Get a cached WeChat article by its short slug/URL path via ReadGZH. Use when you have a slug like 'minicpm-o-4-5' from a previous read.",

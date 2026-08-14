@@ -116,7 +116,62 @@ Deno.serve(async (req) => {
       }
     }
 
+    // --- By-account endpoint: list cached articles from one WeChat account ---
+    if (path === "by-account" || path === "by-account/") {
+      const account = (url.searchParams.get("account") || url.searchParams.get("author") || "").trim();
+      const limit = Math.min(Number(url.searchParams.get("limit")) || 10, 50);
+
+      if (!account) {
+        return new Response(
+          JSON.stringify({
+            success: false, code: "missing_account", error: "missing_account",
+            message: "缺少公众号名称。请提供参数 account。",
+            hint: "示例：/articles-api/by-account?account=机器之心&limit=20。仅返回 ReadGZH 已缓存的文章。",
+            docs_url: "https://readgzh.site/docs", dashboard_url: "https://readgzh.site/dashboard",
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const safeAccount = account.slice(0, 100).replace(/[%_,]/g, "");
+      const { data: articles, error } = await supabase
+        .from("articles")
+        .select("title, author, publish_time, slug, source_url, view_count, created_at")
+        .ilike("author", `%${safeAccount}%`)
+        .order("publish_time", { ascending: false, nullsFirst: false })
+        .limit(limit);
+
+      if (error) {
+        console.error("[articles-api] by-account db_error:", error);
+        return new Response(
+          JSON.stringify({
+            success: false, code: "db_error", error: "db_error",
+            message: "数据库查询异常，请稍后重试。",
+            hint: "若持续出现请反馈。",
+            support_url: "https://readgzh.site/#feedback",
+          }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          account: account,
+          articles: formatArticles(articles || []),
+          total: (articles || []).length,
+          scope: "cached_only",
+          scope_note:
+            "Only articles already cached by ReadGZH are returned. WeChat provides no public API for a full account archive, so this is not an exhaustive list. Read a new article with the /rd endpoint to add it to the cache.",
+          powered_by: "ReadGZH (https://readgzh.site)",
+          upgrade_hint: "免费注册每天 30 积分 · Lite ¥9/月 · Pro ¥39/月 → readgzh.site/dashboard",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json", "X-Credit-Cost": "0" } }
+      );
+    }
+
     // --- Search endpoint ---
+
     if (path === "search" || path === "search/") {
       const query = url.searchParams.get("q") || "";
       const limit = Math.min(Number(url.searchParams.get("limit")) || 5, 20);
@@ -206,9 +261,10 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: false, code: "not_found", error: "not_found",
-        message: "未知接口。可用端点：/search?q=keyword、/recent?limit=10。",
+        message: "未知接口。可用端点：/search?q=keyword、/by-account?account=公众号名、/recent?limit=10。",
         hint: "完整接口列表见开发者文档。",
-        available_endpoints: ["/search?q=keyword&limit=10", "/recent?limit=10"],
+        available_endpoints: ["/search?q=keyword&limit=10", "/by-account?account=name&limit=20", "/recent?limit=10"],
+
         docs_url: "https://readgzh.site/docs", dashboard_url: "https://readgzh.site/dashboard",
       }),
       { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }

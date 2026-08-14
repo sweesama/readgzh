@@ -40,6 +40,18 @@ tools:
         type: number
         description: "Number of articles to return (default 10, max 50)"
         required: false
+  - name: readgzh.list_by_account
+    description: "List cached articles from one WeChat Official Account (公众号) via ReadGZH. Scope is limited to articles already cached — WeChat has no public API for a full account archive, so the list is not exhaustive"
+    parameters:
+      account:
+        type: string
+        description: "Official Account name (author); partial match supported"
+        required: true
+      limit:
+        type: number
+        description: "Number of articles to return (default 10, max 50)"
+        required: false
+
   - name: readgzh.get
     description: "Get a cached article by slug via ReadGZH. Long articles are auto-chunked (~40KB/chunk); use 'part' to paginate"
     parameters:
@@ -105,6 +117,13 @@ User: "Search WeChat articles about AI"
 User: "What articles are available recently?"
 → Call `readgzh.list`
 
+### Browse articles from one Official Account
+User: "这个公众号还写过什么？"
+→ Call `readgzh.list_by_account`, account = the author name.
+Always tell the user the result only covers articles already cached by ReadGZH.
+
+
+
 ### Get article by slug
 User: "Read the article minicpm-o-4-5"
 → Call `readgzh.get`, slug = "minicpm-o-4-5"
@@ -116,6 +135,8 @@ All tools call the ReadGZH API (`https://api.readgzh.site`):
 - **Read article**: `GET /rd?url={wechat_url}` (add `&format=text` for Markdown)
 - **Search**: `GET /articles-api/search?q={query}&limit={n}`
 - **List recent**: `GET /articles-api/recent?limit={n}`
+- **List by account**: `GET /articles-api/by-account?account={name}&limit={n}` (cached articles only)
+
 - **Get by slug**: `GET /rd?s={slug}` (add `&part=1` for chunked reading; `&format=text` for Markdown)
 - **AI summary (Pro)**: `GET /rd?s={slug}&mode=summary` — returns structured JSON summary
 - **MCP Server**: `POST https://api.readgzh.site/mcp-server`

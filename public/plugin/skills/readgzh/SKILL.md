@@ -5,7 +5,7 @@ license: AGPL-3.0
 compatibility: Requires network access and the bundled readgzh MCP server (remote, streamable-http). An optional free API key raises rate limits.
 metadata:
   author: readgzh
-  version: "1.3.0"
+  version: "1.4.0"
   homepage: "https://readgzh.site"
 ---
 
@@ -25,7 +25,9 @@ All tools come from the bundled `readgzh` MCP server.
 | `readgzh.read` | Read an article from its `mp.weixin.qq.com` URL |
 | `readgzh.search` | Find cached articles by keyword |
 | `readgzh.list` | List recently cached articles |
+| `readgzh.list_by_account` | List cached articles from one Official Account (公众号) |
 | `readgzh.get` | Re-read a cached article by slug, page long ones, or get a summary |
+
 
 ### readgzh.read
 
@@ -44,6 +46,15 @@ Returns the title, author, publish time, and the article body.
 
 - `limit` (optional) — default 10, max 50.
 
+### readgzh.list_by_account
+
+- `account` (required) — the Official Account name (author); partial match works.
+- `limit` (optional) — default 10, max 50.
+
+Returns only articles already cached by ReadGZH. WeChat exposes no public API for
+a full account archive, so never present the result as the account's complete
+list — say it covers cached articles only.
+
 ### readgzh.get
 
 - `slug` (required) — the article slug (the `...` in `/s/...`).
@@ -61,8 +72,12 @@ Returns the title, author, publish time, and the article body.
    chunk is the whole article.
 3. User asks about a topic rather than a specific link → `readgzh.search` first,
    then `readgzh.get` on the most relevant slug.
-4. Only the article's own images are returned as proxied CDN links;
+4. User asks what else an account has published → `readgzh.list_by_account`,
+   then `readgzh.get` on the slugs of interest. State that the result is limited
+   to cached articles.
+5. Only the article's own images are returned as proxied CDN links;
    quote them as-is rather than rewriting the URLs.
+
 
 ## Rules
 

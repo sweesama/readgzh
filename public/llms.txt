@@ -17,6 +17,8 @@ ReadGZH acts as a server-side proxy that fetches, sanitizes, and re-serves WeCha
 | `/rd?s={slug}&mode=summary` | GET | Get an AI-generated structured JSON summary (Pro feature). |
 | `/articles-api/search?q={query}` | GET | Search cached articles by keyword. |
 | `/articles-api/recent?limit={n}` | GET | List recently cached articles. |
+| `/articles-api/by-account?account={name}&limit={n}` | GET | List cached articles from one Official Account (cache scope only, not a full archive). |
+
 
 **Authentication**: Optional but strongly recommended for AI agents. Include `Authorization: Bearer sk_live_...` for higher rate limits (a free key gives 30 credits/day, claimed daily, at https://readgzh.site/dashboard). Without a key, the public endpoint applies daily IP-based rate limits.
 
@@ -36,7 +38,9 @@ ReadGZH acts as a server-side proxy that fetches, sanitizes, and re-serves WeCha
 - **Response format**: `text/html` (default) or `text/markdown` (`?format=text`)
 - **Response headers**: `X-Powered-By: ReadGZH (readgzh.site)`, `X-Cache` (HIT/MISS), `X-Credit-Cost`, `X-Credits-Remaining`, `X-Total-Parts`, `X-Current-Part`
 - **Error codes**: 400 (bad params), 401 (unauthorized), 402 (no credits), 403 (Pro required), 404 (not found), 422 (extraction failed), 429 (rate limited)
-- **MCP Server**: `POST https://api.readgzh.site/mcp-server` (Model Context Protocol compatible)
+- **MCP Server**: `POST https://api.readgzh.site/mcp-server` (Model Context Protocol compatible; tools: `readgzh.read`, `readgzh.get`, `readgzh.search`, `readgzh.list`, `readgzh.list_by_account`)
+- **Browse by Official Account**: `GET /articles-api/by-account?account={name}&limit={n}` — lists cached articles from one 公众号. WeChat exposes no public API for a full account archive, so this covers ReadGZH's cache only.
+
 - **OpenAPI spec**: `https://readgzh.site/.well-known/openapi.yaml`
 
 ## Integration Methods
