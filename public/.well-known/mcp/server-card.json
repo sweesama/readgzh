@@ -84,6 +84,28 @@
       }
     },
     {
+      "name": "readgzh.list_by_account",
+      "description": "List cached WeChat articles published by one Official Account (公众号), newest first. Scope is limited to articles already cached by ReadGZH — WeChat has no public API for a full account archive, so the result is not exhaustive.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "Official Account name (author); partial match supported"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Maximum results to return (default 10, max 50)",
+            "default": 10,
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "required": ["account"]
+      }
+    },
+
+    {
       "name": "readgzh.get",
       "description": "Get a previously cached WeChat article by its slug or article ID. Supports paginated reading of long articles via the part parameter.",
       "inputSchema": {
