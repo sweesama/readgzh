@@ -1558,7 +1558,57 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Check rate limit
+      // Validate URL BEFORE any credit deduction so bad URLs never cost credits
+      // (same ordering as the GET path).
+      if (!isWeixinUrl(url)) {
+        console.log("[wechat-reader] invalid_url (POST, pre-credit) rejected:", JSON.stringify({ url, len: url.length }));
+        return apiError({
+          code: "invalid_url",
+          status: 400,
+          message: "请提供有效的微信公众号文章链接（域名需为 mp.weixin.qq.com 或 weixin.qq.com）。",
+          hint: "示例：https://mp.weixin.qq.com/s/AbCdEf123。其他平台链接暂不支持。",
+          extras: { received: url },
+        });
+      }
+
+      // Check cache FIRST before deducting credits — cached reads are free,
+      // exactly like the GET ?url= path. Previously POST charged 3 credits
+      // upfront and never refunded on a cache hit, which distorted both user
+      // balances and the admin stats (credits consumed >> new articles).
+      {
+        const cacheSupabase = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+        );
+        let cacheSlug: string | null = null;
+        const cacheSlugMatch = url.match(/\/(s\/[^?#]+)/);
+        if (cacheSlugMatch) cacheSlug = cacheSlugMatch[1];
+
+        let existing = null;
+        if (cacheSlug) {
+          const { data } = await cacheSupabase.from("articles").select("id, slug").eq("slug", cacheSlug).maybeSingle();
+          existing = data;
+        }
+        if (!existing) {
+          const { data } = await cacheSupabase.from("articles").select("id, slug").eq("source_url", url).maybeSingle();
+          existing = data;
+        }
+
+        if (existing) {
+          console.log("Cache hit (POST, no credit deducted):", existing.id);
+          // Record cache hit for API key users (no credit cost)
+          const apiAuth = await checkApiKeyAuth(req, 0);
+          if (apiAuth?.keyHash) {
+            await cacheSupabase.rpc("record_cache_hit", { p_key_hash: apiAuth.keyHash });
+          }
+          return new Response(
+            JSON.stringify({ success: true, cached: true, articleId: existing.id, slug: existing.slug, creditCost: 0 }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json", "X-Cache": "HIT", "X-Credit-Cost": "0" } }
+          );
+        }
+      }
+
+      // Not cached – check rate limit (deducts 3 credits for API key users)
       const rateInfo = await checkRateLimit(req);
       if (rateInfo && !rateInfo.allowed) {
         return rateLimitResponse(rateInfo);
@@ -1926,10 +1976,17 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     }
 
     if (existing) {
-      console.log("Cache hit:", existing.id);
+      // Rare race: the article got cached between the caller's pre-charge cache
+      // check and this lookup. Credits were already deducted upfront, so refund
+      // them and count this as a cache hit to keep balances and stats accurate.
+      console.log("Cache hit after upfront charge (refunding):", existing.id);
+      const refunded = await refundCredits(keyHash, 3);
+      if (keyHash) {
+        await supabase.rpc("record_cache_hit", { p_key_hash: keyHash });
+      }
       return new Response(
-        JSON.stringify({ success: true, cached: true, articleId: existing.id, slug: existing.slug }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: true, cached: true, articleId: existing.id, slug: existing.slug, creditCost: 0, credits_refunded: refunded ? 3 : 0 }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json", "X-Cache": "HIT", "X-Credit-Cost": "0" } }
       );
     }
 
