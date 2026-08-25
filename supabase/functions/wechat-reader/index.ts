@@ -1976,10 +1976,17 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     }
 
     if (existing) {
-      console.log("Cache hit:", existing.id);
+      // Rare race: the article got cached between the caller's pre-charge cache
+      // check and this lookup. Credits were already deducted upfront, so refund
+      // them and count this as a cache hit to keep balances and stats accurate.
+      console.log("Cache hit after upfront charge (refunding):", existing.id);
+      const refunded = await refundCredits(keyHash, 3);
+      if (keyHash) {
+        await supabase.rpc("record_cache_hit", { p_key_hash: keyHash });
+      }
       return new Response(
-        JSON.stringify({ success: true, cached: true, articleId: existing.id, slug: existing.slug }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: true, cached: true, articleId: existing.id, slug: existing.slug, creditCost: 0, credits_refunded: refunded ? 3 : 0 }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json", "X-Cache": "HIT", "X-Credit-Cost": "0" } }
       );
     }
 
