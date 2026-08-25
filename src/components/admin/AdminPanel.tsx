@@ -218,15 +218,17 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
         ))}
       </div>
 
-      {/* Cache hit rate */}
+      {/* Cache hit rate: total_api_requests counts only CREDITED (non-cached)
+          scrapes, so the true read volume is cached + charged. Dividing cached
+          by charged alone produced impossible rates like 119%. */}
       <div className="border border-green-900/60 rounded bg-black/50 p-4 mb-6">
         <span className="text-green-500 text-sm">API 缓存命中率</span>
         <div className="text-green-300 mt-1 text-lg">
-          {(stats.total_api_requests ?? 0) > 0
-            ? `${(((stats.total_cached ?? 0) / (stats.total_api_requests ?? 1)) * 100).toFixed(1)}%`
+          {((stats.total_cached ?? 0) + (stats.total_api_requests ?? 0)) > 0
+            ? `${(((stats.total_cached ?? 0) / ((stats.total_cached ?? 0) + (stats.total_api_requests ?? 0))) * 100).toFixed(1)}%`
             : "N/A"}{" "}
           <span className="text-green-600 text-sm">
-            ({(stats.total_cached ?? 0).toLocaleString()} / {(stats.total_api_requests ?? 0).toLocaleString()})
+            (缓存 {(stats.total_cached ?? 0).toLocaleString()} / 总读取 {((stats.total_cached ?? 0) + (stats.total_api_requests ?? 0)).toLocaleString()})
           </span>
         </div>
       </div>
