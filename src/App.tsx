@@ -19,7 +19,7 @@ import DashboardPage from "./pages/DashboardPage";
 import PricingPage from "./pages/PricingPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import CommentsPage from "./pages/CommentsPage";
-import UnsubscribePage from "./pages/UnsubscribePage";
+
 import ChangelogPage from "./pages/ChangelogPage";
 import InvitePage from "./pages/InvitePage";
 import EnterprisePage from "./pages/EnterprisePage";
@@ -72,7 +72,7 @@ const App = () => (
           <Route path="/enterprise" element={<EnterprisePage />} />
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
           <Route path="/comments" element={<CommentsPage />} />
-          <Route path="/unsubscribe" element={<UnsubscribePage />} />
+          
           <Route path="/changelog" element={<ChangelogPage />} />
           <Route path="/dashboard/invite" element={<InvitePage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
