@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { sendTemplateEmail } from '../_shared/transactional-email-templates/send-email.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,12 +12,16 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  const supabase = createClient(supabaseUrl, serviceKey)
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  if (!supabaseUrl || !serviceKey) {
+    return new Response(JSON.stringify({ error: 'Server configuration error' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
 
-  // Auth: only allow callers presenting the service-role key (the DB trigger)
-  // or a valid authenticated user JWT. Blocks unauthenticated email-spam abuse.
+  const supabase = createClient(supabaseUrl, serviceKey)
   const authHeader = req.headers.get('Authorization') || ''
   const token = authHeader.replace(/^Bearer\s+/i, '').trim()
   if (!token) {
@@ -25,18 +30,22 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
-  if (token !== serviceKey) {
-    const { data: userData, error: userErr } = await supabase.auth.getUser(token)
-    if (userErr || !userData?.user) {
+  const isInternalCall = token === serviceKey
+  let callerUserId: string | null = null
+  if (!isInternalCall) {
+    const { data: callerData, error: callerError } = await supabase.auth.getUser(token)
+    if (callerError || !callerData?.user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
+    callerUserId = callerData.user.id
   }
 
   try {
-    const { commentId } = await req.json()
+    const body = await req.json()
+    const commentId = typeof body.commentId === 'string' ? body.commentId : ''
     if (!commentId) {
       return new Response(JSON.stringify({ error: 'commentId required' }), {
         status: 400,
@@ -44,22 +53,26 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Fetch the comment
-    const { data: comment, error: commentErr } = await supabase
+    const { data: comment, error: commentError } = await supabase
       .from('comments')
       .select('id, content, user_id, parent_id')
       .eq('id', commentId)
       .maybeSingle()
 
-    if (commentErr || !comment) {
-      console.error('Comment not found', { commentId, commentErr })
+    if (commentError || !comment) {
+      console.error('Comment not found', { commentId, commentError })
       return new Response(JSON.stringify({ error: 'Comment not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
+    if (!isInternalCall && callerUserId !== comment.user_id) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
 
-    // Get commenter's display name
     const { data: profile } = await supabase
       .from('profiles')
       .select('display_name')
@@ -67,42 +80,33 @@ Deno.serve(async (req) => {
       .maybeSingle()
     const userName = profile?.display_name?.trim() || '匿名用户'
 
-    // Helper: call send-transactional-email via direct fetch so we can log failures
-    const sendEmail = async (label: string, body: Record<string, unknown>) => {
+    const sendEmail = async (
+      label: string,
+      recipient: string,
+      templateName: 'new-comment' | 'comment-reply',
+      templateData: Record<string, unknown>,
+    ) => {
       try {
-        const res = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${serviceKey}`,
-            apikey: serviceKey,
-          },
-          body: JSON.stringify(body),
+        const result = await sendTemplateEmail(templateName, recipient, {
+          templateData,
+          idempotencyKey: `${templateName}-${comment.id}-${recipient || 'admin'}`,
         })
-        const text = await res.text()
-        if (!res.ok) {
-          console.error(`[notify-comment] ${label} failed`, res.status, text)
+        if (!result.sent) {
+          console.log('Comment email suppressed', { label })
         } else {
-          console.log(`[notify-comment] ${label} ok`, text)
+          console.log('Comment email sent', { label })
         }
-      } catch (e) {
-        console.error(`[notify-comment] ${label} threw`, e)
+      } catch (error) {
+        console.error(`[notify-comment] ${label} failed`, error)
       }
     }
 
-    // Always notify admin about new comments
-    await sendEmail('admin', {
-      templateName: 'new-comment',
-      recipientEmail: 'sweeyeah@gmail.com',
-      idempotencyKey: `new-comment-admin-${comment.id}`,
-      templateData: {
-        userName,
-        commentContent: comment.content.substring(0, 500),
-        commentUrl: 'https://readgzh.site/comments',
-      },
+    await sendEmail('admin', '', 'new-comment', {
+      userName,
+      commentContent: comment.content.substring(0, 500),
+      commentUrl: 'https://readgzh.site/comments',
     })
 
-    // If it's a reply, notify the parent comment author
     if (comment.parent_id) {
       const { data: parentComment } = await supabase
         .from('comments')
@@ -118,16 +122,11 @@ Deno.serve(async (req) => {
           .maybeSingle()
 
         if (parentProfile?.email) {
-          await sendEmail('reply', {
-            templateName: 'comment-reply',
-            recipientEmail: parentProfile.email,
-            idempotencyKey: `comment-reply-${comment.id}`,
-            templateData: {
-              replierName: userName,
-              replyContent: comment.content.substring(0, 500),
-              originalContent: parentComment.content.substring(0, 200),
-              commentUrl: 'https://readgzh.site/comments',
-            },
+          await sendEmail('reply', parentProfile.email, 'comment-reply', {
+            replierName: userName,
+            replyContent: comment.content.substring(0, 500),
+            originalContent: parentComment.content.substring(0, 200),
+            commentUrl: 'https://readgzh.site/comments',
           })
         }
       }
@@ -136,8 +135,8 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
-  } catch (err) {
-    console.error('notify-comment error', err)
+  } catch (error) {
+    console.error('notify-comment error', error)
     return new Response(JSON.stringify({ error: 'Internal error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
