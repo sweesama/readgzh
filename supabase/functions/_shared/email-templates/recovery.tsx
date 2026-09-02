@@ -9,7 +9,6 @@ import {
   Head,
   Heading,
   Html,
-  Img,
   Preview,
   Text,
 } from 'npm:@react-email/components@0.0.22'
@@ -23,30 +22,24 @@ export const RecoveryEmail = ({
   siteName,
   confirmationUrl,
 }: RecoveryEmailProps) => (
-  <Html lang="zh" dir="ltr">
+  <Html lang="en" dir="ltr">
     <Head>
-      <meta httpEquiv="Content-Type" content="text/html; charset=utf-8" />
-      <meta charSet="utf-8" />
+      <style>{darkModeCss}</style>
     </Head>
-    <Preview>重置你的 ReadGZH 密码</Preview>
+    <Preview>Reset your password for {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Img
-          src="https://jhnnmmwgdrquwjytvvwu.supabase.co/storage/v1/object/public/email-assets/logo.png"
-          width="48"
-          height="48"
-          alt="ReadGZH"
-          style={{ marginBottom: '24px' }}
-        />
-        <Heading style={h1}>重置密码</Heading>
+        <Heading style={h1}>Reset your password</Heading>
         <Text style={text}>
-          我们收到了重置你 ReadGZH 密码的请求。点击下方按钮设置新密码。
+          We received a request to reset your password for {siteName}. Click
+          the button below to choose a new password.
         </Text>
-        <Button style={button} href={confirmationUrl}>
-          重置密码
+        <Button className="dm-btn" style={button} href={confirmationUrl}>
+          Reset Password
         </Button>
         <Text style={footer}>
-          如果你没有请求重置密码，请忽略此邮件，你的密码不会被更改。
+          If you didn't request a password reset, you can safely ignore this
+          email. Your password will not be changed.
         </Text>
       </Container>
     </Body>
@@ -55,26 +48,35 @@ export const RecoveryEmail = ({
 
 export default RecoveryEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: '-apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif' }
-const container = { padding: '32px 28px' }
+const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
+const container = { padding: '20px 25px' }
 const h1 = {
   fontSize: '22px',
   fontWeight: 'bold' as const,
-  color: '#172533',
+  color: '#000000',
   margin: '0 0 20px',
 }
 const text = {
-  fontSize: '15px',
-  color: '#62697a',
-  lineHeight: '1.6',
-  margin: '0 0 24px',
+  fontSize: '14px',
+  color: '#55575d',
+  lineHeight: '1.5',
+  margin: '0 0 25px',
 }
 const button = {
-  backgroundColor: '#299e7a',
+  backgroundColor: '#000000',
   color: '#ffffff',
-  fontSize: '15px',
-  borderRadius: '12px',
-  padding: '12px 24px',
+  fontSize: '14px',
+  border: '1px solid #000000',
+  borderRadius: '8px',
+  padding: '12px 20px',
   textDecoration: 'none',
 }
-const footer = { fontSize: '12px', color: '#999999', margin: '32px 0 0' }
+const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
+// Rendered as a text child, which React may HTML-escape: keep this CSS free of >, &, and quotes.
+const darkModeCss = `
+  @media (prefers-color-scheme: dark) {
+    .dm-btn { background-color: #ffffff !important; color: #000000 !important; }
+  }
+  [data-ogsc] .dm-btn { background-color: #ffffff !important; color: #000000 !important; }
+  [data-ogsb] .dm-btn { background-color: #ffffff !important; color: #000000 !important; }
+`
