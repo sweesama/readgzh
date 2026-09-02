@@ -29,3 +29,5 @@ project_id = "jhnnmmwgdrquwjytvvwu"
     verify_jwt = false
   [functions.stripe-webhook]
     verify_jwt = false
+  [functions.submit-enterprise-inquiry]
+    verify_jwt = false

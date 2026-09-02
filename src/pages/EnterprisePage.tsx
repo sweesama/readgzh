@@ -69,19 +69,21 @@ const EnterprisePage = () => {
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase.from("enterprise_inquiries").insert({
-      company_name: parsed.data.company_name,
-      contact_name: parsed.data.contact_name,
-      email: parsed.data.email,
-      phone: parsed.data.phone || null,
-      tax_id: parsed.data.tax_id || null,
-      note: parsed.data.note || null,
-      plan,
-      billing_cycle: billing,
-      invoice_type: invoice,
+    const { data, error } = await supabase.functions.invoke("submit-enterprise-inquiry", {
+      body: {
+        company_name: parsed.data.company_name,
+        contact_name: parsed.data.contact_name,
+        email: parsed.data.email,
+        phone: parsed.data.phone || null,
+        tax_id: parsed.data.tax_id || null,
+        note: parsed.data.note || null,
+        plan,
+        billing_cycle: billing,
+        invoice_type: invoice,
+      },
     });
     setSubmitting(false);
-    if (error) {
+    if (error || !data?.success) {
       toast({
         title: "提交失败",
         description: `请稍后重试，或直接邮件联系 ${CONTACT_EMAIL}`,
