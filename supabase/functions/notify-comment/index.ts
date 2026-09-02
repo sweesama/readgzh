@@ -30,12 +30,17 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
-  const { data: callerData, error: callerError } = await supabase.auth.getUser(token)
-  if (callerError || !callerData?.user) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+  const isInternalCall = token === serviceKey
+  let callerUserId: string | null = null
+  if (!isInternalCall) {
+    const { data: callerData, error: callerError } = await supabase.auth.getUser(token)
+    if (callerError || !callerData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    callerUserId = callerData.user.id
   }
 
   try {
@@ -58,6 +63,12 @@ Deno.serve(async (req) => {
       console.error('Comment not found', { commentId, commentError })
       return new Response(JSON.stringify({ error: 'Comment not found' }), {
         status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    if (!isInternalCall && callerUserId !== comment.user_id) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
