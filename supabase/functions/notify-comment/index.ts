@@ -30,14 +30,12 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
-  if (token !== serviceKey) {
-    const { data: userData, error: userError } = await supabase.auth.getUser(token)
-    if (userError || !userData?.user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
+  const { data: callerData, error: callerError } = await supabase.auth.getUser(token)
+  if (callerError || !callerData?.user) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 
   try {
@@ -80,7 +78,7 @@ Deno.serve(async (req) => {
       try {
         const result = await sendTemplateEmail(templateName, recipient, {
           templateData,
-          idempotencyKey: `${templateName}-${comment.id}`,
+          idempotencyKey: `${templateName}-${comment.id}-${recipient || 'admin'}`,
         })
         if (!result.sent) {
           console.log('Comment email suppressed', { label })
