@@ -92,11 +92,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    await sendEmail('admin', '', 'new-comment', {
-      userName,
-      commentContent: comment.content.substring(0, 500),
-      commentUrl: 'https://readgzh.site/comments',
-    })
+    if (!comment.parent_id) {
+      await sendEmail('admin', '', 'new-comment', {
+        userName,
+        commentContent: comment.content.substring(0, 500),
+        commentUrl: 'https://readgzh.site/comments',
+      })
+    }
 
     if (comment.parent_id) {
       const { data: parentComment } = await supabase
