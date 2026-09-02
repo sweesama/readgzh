@@ -12,9 +12,11 @@ export interface TemplateEntry {
 import { template as newComment } from './new-comment.tsx'
 import { template as commentReply } from './comment-reply.tsx'
 import { template as systemNotice } from './system-notice.tsx'
+import { template as enterpriseInquiry } from './enterprise-inquiry.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'new-comment': newComment,
   'comment-reply': commentReply,
   'system-notice': systemNotice,
+  'enterprise-inquiry': enterpriseInquiry,
 }
