@@ -1,66 +1,22 @@
 /// <reference types="npm:@types/react@18.3.1" />
 
 import * as React from 'npm:react@18.3.1'
+import { Body, Button, Container, Head, Heading, Html, Img, Link, Preview, Text } from 'npm:@react-email/components@0.0.22'
 
-import {
-  Body,
-  Button,
-  Container,
-  Head,
-  Heading,
-  Html,
-  Link,
-  Preview,
-  Text,
-} from 'npm:@react-email/components@0.0.22'
+interface EmailChangeEmailProps { siteName: string; oldEmail: string; email: string; newEmail: string; confirmationUrl: string }
 
-interface EmailChangeEmailProps {
-  siteName: string
-  // oldEmail is the user's current address (HookData.OldEmail). For the
-  // NEW-recipient half of a secure email_change fanout, `email` equals the
-  // recipient (NEW), so the "from" line must render oldEmail to read
-  // "from OLD to NEW" instead of "from NEW to NEW".
-  oldEmail: string
-  email: string
-  newEmail: string
-  confirmationUrl: string
-}
-
-export const EmailChangeEmail = ({
-  siteName,
-  oldEmail,
-  newEmail,
-  confirmationUrl,
-}: EmailChangeEmailProps) => (
-  <Html lang="en" dir="ltr">
-    <Head>
-      <style>{darkModeCss}</style>
-    </Head>
-    <Preview>Confirm your email change for {siteName}</Preview>
+export const EmailChangeEmail = ({ siteName, oldEmail, email, newEmail, confirmationUrl }: EmailChangeEmailProps) => (
+  <Html lang="zh" dir="ltr">
+    <Head><meta httpEquiv="Content-Type" content="text/html; charset=utf-8" /><meta charSet="utf-8" /></Head>
+    <Preview>确认你的 ReadGZH 邮箱变更</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Confirm your email change</Heading>
-        <Text style={text}>
-          You requested to change your email address for {siteName} from{' '}
-          <Link href={`mailto:${oldEmail}`} style={link}>
-            {oldEmail}
-          </Link>{' '}
-          to{' '}
-          <Link href={`mailto:${newEmail}`} style={link}>
-            {newEmail}
-          </Link>
-          .
-        </Text>
-        <Text style={text}>
-          Click the button below to confirm this change:
-        </Text>
-        <Button className="dm-btn" style={button} href={confirmationUrl}>
-          Confirm Email Change
-        </Button>
-        <Text style={footer}>
-          If you didn't request this change, please secure your account
-          immediately.
-        </Text>
+        <Img src="https://jhnnmmwgdrquwjytvvwu.supabase.co/storage/v1/object/public/email-assets/logo.png" width="48" height="48" alt="ReadGZH" style={{ marginBottom: '24px' }} />
+        <Heading style={h1}>确认邮箱变更</Heading>
+        <Text style={text}>你请求将 {siteName} 的邮箱从 <Link href={`mailto:${oldEmail || email}`} style={link}>{oldEmail || email}</Link> 更改为 <Link href={`mailto:${newEmail}`} style={link}>{newEmail}</Link>。</Text>
+        <Text style={text}>点击下方按钮确认此变更：</Text>
+        <Button style={button} href={confirmationUrl}>确认变更</Button>
+        <Text style={footer}>如果你没有请求此变更，请立即检查你的账户安全。</Text>
       </Container>
     </Body>
   </Html>
@@ -68,36 +24,10 @@ export const EmailChangeEmail = ({
 
 export default EmailChangeEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '20px 25px' }
-const h1 = {
-  fontSize: '22px',
-  fontWeight: 'bold' as const,
-  color: '#000000',
-  margin: '0 0 20px',
-}
-const text = {
-  fontSize: '14px',
-  color: '#55575d',
-  lineHeight: '1.5',
-  margin: '0 0 25px',
-}
-const link = { color: 'inherit', textDecoration: 'underline' }
-const button = {
-  backgroundColor: '#000000',
-  color: '#ffffff',
-  fontSize: '14px',
-  border: '1px solid #000000',
-  borderRadius: '8px',
-  padding: '12px 20px',
-  textDecoration: 'none',
-}
-const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
-// Rendered as a text child, which React may HTML-escape: keep this CSS free of >, &, and quotes.
-const darkModeCss = `
-  @media (prefers-color-scheme: dark) {
-    .dm-btn { background-color: #ffffff !important; color: #000000 !important; }
-  }
-  [data-ogsc] .dm-btn { background-color: #ffffff !important; color: #000000 !important; }
-  [data-ogsb] .dm-btn { background-color: #ffffff !important; color: #000000 !important; }
-`
+const main = { backgroundColor: '#ffffff', fontFamily: '-apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif' }
+const container = { padding: '32px 28px' }
+const h1 = { fontSize: '22px', fontWeight: 'bold' as const, color: '#172533', margin: '0 0 20px' }
+const text = { fontSize: '15px', color: '#62697a', lineHeight: '1.6', margin: '0 0 24px' }
+const link = { color: '#299e7a', textDecoration: 'underline' }
+const button = { backgroundColor: '#299e7a', color: '#ffffff', fontSize: '15px', borderRadius: '12px', padding: '12px 24px', textDecoration: 'none' }
+const footer = { fontSize: '12px', color: '#999999', margin: '32px 0 0' }

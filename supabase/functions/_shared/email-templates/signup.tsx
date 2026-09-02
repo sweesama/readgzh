@@ -1,17 +1,8 @@
 /// <reference types="npm:@types/react@18.3.1" />
 
 import * as React from 'npm:react@18.3.1'
-
 import {
-  Body,
-  Button,
-  Container,
-  Head,
-  Heading,
-  Html,
-  Link,
-  Preview,
-  Text,
+  Body, Button, Container, Head, Heading, Html, Img, Link, Preview, Text,
 } from 'npm:@react-email/components@0.0.22'
 
 interface SignupEmailProps {
@@ -21,40 +12,18 @@ interface SignupEmailProps {
   confirmationUrl: string
 }
 
-export const SignupEmail = ({
-  siteName,
-  siteUrl,
-  recipient,
-  confirmationUrl,
-}: SignupEmailProps) => (
-  <Html lang="en" dir="ltr">
-    <Head>
-      <style>{darkModeCss}</style>
-    </Head>
-    <Preview>Confirm your email for {siteName}</Preview>
+export const SignupEmail = ({ siteName, siteUrl, recipient, confirmationUrl }: SignupEmailProps) => (
+  <Html lang="zh" dir="ltr">
+    <Head><meta httpEquiv="Content-Type" content="text/html; charset=utf-8" /><meta charSet="utf-8" /></Head>
+    <Preview>验证你的 ReadGZH 邮箱</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Confirm your email</Heading>
-        <Text style={text}>
-          Thanks for signing up for{' '}
-          <Link href={siteUrl} style={link}>
-            <strong>{siteName}</strong>
-          </Link>
-          !
-        </Text>
-        <Text style={text}>
-          Please confirm your email address (
-          <Link href={`mailto:${recipient}`} style={link}>
-            {recipient}
-          </Link>
-          ) by clicking the button below:
-        </Text>
-        <Button className="dm-btn" style={button} href={confirmationUrl}>
-          Verify Email
-        </Button>
-        <Text style={footer}>
-          If you didn't create an account, you can safely ignore this email.
-        </Text>
+        <Img src="https://jhnnmmwgdrquwjytvvwu.supabase.co/storage/v1/object/public/email-assets/logo.png" width="48" height="48" alt="ReadGZH" style={{ marginBottom: '24px' }} />
+        <Heading style={h1}>验证你的邮箱</Heading>
+        <Text style={text}>感谢注册 <Link href={siteUrl} style={link}><strong>{siteName}</strong></Link>！</Text>
+        <Text style={text}>请点击下方按钮验证你的邮箱地址（<Link href={`mailto:${recipient}`} style={link}>{recipient}</Link>）：</Text>
+        <Button style={button} href={confirmationUrl}>验证邮箱</Button>
+        <Text style={footer}>如果你没有注册过 ReadGZH，请忽略此邮件。</Text>
       </Container>
     </Body>
   </Html>
@@ -62,36 +31,10 @@ export const SignupEmail = ({
 
 export default SignupEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '20px 25px' }
-const h1 = {
-  fontSize: '22px',
-  fontWeight: 'bold' as const,
-  color: '#000000',
-  margin: '0 0 20px',
-}
-const text = {
-  fontSize: '14px',
-  color: '#55575d',
-  lineHeight: '1.5',
-  margin: '0 0 25px',
-}
-const link = { color: 'inherit', textDecoration: 'underline' }
-const button = {
-  backgroundColor: '#000000',
-  color: '#ffffff',
-  fontSize: '14px',
-  border: '1px solid #000000',
-  borderRadius: '8px',
-  padding: '12px 20px',
-  textDecoration: 'none',
-}
-const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
-// Rendered as a text child, which React may HTML-escape: keep this CSS free of >, &, and quotes.
-const darkModeCss = `
-  @media (prefers-color-scheme: dark) {
-    .dm-btn { background-color: #ffffff !important; color: #000000 !important; }
-  }
-  [data-ogsc] .dm-btn { background-color: #ffffff !important; color: #000000 !important; }
-  [data-ogsb] .dm-btn { background-color: #ffffff !important; color: #000000 !important; }
-`
+const main = { backgroundColor: '#ffffff', fontFamily: '-apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif' }
+const container = { padding: '32px 28px' }
+const h1 = { fontSize: '22px', fontWeight: 'bold' as const, color: '#172533', margin: '0 0 20px' }
+const text = { fontSize: '15px', color: '#62697a', lineHeight: '1.6', margin: '0 0 24px' }
+const link = { color: '#299e7a', textDecoration: 'underline' }
+const button = { backgroundColor: '#299e7a', color: '#ffffff', fontSize: '15px', borderRadius: '12px', padding: '12px 24px', textDecoration: 'none' }
+const footer = { fontSize: '12px', color: '#999999', margin: '32px 0 0' }
