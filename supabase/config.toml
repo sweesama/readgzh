@@ -25,5 +25,7 @@ project_id = "jhnnmmwgdrquwjytvvwu"
     verify_jwt = false
   [functions.preview-transactional-email]
     verify_jwt = false
+  [functions.notify-comment]
+    verify_jwt = false
   [functions.stripe-webhook]
     verify_jwt = false
