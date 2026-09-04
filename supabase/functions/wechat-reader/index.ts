@@ -1866,6 +1866,28 @@ async function handleDirectSubmit(body: Record<string, unknown>): Promise<Respon
 
   if (dbError) {
     console.error("DB error:", dbError);
+    // A concurrent save (duplicate slug / source_url) is not a user-facing failure.
+    let recovered = null as { id: string } | null;
+    if (slug) {
+      const { data } = await supabase.from("articles").select("id").eq("slug", slug).maybeSingle();
+      recovered = data;
+    }
+    if (!recovered && sourceUrl) {
+      const { data } = await supabase
+        .from("articles")
+        .select("id")
+        .eq("source_url", sourceUrl)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      recovered = data;
+    }
+    if (recovered) {
+      return new Response(
+        JSON.stringify({ success: true, cached: true, articleId: recovered.id }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     return new Response(
       JSON.stringify({ success: false, error: "保存文章失败，请稍后重试" }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
