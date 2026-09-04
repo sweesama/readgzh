@@ -1866,6 +1866,28 @@ async function handleDirectSubmit(body: Record<string, unknown>): Promise<Respon
 
   if (dbError) {
     console.error("DB error:", dbError);
+    // A concurrent save (duplicate slug / source_url) is not a user-facing failure.
+    let recovered = null as { id: string } | null;
+    if (slug) {
+      const { data } = await supabase.from("articles").select("id").eq("slug", slug).maybeSingle();
+      recovered = data;
+    }
+    if (!recovered && sourceUrl) {
+      const { data } = await supabase
+        .from("articles")
+        .select("id")
+        .eq("source_url", sourceUrl)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      recovered = data;
+    }
+    if (recovered) {
+      return new Response(
+        JSON.stringify({ success: true, cached: true, articleId: recovered.id }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     return new Response(
       JSON.stringify({ success: false, error: "保存文章失败，请稍后重试" }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -2224,22 +2246,47 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
       }));
     }
 
+    // Last-resort save: text-only, small body. GIN maintenance on `content` plus a
+    // multi-MB raw_html is the usual timeout source, so drop both before giving up.
+    if (dbError?.code === "57014") {
+      console.error("DB insert timed out again; retrying with minimal article payload:", { slug });
+      ({ data: saved, error: dbError } = await insertArticle({
+        ...articlePayload,
+        content: truncateForStorage(textContent, 50_000, "minimal_content"),
+        raw_html: null as unknown as string,
+      }));
+    }
+
     if (dbError) {
       console.error("DB error:", dbError);
+      // Concurrent writers (or a null-slug duplicate) may have cached it already.
+      let existingAfterConflict: { id: string; slug: string | null } | null = null;
       if (slug) {
-        const { data: existingAfterConflict } = await supabase
+        const { data } = await supabase
           .from("articles")
           .select("id, slug")
           .eq("slug", slug)
           .maybeSingle();
-        if (existingAfterConflict) {
-          console.log("DB save conflict recovered from cache:", existingAfterConflict.id, existingAfterConflict.slug);
-          return new Response(
-            JSON.stringify({ success: true, cached: true, articleId: existingAfterConflict.id, slug: existingAfterConflict.slug, creditCost: 0 }),
-            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
+        existingAfterConflict = data;
       }
+      if (!existingAfterConflict) {
+        const { data } = await supabase
+          .from("articles")
+          .select("id, slug")
+          .eq("source_url", url)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        existingAfterConflict = data;
+      }
+      if (existingAfterConflict) {
+        console.log("DB save conflict recovered from cache:", existingAfterConflict.id, existingAfterConflict.slug);
+        return new Response(
+          JSON.stringify({ success: true, cached: true, articleId: existingAfterConflict.id, slug: existingAfterConflict.slug, creditCost: 0 }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       const refunded = await refundCredits(keyHash, 3);
       return apiError({
         code: "db_save_failed",
