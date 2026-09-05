@@ -2246,16 +2246,19 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
       }));
     }
 
-    // Last-resort save: text-only, small body. GIN maintenance on `content` plus a
-    // multi-MB raw_html is the usual timeout source, so drop both before giving up.
+    // Last-resort save: keep the full formatted HTML (it is what readers see) and
+    // only retry once more — a degraded, permanently cached text-only copy is worse
+    // than asking the user to retry. The GIN indexes now use fastupdate=off, so
+    // insert cost is bounded and this path should be rare.
     if (dbError?.code === "57014") {
-      console.error("DB insert timed out again; retrying with minimal article payload:", { slug });
+      console.error("DB insert timed out again; final retry with compact payload:", { slug });
       ({ data: saved, error: dbError } = await insertArticle({
         ...articlePayload,
-        content: truncateForStorage(textContent, 50_000, "minimal_content"),
-        raw_html: null as unknown as string,
+        content: truncateForStorage(textContent, RETRY_STORED_CONTENT_LENGTH, "retry2_content"),
+        raw_html: truncateForStorage(contentHtml, RETRY_STORED_HTML_LENGTH, "retry2_raw_html"),
       }));
     }
+
 
     if (dbError) {
       console.error("DB error:", dbError);
