@@ -2263,25 +2263,33 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     if (dbError) {
       console.error("DB error:", dbError);
       // Concurrent writers (or a null-slug duplicate) may have cached it already.
+      // The recovery lookup itself can fail transiently (read timeout / replica lag),
+      // so retry a few times before giving the user a hard error.
       let existingAfterConflict: { id: string; slug: string | null } | null = null;
-      if (slug) {
-        const { data } = await supabase
-          .from("articles")
-          .select("id, slug")
-          .eq("slug", slug)
-          .maybeSingle();
-        existingAfterConflict = data;
+      for (let attempt = 0; attempt < 3 && !existingAfterConflict; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, 400 * attempt));
+        if (slug) {
+          const { data, error } = await supabase
+            .from("articles")
+            .select("id, slug")
+            .eq("slug", slug)
+            .maybeSingle();
+          if (error) console.error("Conflict recovery slug lookup failed:", error);
+          existingAfterConflict = data ?? null;
+        }
+        if (!existingAfterConflict) {
+          const { data, error } = await supabase
+            .from("articles")
+            .select("id, slug")
+            .eq("source_url", url)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (error) console.error("Conflict recovery source_url lookup failed:", error);
+          existingAfterConflict = data ?? null;
+        }
       }
-      if (!existingAfterConflict) {
-        const { data } = await supabase
-          .from("articles")
-          .select("id, slug")
-          .eq("source_url", url)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        existingAfterConflict = data;
-      }
+
       if (existingAfterConflict) {
         console.log("DB save conflict recovered from cache:", existingAfterConflict.id, existingAfterConflict.slug);
         return new Response(
