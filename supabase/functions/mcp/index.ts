@@ -110,6 +110,11 @@ function errorText(value) {
 // src/lib/mcp/tools/read.ts
 var ARTICLE_FIELDS = "title, author, content, publish_time, source_url, slug";
 var CREDIT_COST = 3;
+function serviceRoleKey() {
+  return globalThis.Deno?.env.get(
+    "SUPABASE_SERVICE_ROLE_KEY"
+  ) ?? "";
+}
 function normalizeUrl(raw) {
   try {
     const url = new URL(raw.trim());
@@ -118,6 +123,10 @@ function normalizeUrl(raw) {
   } catch {
     return null;
   }
+}
+function slugFromUrl(target) {
+  const match = target.match(/\/(s\/[^?#]+)/);
+  return match ? match[1] : null;
 }
 var read_default = defineTool({
   name: "readgzh_read",
@@ -132,7 +141,16 @@ var read_default = defineTool({
     const target = normalizeUrl(url);
     if (!target) return errorText("Only mp.weixin.qq.com article links are supported.");
     const anon = supabaseAnon();
-    const { data: cached } = await anon.from("articles").select(ARTICLE_FIELDS).eq("source_url", target).maybeSingle();
+    const slug = slugFromUrl(target);
+    let cached = null;
+    if (slug) {
+      const { data } = await anon.from("articles").select(ARTICLE_FIELDS).eq("slug", slug).maybeSingle();
+      cached = data;
+    }
+    if (!cached) {
+      const { data } = await anon.from("articles").select(ARTICLE_FIELDS).eq("source_url", target).maybeSingle();
+      cached = data;
+    }
     if (cached) return text(articleMarkdown(cached, "cached \u2014 0 credits"));
     const { data: keys, error: keyError } = await supabaseForUser(ctx).from("api_keys").select("key_hash, created_at").eq("is_active", true).order("created_at", { ascending: true }).limit(1);
     if (keyError) return errorText(`Could not load your ReadGZH account: ${keyError.message}`);
@@ -141,9 +159,10 @@ var read_default = defineTool({
         "No active ReadGZH API key on this account. Create one (free, 30 credits/day) at https://readgzh.site/dashboard, then retry."
       );
     }
+    const keyHash = keys[0].key_hash;
     const service = supabaseService();
     const { data: quota, error: quotaError } = await service.rpc("validate_api_key", {
-      p_key_hash: keys[0].key_hash,
+      p_key_hash: keyHash,
       p_credit_cost: CREDIT_COST
     });
     if (quotaError) return errorText(`Credit check failed: ${quotaError.message}`);
@@ -154,6 +173,10 @@ var read_default = defineTool({
         "Out of credits for today. Claim your daily free credits or upgrade at https://readgzh.site/pricing."
       );
     }
+    const refund = async () => {
+      const { error: error2 } = await service.rpc("refund_credits", { p_key_hash: keyHash, p_amount: CREDIT_COST });
+      if (error2) console.error("[readgzh_read] refund failed:", error2.message);
+    };
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 55e3);
     let scrape;
@@ -162,27 +185,43 @@ var read_default = defineTool({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${globalThis.Deno?.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""}`
+          Authorization: `Bearer ${serviceRoleKey()}`,
+          "X-ReadGZH-Internal": "mcp-oauth"
         },
         body: JSON.stringify({ url: target }),
         signal: controller.signal
       });
+      if (!response.ok) {
+        const detail = await response.text().catch(() => "");
+        await refund();
+        return errorText(`Failed to read article (HTTP ${response.status}). No credits were charged.${detail ? `
+${detail.slice(0, 500)}` : ""}`);
+      }
       scrape = await response.json();
     } catch (err) {
+      await refund();
       return errorText(
-        `Extraction timed out or failed: ${err instanceof Error ? err.message : "unknown error"}. Please retry.`
+        `Extraction timed out or failed: ${err instanceof Error ? err.message : "unknown error"}. No credits were charged. Please retry.`
       );
     } finally {
       clearTimeout(timeout);
     }
     if (!scrape?.success || !scrape.articleId) {
-      return errorText(`Failed to read article: ${scrape?.error ?? "unknown error"}${scrape?.hint ? `
-${scrape.hint}` : ""}`);
+      await refund();
+      return errorText(
+        `Failed to read article: ${scrape?.error ?? "unknown error"}. No credits were charged.${scrape?.hint ? `
+${scrape.hint}` : ""}`
+      );
     }
+    const wasFree = scrape.cached === true || scrape.creditCost === 0;
+    if (wasFree) await refund();
     const { data: article, error } = await anon.from("articles").select(ARTICLE_FIELDS).eq("id", scrape.articleId).maybeSingle();
-    if (error || !article) return errorText("Article was extracted but could not be loaded back. Please retry.");
-    const remaining = typeof result.remaining === "number" ? `${CREDIT_COST} credits used, ${result.remaining} remaining` : void 0;
-    return text(articleMarkdown(article, remaining));
+    if (error || !article) {
+      if (!wasFree) await refund();
+      return errorText("Article was extracted but could not be loaded back. No credits were charged. Please retry.");
+    }
+    const note = wasFree ? "cached \u2014 0 credits" : typeof result.remaining === "number" ? `${CREDIT_COST} credits used, ${result.remaining} remaining` : void 0;
+    return text(articleMarkdown(article, note));
   }
 });
 
