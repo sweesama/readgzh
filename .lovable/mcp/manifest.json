@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "sdk_version": "2.0.4",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://jhnnmmwgdrquwjytvvwu.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "readgzh",
+      "version": "1.0.0",
+      "title": "ReadGZH"
+    },
+    "tools": [
+      {
+        "name": "readgzh_read",
+        "title": "Read WeChat article",
+        "description": "Read the full text of a WeChat Official Account (微信公众号) article from its mp.weixin.qq.com URL. Returns title, author, publish time and clean Markdown content. Cached articles are free; a fresh extraction costs 3 credits from the signed-in user's ReadGZH balance.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string",
+              "description": "Full WeChat article URL, e.g. https://mp.weixin.qq.com/s/xxxx"
+            }
+          },
+          "required": [
+            "url"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "readgzh_search",
+        "title": "Search cached articles",
+        "description": "Search WeChat articles already cached by ReadGZH, by keyword in title or content (Chinese or English). Returns matching titles and slugs; read one with readgzh_get.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Search keyword"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum results, default 5, capped at 20"
+            }
+          },
+          "required": [
+            "query"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "readgzh_list",
+        "title": "List recent cached articles",
+        "description": "List the most recently cached WeChat articles on ReadGZH, newest first. Useful for browsing.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "number",
+              "description": "Number of articles, default 10, capped at 50"
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "readgzh_list_by_account",
+        "title": "List cached articles by account",
+        "description": "List cached WeChat articles from one Official Account (公众号), newest first. Only covers articles already cached by ReadGZH — WeChat has no public archive API, so the result is never exhaustive; say so when presenting it.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "account": {
+              "type": "string",
+              "description": "Official Account name (author); partial match supported"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Number of articles, default 10, capped at 50"
+            }
+          },
+          "required": [
+            "account"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "readgzh_get",
+        "title": "Get cached article by slug",
+        "description": "Read a cached WeChat article by its ReadGZH slug. Long articles are chunked at ~40,000 characters; pass part to page through them. Always free — no credits.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "slug": {
+              "type": "string",
+              "description": "Article slug, e.g. the value after /s/ in a ReadGZH link"
+            },
+            "part": {
+              "type": "number",
+              "description": "Chunk number starting at 1 for long articles"
+            }
+          },
+          "required": [
+            "slug"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
