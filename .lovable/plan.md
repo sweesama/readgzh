@@ -1,167 +1,57 @@
-# 邀请好友送积分 · 实施计划
+# OAuth MCP 读文计费链路核验（只读结论 + 待授权修复方案）
 
-## 一、产品规则（已确认）
+本轮只做代码只读核验，未编辑任何文件、未部署、未做任何扣款测试。
 
-| 项 | 规则 |
-|---|---|
-| 邀请上限 | 每账号最多 20 人 |
-| 阶梯奖励 | 1–3 人 × 30 / 4–8 人 × 60 / 9–15 人 × 90 / 16–20 人 × 120，满额 1620 |
-| 触发条件 | 被邀请人完成邮箱验证 + 首次成功阅读一篇文章 |
-| 积分过期 | 自发放日起 60 天 |
-| 充值额外奖励 | 不做 |
-| 被邀请人福利 | 待你确认（见"待确认问题 Q1"） |
-| 活动时长 | 待你确认（见 Q2） |
+## 你的三点判断是否成立
 
-## 二、技术方案
+1. **重复计费/双重扣费路径成立（但比预期轻）**
+   - `src/lib/mcp/tools/read.ts`：先用 service role 调 `validate_api_key(p_key_hash, 3)` 扣 3 积分，然后带 **service-role Bearer** 调 `wechat-reader`。
+   - `wechat-reader` 的 `checkApiKeyAuth` 只接受 `Authorization: Bearer sk_live_` 开头的请求头，service-role token 不匹配 → 返回 null → `checkRateLimit` 落到 **匿名 IP 限流**分支，`keyHash` 为 `undefined`。成立。
+   - 但不会二次扣积分：匿名分支只查 `check_rate_limit`，不扣 credits。所以是「扣一次 + 走匿名配额」，不是扣两次。
 
-### 2.1 数据库（新增 3 张表）
+2. **匿名限流会挡住新 MCP 抓新文章：成立，且这是最高风险项**
+   - 函数间调用时 `x-forwarded-for` 若为空，`getClientIp` 返回 `unknown` → 直接放行（此时无限制）；若上游带了 IP，则整个新 MCP 共用同一个桶，`DAILY_LIMIT = 10`，约 3 篇新文章后所有 OAuth 用户一起被 429。行为取决于运行时是否透传 IP，属于不确定的隐性故障。
 
-```text
-referral_codes               每用户一个唯一邀请码
-├─ user_id (PK, FK profiles)
-├─ code (unique, 8 位大写字母数字)
-└─ created_at
+3. **失败不退款、未处理 `cached` / `creditCost`：成立**
+   - `wechat-reader` 内部的 `refundCredits(keyHash, 3)` 只在 `keyHash` 存在时生效；新 MCP 传的是 service-role，`keyHash` 为空 → 抓取失败、视频文、微信验证拦截等场景全部**不退款**。
+   - `read.ts` 只看 `scrape.success && scrape.articleId`，忽略响应里的 `cached: true` 与 `creditCost: 0`。
+   - 你**遗漏的一层已有保护**：`read.ts` 在扣费前先用匿名客户端按 `source_url` 查过缓存；`wechat-reader` POST 路径在扣费前也再查一次 slug + source_url 缓存。所以常见的「已缓存文章」不会被扣费。真正会白扣 3 分的是：并发抓取被别人先写入（返回 `cached:true`）、以及抓取/保存失败这两类。另注意 `read.ts` 缓存预检按 `source_url` 精确匹配，带 UTM 参数的链接会漏掉缓存，落到扣费路径后才由 slug 命中。
 
-referrals                    每条邀请关系
-├─ id
-├─ inviter_id (FK profiles)
-├─ invitee_id (FK profiles, unique)   ← 防一人被多次邀请
-├─ status: pending|qualified|rewarded|invalid
-├─ signup_ip / signup_user_agent      ← 风控审计
-├─ qualified_at  (首次阅读时间)
-├─ rewarded_at   (积分发放时间)
-├─ reward_amount (30/60/90/120)
-└─ created_at
+## 线上与仓库是否一致
 
-bonus_grants                 积分发放台账（替代当前单字段 bonus_expires_at）
-├─ id
-├─ user_id
-├─ amount
-├─ source: 'referral' | 'credit_pack' | 'admin'
-├─ source_ref (referral_id / stripe_session_id)
-├─ granted_at
-├─ expires_at  (granted_at + 60d)
-└─ consumed_amount (默认 0)
-```
+平台没有「读取线上函数源码」的只读能力，无法逐行 diff。可确认的是仓库里 `supabase/config.toml` 已把 `wechat-reader`、`mcp-server` 设为 `verify_jwt = false`，且这两个函数最近一次修改都已部署过。要在不扣款前提下做行为核验，可用只读探针：对**已缓存**文章调 `POST /functions/v1/wechat-reader`，观察是否返回 `X-Cache: HIT` 与 `creditCost: 0`（0 积分、不写数据）。需要你点头我才执行。
 
-**关键决策**：当前 `api_keys.bonus_credits` 是单字段，多笔奖励叠加时会丢失各自过期时间。引入 `bonus_grants` 台账后，`get_user_balance` 和 `validate_api_key` 改为 `SUM(amount - consumed) WHERE expires_at > now()`。历史的 `credit_pack` 数据需要一次性回填到台账（用 `credit_pack_claims` 反推）。
+## 文档现状（只读确认）
 
-### 2.2 边缘函数（新增 2 个）
+- `public/llms.txt`：只写了 `POST https://api.readgzh.site/mcp-server` 与 `readgzh.*` 点号工具名，**没有** OAuth MCP 地址、`readgzh_*` 下划线工具名、也没有「首次抓取前需要有效 API Key」这条前置条件。
+- `src/pages/DocsPage.tsx`：MCP 章节同样只有 API-key 接入（含 Cursor deeplink），**无** OAuth 接入说明。
+- 二者都缺，且 README 已更新，出现文档不一致。
 
-- **`referral-claim`**（注册流程调用）
-  - 入参：`code`, `invitee_id`
-  - 校验：code 存在、未自邀（IP/email 不同）、invitee 未被邀请过、邀请人未满 20
-  - 写入 `referrals` 行 `status=pending`
-  
-- **`referral-trigger`**（首次阅读时调用，从 `wechat-reader` / `rd` 内部 RPC）
-  - 输入：`user_id`
-  - 若该用户存在 `pending` 邀请：标记 `qualified` → 计算邀请人当前已 `rewarded` 数对应的阶梯 → 写入 `bonus_grants` → 标 `rewarded`
-  - 幂等：同一 invitee 只触发一次（status 机），用事务 + 唯一约束
+## 最小修复方案（待你明确授权后再做，当前不实施）
 
-### 2.3 注册流程改造
+范围仅限 `src/lib/mcp/tools/read.ts`（外加可选的一个 `wechat-reader` 小改动）：
 
-- 注册页（`/auth` 或现有入口）读取 URL `?ref=XXXXXXXX`，存入 sessionStorage
-- 注册成功后立即调用 `referral-claim`
-- `handle_new_user` 触发器**不改**，因为风控逻辑放在边缘函数更灵活
+1. **抓取改用用户自己的 API Key 计费，而不是先扣再匿名调用**（首选）
+   - 障碍：库里只存 `key_hash`（SHA-256），拿不到明文 `sk_live_`，所以无法直接把用户 Key 转发给 `wechat-reader`。
+   - 因此实际最小改法是方案 2。
+2. **保留现有「先扣后调」，但补齐失败与缓存回退**
+   - `read.ts` 读取 `scrape.cached === true` 或 `creditCost === 0` 时，调用 `refund_credits(key_hash, 3)` 退还本次扣费。
+   - `scrape.success !== true`（含 HTTP 非 2xx、超时、abort）时同样退款，再返回错误文案。
+   - 给内部调用加一个显式标记（如请求头 `X-ReadGZH-Internal: mcp-oauth`），让 `wechat-reader` 跳过匿名 IP 限流分支，避免共享桶 429；`wechat-reader` 侧只在 service-role 授权成立时接受该标记。
+3. **缓存预检对齐**：`read.ts` 先按 URL 中的 `s/xxx` slug 查一次缓存，再按 `source_url` 查，减少带参数链接的误扣。
 
-### 2.4 前端
+## 需要的回归场景
 
-新增页面 `/dashboard/invite`（或控制台内 Tab）：
-- 个人邀请链接：`https://readgzh.site/?ref=XXXXXXXX` + 一键复制
-- 进度卡片：已邀请 N/20、已发放积分总额、下一档单人奖励金额
-- 已邀请列表：脱敏 email（`abc***@gmail.com`）、状态（待激活/已激活）、奖励
-- 阶梯说明表
+1. 已缓存文章（普通链接）→ 0 积分、返回正文。
+2. 已缓存文章 + 带 UTM 参数 → 0 积分（验证 slug 预检）。
+3. 未缓存文章正常抓取 → 恰好扣 3 积分，余额减 3。
+4. 并发两个客户端读同一篇未缓存文章 → 总共只净扣 3 分，后到者退款。
+5. 抓取失败（已删除文章 / 视频文 / 微信验证拦截）→ 净扣 0 分。
+6. 连续抓取 5 篇以上新文章 → 不出现 429 匿名限流。
+7. 无有效 API Key 的 OAuth 用户 → 明确提示去控制台创建 Key，不扣分。
+8. 积分不足 → 返回升级提示，且不触发抓取。
+9. 旧 API-key MCP（`/mcp-server`）与 `/rd` 行为不回退。
 
-控制台首页加入口卡片 + 新鲜事/活动页 CTA 跳转到此页。
+## 授权确认
 
-### 2.5 小圆点 → 图标呼吸（你刚提的优化）
-
-- 删除 `<Sparkles>` 外侧的小圆点 span 和 ring
-- 未读时：`Sparkles` 加 `text-primary animate-breath-soft`（仅 opacity 0.55↔1，不缩放）
-- 已读后：恢复默认色（继承 ghost 按钮的 `text-foreground`）
-- 配套：`tailwind.config.ts` 新增 `breath-soft` keyframes
-
-## 三、防滥用（重要）
-
-| 风险 | 防范 |
-|---|---|
-| 自邀（注册小号） | 邀请人 IP ≠ 被邀请人注册 IP；email 域名不同；同一 device fingerprint 不允许 |
-| 一次性邮箱 | 维护一份 disposable email 黑名单（开源列表，CI 周更）|
-| 刷阅读触发奖励 | 复用现有 IP 限流 + 要求被邀请人是真实登录态 + 阅读的文章必须 `view_count > 0` 已存在或新抓取成功 |
-| 同一被邀请人被多人"认领" | `referrals.invitee_id` UNIQUE 约束 |
-| 邀请人退款/封号 | 增加 admin 接口可撤销未消费的 `bonus_grants` |
-
-## 四、文件变动清单
-
-```text
-新增
-  supabase/functions/referral-claim/index.ts
-  supabase/functions/referral-trigger/index.ts
-  src/pages/InvitePage.tsx              (或 dashboard 内嵌)
-  src/lib/referral.ts                   (URL 参数 + sessionStorage helpers)
-
-修改
-  supabase/functions/wechat-reader/index.ts   首次阅读成功后调 referral-trigger
-  supabase/functions/rd/index.ts              同上
-  src/pages/DashboardPage.tsx                 加邀请入口
-  src/pages/ChangelogPage.tsx                 "活动" 状态改为 active + CTA
-  src/data/events.ts                          状态 upcoming → active
-  src/pages/Index.tsx                         小圆点 → 图标呼吸
-  tailwind.config.ts                          新增 breath-soft keyframes
-  src/data/changelog.ts                       上线日志
-
-数据库迁移（1 次）
-  3 张新表 + RLS + 回填 bonus_grants + 调整 get_user_balance / validate_api_key
-```
-
-## 五、上线步骤
-
-1. 数据库迁移 + 回填台账（**有风险**，需要先在测试环境验证 balance 数值与现有一致）
-2. 部署 2 个边缘函数 + 改造 reader 函数
-3. 前端发布
-4. `events.ts` 状态切 `active`，写更新日志
-5. 监控前 48 小时：发放量、被邀请人转化率、风控拦截率
-
-## 六、待确认问题（请你回复后再实施）
-
-**Q1 · 被邀请人是否也送欢迎积分？**
-- 选项 A：不送，保持简单
-- 选项 B：送 30 积分（与首档持平，鼓励首次阅读）
-- 选项 C：送 90 积分但过期 7 天（强冷启动）
-- 建议 B：转化率提升明显且成本极低
-
-**Q2 · 活动持续时长？**
-- 短期（1 个月）：制造紧迫感，便于复盘
-- 中期（3 个月）：覆盖夏季流量
-- 长期（默认开启）：作为常驻增长功能
-- 建议 3 个月，到期评估再决定是否常驻
-
-**Q3 · 邀请码格式？**
-- A：8 位随机大写字母数字（如 `K7P2M9XQ`）—— 默认推荐，碰撞概率极低
-- B：用户可自定义（如 `david-2026`）—— 工作量加大，需校验脏词
-
-**Q4 · 触发"首次阅读"的精确定义？**
-- A：被邀请人登录后访问任意 `/s/:slug`（最宽松）
-- B：被邀请人触发一次成功的文章抓取（更高门槛，但能挡刷量）
-- 建议 B，复用 `wechat-reader` 已有的 user_id 上下文
-
-**Q5 · 已注册老用户能否补领邀请码？**
-- 全员自动生成，所有活跃用户都能邀请 ✅（推荐）
-- 仅新用户能邀请 ❌
-
-## 七、可能被忽略的边界问题
-
-1. **现有 `bonus_credits` 数据迁移**：必须无损迁到台账，否则会有用户余额突然变化的投诉
-2. **`validate_api_key` 性能**：每次 API 调用都要 SUM 台账，需要 `(user_id, expires_at)` 索引
-3. **被邀请人删除账号**：referral 应保留为审计记录，但不撤销已发的奖励
-4. **邀请人删号**：未消费的 bonus_grants 自然失效
-5. **撤销机制**：admin 后台需要"作废邀请关系"按钮（防刷量爆发时止损）
-6. **统计指标**：activity 仪表盘应在 admin 面板加一个简易卡片，看 DAU 转化和发放总额
-7. **邮件通知**：被邀请人完成激活时，是否给邀请人发邮件？（建议复用 transactional template，单日聚合发送避免轰炸）
-8. **SEO/分享卡**：`?ref=` 链接被分享到微信时，OG image 是否要做差异化？（首期可不做）
-9. **隐私合规**：邀请列表展示 email 必须脱敏；不能让用户看到被邀请人的真实邮箱
-10. **退款联动**：若邀请人订阅退款，已发奖励不撤销（合理且简单）；但若被邀请人在 7 天内退款且无消费，是否撤销？建议不撤销（成本已沉没，复杂度高）
-
----
-
-请回复 Q1–Q5 的选择，我就开工。
+以上均未实施。请明确回复要不要动 `src/lib/mcp/tools/read.ts`（以及是否允许给 `wechat-reader` 加内部调用标记），我再执行；文档补 OAuth 接入说明也需要单独授权。
