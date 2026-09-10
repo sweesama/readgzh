@@ -60,7 +60,18 @@ ReadGZH 提供远程 MCP 和 REST API，适合不想自行维护浏览器与抓�
 
 ### Use it from your AI client (MCP)
 
-ReadGZH is a remote MCP server — no install. Add to your MCP client config:
+ReadGZH offers two remote MCP connections. Choose the one your client supports:
+
+| Connection | Server URL | Authentication |
+| --- | --- | --- |
+| OAuth (Lovable integration) | `https://jhnnmmwgdrquwjytvvwu.supabase.co/functions/v1/mcp` | Sign in to ReadGZH and approve the requested access in the Chinese authorization page |
+| Existing API-key connection | `https://api.readgzh.site/mcp-server` | ReadGZH API key in the `Authorization` header; anonymous access has shared-IP limits |
+
+**中文：新 OAuth 接入**适用于支持远程 MCP 与 OAuth 的客户端。在客户端添加上表 OAuth 地址，按页面提示登录并授权。各客户端、账号套餐和管理员设置可能限制自定义 MCP 接入；支持 MCP 不等于所有 AI 都会自动发现或使用 ReadGZH。
+
+OAuth 连接提供 `readgzh_read`、`readgzh_search`、`readgzh_list`、`readgzh_list_by_account`、`readgzh_get` 五个工具。首次抓取前，账号需在 [控制台](https://readgzh.site/dashboard) 创建有效 API Key；新文章抓取消耗 3 积分，已缓存文章读取为 0 积分。搜索与按公众号列表仅覆盖 ReadGZH 缓存，不是全微信搜索或完整历史。
+
+The following JSON examples use the existing API-key connection and its dot-separated tool names:
 
 ```json
 {
@@ -81,7 +92,7 @@ Optional API key (higher quota, bypasses anonymous IP limits):
   "mcpServers": {
     "readgzh": {
       "url": "https://api.readgzh.site/mcp-server",
-      "headers": { "Authorization": "Bearer rgz_..." }
+      "headers": { "Authorization": "Bearer sk_live_..." }
     }
   }
 }
@@ -92,7 +103,7 @@ Optional API key (higher quota, bypasses anonymous IP limits):
 ```bash
 curl -X POST https://api.readgzh.site/rd \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer rgz_..." \
+  -H "Authorization: Bearer sk_live_..." \
   -d '{"url":"https://mp.weixin.qq.com/s/xxxx"}'
 ```
 
@@ -105,13 +116,14 @@ Full API spec: <https://readgzh.site/.well-known/openapi.yaml>
 | `readgzh.read` | Read & extract a WeChat article from a URL |
 | `readgzh.search` | Search cached articles by keyword |
 | `readgzh.list` | List recently cached articles |
+| `readgzh.list_by_account` | List cached articles from an account (not a complete archive) |
 | `readgzh.get` | Fetch a cached article by slug |
 
 ## Pricing
 
-- **Free** — 30 credits/day for registered users · 10/IP/day anonymous
-- **Lite** — ¥9/month · 300 reads/month
-- **Pro** — ¥39/month · 2000 reads/month + AI summary
+- **Free** — 30 credits/day for registered users (claim daily) · 10 credits/IP/day anonymous
+- **Lite** — ¥9/month · 300 credits/month
+- **Pro** — ¥39/month · 2000 credits/month + AI summary
 
 Each fresh read = 3 credits. Cached re-reads = 0. Details: <https://readgzh.site/pricing>
 
