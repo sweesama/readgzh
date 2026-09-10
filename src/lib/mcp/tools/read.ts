@@ -6,6 +6,14 @@ import { articleMarkdown, errorText, text, type ArticleRow } from "../format";
 const ARTICLE_FIELDS = "title, author, content, publish_time, source_url, slug";
 const CREDIT_COST = 3;
 
+function serviceRoleKey(): string {
+  return (
+    (globalThis as { Deno?: { env: { get(k: string): string | undefined } } }).Deno?.env.get(
+      "SUPABASE_SERVICE_ROLE_KEY",
+    ) ?? ""
+  );
+}
+
 function normalizeUrl(raw: string): string | null {
   try {
     const url = new URL(raw.trim());
@@ -14,6 +22,12 @@ function normalizeUrl(raw: string): string | null {
   } catch {
     return null;
   }
+}
+
+/** WeChat article slug, e.g. "s/AbCdEf" — stable across UTM/query variations. */
+function slugFromUrl(target: string): string | null {
+  const match = target.match(/\/(s\/[^?#]+)/);
+  return match ? match[1] : null;
 }
 
 export default defineTool({
@@ -32,11 +46,18 @@ export default defineTool({
     if (!target) return errorText("Only mp.weixin.qq.com article links are supported.");
 
     const anon = supabaseAnon();
-    const { data: cached } = await anon
-      .from("articles")
-      .select(ARTICLE_FIELDS)
-      .eq("source_url", target)
-      .maybeSingle();
+
+    // Cache pre-check: by slug first (survives UTM/query differences), then by exact URL.
+    const slug = slugFromUrl(target);
+    let cached: unknown = null;
+    if (slug) {
+      const { data } = await anon.from("articles").select(ARTICLE_FIELDS).eq("slug", slug).maybeSingle();
+      cached = data;
+    }
+    if (!cached) {
+      const { data } = await anon.from("articles").select(ARTICLE_FIELDS).eq("source_url", target).maybeSingle();
+      cached = data;
+    }
 
     if (cached) return text(articleMarkdown(cached as ArticleRow, "cached — 0 credits"));
 
@@ -55,9 +76,10 @@ export default defineTool({
       );
     }
 
+    const keyHash = keys[0].key_hash as string;
     const service = supabaseService();
     const { data: quota, error: quotaError } = await service.rpc("validate_api_key", {
-      p_key_hash: keys[0].key_hash,
+      p_key_hash: keyHash,
       p_credit_cost: CREDIT_COST,
     });
     if (quotaError) return errorText(`Credit check failed: ${quotaError.message}`);
@@ -70,31 +92,52 @@ export default defineTool({
       );
     }
 
+    // Best-effort refund so a failed or racing extraction never costs credits.
+    const refund = async () => {
+      const { error } = await service.rpc("refund_credits", { p_key_hash: keyHash, p_amount: CREDIT_COST });
+      if (error) console.error("[readgzh_read] refund failed:", error.message);
+    };
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 55_000);
-    let scrape: { success?: boolean; articleId?: string; error?: string; hint?: string };
+    let scrape: { success?: boolean; articleId?: string; cached?: boolean; creditCost?: number; error?: string; hint?: string };
     try {
       const response = await fetch(`${supabaseProjectUrl()}/functions/v1/wechat-reader`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${(globalThis as { Deno?: { env: { get(k: string): string | undefined } } }).Deno?.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""}`,
+          Authorization: `Bearer ${serviceRoleKey()}`,
+          "X-ReadGZH-Internal": "mcp-oauth",
         },
         body: JSON.stringify({ url: target }),
         signal: controller.signal,
       });
+      if (!response.ok) {
+        const detail = await response.text().catch(() => "");
+        await refund();
+        return errorText(`Failed to read article (HTTP ${response.status}). No credits were charged.${detail ? `\n${detail.slice(0, 500)}` : ""}`);
+      }
       scrape = await response.json();
     } catch (err) {
+      await refund();
       return errorText(
-        `Extraction timed out or failed: ${err instanceof Error ? err.message : "unknown error"}. Please retry.`,
+        `Extraction timed out or failed: ${err instanceof Error ? err.message : "unknown error"}. No credits were charged. Please retry.`,
       );
     } finally {
       clearTimeout(timeout);
     }
 
     if (!scrape?.success || !scrape.articleId) {
-      return errorText(`Failed to read article: ${scrape?.error ?? "unknown error"}${scrape?.hint ? `\n${scrape.hint}` : ""}`);
+      await refund();
+      return errorText(
+        `Failed to read article: ${scrape?.error ?? "unknown error"}. No credits were charged.${scrape?.hint ? `\n${scrape.hint}` : ""}`,
+      );
     }
+
+    // Another reader cached the same article first (or the backend served a cache
+    // hit): the read was free, so give the 3 credits back.
+    const wasFree = scrape.cached === true || scrape.creditCost === 0;
+    if (wasFree) await refund();
 
     const { data: article, error } = await anon
       .from("articles")
@@ -102,9 +145,16 @@ export default defineTool({
       .eq("id", scrape.articleId)
       .maybeSingle();
 
-    if (error || !article) return errorText("Article was extracted but could not be loaded back. Please retry.");
+    if (error || !article) {
+      if (!wasFree) await refund();
+      return errorText("Article was extracted but could not be loaded back. No credits were charged. Please retry.");
+    }
 
-    const remaining = typeof result.remaining === "number" ? `${CREDIT_COST} credits used, ${result.remaining} remaining` : undefined;
-    return text(articleMarkdown(article as ArticleRow, remaining));
+    const note = wasFree
+      ? "cached — 0 credits"
+      : typeof result.remaining === "number"
+        ? `${CREDIT_COST} credits used, ${result.remaining} remaining`
+        : undefined;
+    return text(articleMarkdown(article as ArticleRow, note));
   },
 });
