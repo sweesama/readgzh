@@ -25,6 +25,7 @@ import InvitePage from "./pages/InvitePage";
 import EnterprisePage from "./pages/EnterprisePage";
 import AiReadWechatPage from "./pages/guides/AiReadWechatPage";
 import ReferralCatcher from "./components/ReferralCatcher";
+import OAuthConsent from "./pages/OAuthConsent";
 
 // Error boundary to prevent WebMCP from crashing the app
 class WebMCPErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
@@ -75,6 +76,7 @@ const App = () => (
           
           <Route path="/changelog" element={<ChangelogPage />} />
           <Route path="/dashboard/invite" element={<InvitePage />} />
+          <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
