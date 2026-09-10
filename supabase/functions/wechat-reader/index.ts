@@ -1010,6 +1010,17 @@ function getClientIp(req: Request): string {
   return "unknown";
 }
 
+// Internal server-to-server call from the OAuth MCP integration. Requires BOTH
+// the marker header and a valid service-role bearer, so external callers cannot
+// spoof it to bypass the anonymous IP quota.
+function isTrustedInternalCall(req: Request): boolean {
+  if (req.headers.get("x-readgzh-internal") !== "mcp-oauth") return false;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (!serviceKey) return false;
+  const auth = req.headers.get("authorization") ?? "";
+  return auth === `Bearer ${serviceKey}`;
+}
+
 const DAILY_LIMIT = 10; // 10 credits/IP/day for anonymous users (approx 3 articles at 3 credits each)
 const READ_MODE_DAILY_LIMIT = 50; // Daily limit for anonymous read mode requests
 const READ_MODE_API_KEY_LIMIT = 500; // Daily limit for API Key read mode requests
