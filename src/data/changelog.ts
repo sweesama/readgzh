@@ -11,6 +11,18 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-09-10",
+    title: "新增 Lovable 原生智能体接入：ChatGPT / Claude / Cursor 可直接连接",
+    tags: ["新增"],
+    items: [
+      "支持通过 Lovable MCP 协议将 ReadGZH 接入 ChatGPT、Claude、Cursor 等 AI 助手",
+      "新增中文 OAuth 授权确认页，登录 ReadGZH 账号并授权后，AI 助手即可代为读取文章",
+      "接入能力包括：读文章、搜索缓存、按公众号列出文章、获取最近缓存、按 slug 重读",
+      "抓取新文章会消耗账号积分，命中共享缓存则不扣积分",
+      "保留原有自托管 MCP 接口，两者互不冲突",
+    ],
+  },
+  {
     date: "2026-08-14",
     title: "支持按公众号查看已缓存文章 + 加量包支持 USDC 支付",
     tags: ["新增"],
