@@ -1122,6 +1122,14 @@ async function checkRateLimit(req: Request): Promise<{ allowed: boolean; current
     console.log("API Key auth result:", JSON.stringify({ allowed: apiKeyResult.allowed, current: apiKeyResult.current, remaining: apiKeyResult.remaining, tier: apiKeyResult.tier, hasKeyHash: !!apiKeyResult.keyHash }));
     return apiKeyResult;
   }
+  // Trusted internal caller (OAuth MCP): credits were already deducted against
+  // the signed-in user's own API key before this call, so the anonymous IP
+  // bucket must not apply. Only honoured with a valid service-role bearer.
+  if (isTrustedInternalCall(req)) {
+    console.log("Trusted internal call detected, skipping anonymous IP rate limiting");
+    return { allowed: true, current: 0, remaining: DAILY_LIMIT, limit: DAILY_LIMIT };
+  }
+
   console.log("No API Key detected, falling back to IP rate limiting");
 
   const ip = getClientIp(req);
