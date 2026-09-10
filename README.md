@@ -22,6 +22,40 @@ WeChat articles can't be read by Claude, ChatGPT, Cursor, or other AI tools — 
 - 🤖 **AI summaries** — structured JSON via `?mode=summary` (Pro)
 - 🔌 **MCP, OpenAPI, REST** — works with Claude Desktop, Cursor, ChatGPT, custom agents
 
+## 中文指南：AI 打不开公众号文章怎么办？
+
+ReadGZH 适合这样的需求：你已经有一篇公开微信公众号文章的链接，希望把正文交给 AI 阅读，又不想安装和维护本地抓取程序。
+
+### 偶尔读一篇：从网页开始
+
+1. 打开 [ReadGZH](https://readgzh.site/?utm_source=github&utm_medium=referral&utm_campaign=readgzh_intent_202609&utm_content=readme_quickstart)，粘贴公众号文章链接。
+2. 获取转换后的页面，把页面链接交给支持网页访问的 AI。
+3. 如果你的 AI 不能打开链接，复制转换页面的正文；重要数字、引用和结论仍需回原文核对。
+
+单篇阅读不需要先配置 MCP。能直接复制原文时，也可以直接把文字交给 AI。
+
+### 给 Agent 使用：从远程 MCP 开始
+
+ReadGZH 提供远程 MCP 和 REST API，适合不想自行维护浏览器与抓取环境的用户。接入示例见下方 [Quick Start](#quick-start) 和[开发者文档](https://readgzh.site/docs?utm_source=github&utm_medium=referral&utm_campaign=readgzh_intent_202609&utm_content=readme_mcp)。不同客户端的配置方式可能不同，请按对应客户端说明接入。
+
+### 哪些情况应考虑其他方案？
+
+- 希望全过程在本地运行、自己控制读取环境：评估本地读取工具。
+- 想发现尚未提供链接的新文章、追踪公众号更新：先明确搜索或订阅需求。ReadGZH 的缓存搜索不等同于搜索微信全部文章。
+- 内容不适合经过第三方服务或进入共享缓存：不要提交到 ReadGZH。
+
+### 多篇文章怎么比较？
+
+分别转换每篇文章，保留标题与原文链接，再把正文或可访问页面交给 AI。可以使用：
+
+> 请先确认你能读取每篇文章的正文。按文章 A、B、C 列出核心结论、证据、适用条件和未回答的问题；每一项注明来自哪篇，未提及就写未提及。不要把不同作者的观点合并成同一个结论。
+
+如果无法读取其中一篇，先补充该篇正文，再开始比较。
+
+### 使用边界与费用
+
+仅处理你有权使用的公开可访问内容。已经删除、需要授权或读取受限的文章不保证成功。转换成功也不代表 AI 的总结准确。服务有免费额度及付费方案，具体计费以[定价页](https://readgzh.site/pricing)为准。
+
 ## Quick Start
 
 ### Use it from your AI client (MCP)
