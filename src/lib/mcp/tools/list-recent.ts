@@ -1,6 +1,6 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-import { supabaseAnon } from "../supabase";
+import { supabaseService } from "../supabase";
 import { errorText, listMarkdown, text } from "../format";
 
 export default defineTool({
@@ -13,7 +13,7 @@ export default defineTool({
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ limit }) => {
     const max = Math.min(Math.max(Number(limit) || 10, 1), 50);
-    const { data, error } = await supabaseAnon()
+    const { data, error } = await supabaseService()
       .from("articles")
       .select("title, author, publish_time, slug")
       .order("created_at", { ascending: false })

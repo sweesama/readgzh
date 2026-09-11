@@ -1,6 +1,6 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-import { supabaseAnon, supabaseForUser, supabaseService, supabaseProjectUrl } from "../supabase";
+import { supabaseForUser, supabaseService, supabaseProjectUrl } from "../supabase";
 import { articleMarkdown, errorText, text, type ArticleRow } from "../format";
 
 const ARTICLE_FIELDS = "title, author, content, publish_time, source_url, slug";
@@ -45,17 +45,17 @@ export default defineTool({
     const target = normalizeUrl(url);
     if (!target) return errorText("Only mp.weixin.qq.com article links are supported.");
 
-    const anon = supabaseAnon();
+    const service = supabaseService();
 
     // Cache pre-check: by slug first (survives UTM/query differences), then by exact URL.
     const slug = slugFromUrl(target);
     let cached: unknown = null;
     if (slug) {
-      const { data } = await anon.from("articles").select(ARTICLE_FIELDS).eq("slug", slug).maybeSingle();
+      const { data } = await service.from("articles").select(ARTICLE_FIELDS).eq("slug", slug).maybeSingle();
       cached = data;
     }
     if (!cached) {
-      const { data } = await anon.from("articles").select(ARTICLE_FIELDS).eq("source_url", target).maybeSingle();
+      const { data } = await service.from("articles").select(ARTICLE_FIELDS).eq("source_url", target).maybeSingle();
       cached = data;
     }
 
@@ -77,7 +77,6 @@ export default defineTool({
     }
 
     const keyHash = keys[0].key_hash as string;
-    const service = supabaseService();
     const { data: quota, error: quotaError } = await service.rpc("validate_api_key", {
       p_key_hash: keyHash,
       p_credit_cost: CREDIT_COST,
@@ -139,7 +138,7 @@ export default defineTool({
     const wasFree = scrape.cached === true || scrape.creditCost === 0;
     if (wasFree) await refund();
 
-    const { data: article, error } = await anon
+    const { data: article, error } = await service
       .from("articles")
       .select(ARTICLE_FIELDS)
       .eq("id", scrape.articleId)

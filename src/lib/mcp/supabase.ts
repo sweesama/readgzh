@@ -69,8 +69,9 @@ export function supabaseForUser(ctx: ToolContext) {
 }
 
 /**
- * Privileged client. Only used for the credit-metering RPC and the scrape call,
- * and always after the caller's identity has been verified from their OAuth token.
+ * Privileged server-only client. Used after MCP authentication for credit
+ * metering and for bounded article reads whose selected fields are already
+ * exposed by the public SECURITY DEFINER article RPCs.
  */
 export function supabaseService() {
   const key = configuredEnv(["SUPABASE_SERVICE_ROLE_KEY"]);

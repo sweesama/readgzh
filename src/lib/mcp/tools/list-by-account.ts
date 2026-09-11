@@ -1,6 +1,6 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-import { supabaseAnon } from "../supabase";
+import { supabaseService } from "../supabase";
 import { errorText, listMarkdown, text } from "../format";
 
 export default defineTool({
@@ -18,7 +18,7 @@ export default defineTool({
     if (!name) return errorText("Missing account name.");
     const max = Math.min(Math.max(Number(limit) || 10, 1), 50);
 
-    const { data, error } = await supabaseAnon()
+    const { data, error } = await supabaseService()
       .from("articles")
       .select("title, author, publish_time, slug")
       .ilike("author", `%${name}%`)

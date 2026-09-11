@@ -140,15 +140,15 @@ var read_default = defineTool({
     if (!ctx.isAuthenticated()) return errorText("Not authenticated. Reconnect the ReadGZH MCP server and sign in.");
     const target = normalizeUrl(url);
     if (!target) return errorText("Only mp.weixin.qq.com article links are supported.");
-    const anon = supabaseAnon();
+    const service = supabaseService();
     const slug = slugFromUrl(target);
     let cached = null;
     if (slug) {
-      const { data } = await anon.from("articles").select(ARTICLE_FIELDS).eq("slug", slug).maybeSingle();
+      const { data } = await service.from("articles").select(ARTICLE_FIELDS).eq("slug", slug).maybeSingle();
       cached = data;
     }
     if (!cached) {
-      const { data } = await anon.from("articles").select(ARTICLE_FIELDS).eq("source_url", target).maybeSingle();
+      const { data } = await service.from("articles").select(ARTICLE_FIELDS).eq("source_url", target).maybeSingle();
       cached = data;
     }
     if (cached) return text(articleMarkdown(cached, "cached \u2014 0 credits"));
@@ -160,7 +160,6 @@ var read_default = defineTool({
       );
     }
     const keyHash = keys[0].key_hash;
-    const service = supabaseService();
     const { data: quota, error: quotaError } = await service.rpc("validate_api_key", {
       p_key_hash: keyHash,
       p_credit_cost: CREDIT_COST
@@ -215,7 +214,7 @@ ${scrape.hint}` : ""}`
     }
     const wasFree = scrape.cached === true || scrape.creditCost === 0;
     if (wasFree) await refund();
-    const { data: article, error } = await anon.from("articles").select(ARTICLE_FIELDS).eq("id", scrape.articleId).maybeSingle();
+    const { data: article, error } = await service.from("articles").select(ARTICLE_FIELDS).eq("id", scrape.articleId).maybeSingle();
     if (error || !article) {
       if (!wasFree) await refund();
       return errorText("Article was extracted but could not be loaded back. No credits were charged. Please retry.");
@@ -265,7 +264,7 @@ var list_recent_default = defineTool3({
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ limit }) => {
     const max = Math.min(Math.max(Number(limit) || 10, 1), 50);
-    const { data, error } = await supabaseAnon().from("articles").select("title, author, publish_time, slug").order("created_at", { ascending: false }).limit(max);
+    const { data, error } = await supabaseService().from("articles").select("title, author, publish_time, slug").order("created_at", { ascending: false }).limit(max);
     if (error) return errorText(`Could not list articles: ${error.message}`);
     if (!data || data.length === 0) return text("No cached articles found.");
     return text(listMarkdown("Recently cached articles", data));
@@ -288,7 +287,7 @@ var list_by_account_default = defineTool4({
     const name = String(account ?? "").trim().slice(0, 100).replace(/[%_,]/g, "");
     if (!name) return errorText("Missing account name.");
     const max = Math.min(Math.max(Number(limit) || 10, 1), 50);
-    const { data, error } = await supabaseAnon().from("articles").select("title, author, publish_time, slug").ilike("author", `%${name}%`).order("publish_time", { ascending: false, nullsFirst: false }).limit(max);
+    const { data, error } = await supabaseService().from("articles").select("title, author, publish_time, slug").ilike("author", `%${name}%`).order("publish_time", { ascending: false, nullsFirst: false }).limit(max);
     if (error) return errorText(`Could not list articles: ${error.message}`);
     if (!data || data.length === 0) {
       return text(
@@ -320,8 +319,7 @@ var get_default = defineTool5({
     const raw = String(slug ?? "").trim();
     if (!raw) return errorText("Missing slug.");
     const bare = raw.replace(/^s\//, "");
-    const anon = supabaseAnon();
-    const { data, error } = await anon.from("articles").select("title, author, content, publish_time, source_url, slug").or(`slug.eq.${bare},slug.eq.s/${bare}`).limit(1).maybeSingle();
+    const { data, error } = await supabaseService().from("articles").select("title, author, content, publish_time, source_url, slug").or(`slug.eq.${bare},slug.eq.s/${bare}`).limit(1).maybeSingle();
     if (error) return errorText(`Lookup failed: ${error.message}`);
     if (!data) return errorText(`No cached article with slug "${bare}". Try readgzh_search first.`);
     const article = data;
