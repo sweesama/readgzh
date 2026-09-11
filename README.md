@@ -13,14 +13,20 @@
 
 ## Why ReadGZH
 
-WeChat articles can't be read by Claude, ChatGPT, Cursor, or other AI tools — `mp.weixin.qq.com` blocks bots. ReadGZH solves this with a cloud reader you can call from any AI client.
+AI tools may fail to retrieve the body of a public WeChat Official Account article directly. ReadGZH provides a hosted reader for an existing article URL. Use its readable page with a browsing-capable AI, copy the extracted text, or connect through a compatible MCP client.
 
 - ☁️ **Cloud-based** — no WeChat desktop install, no local script
 - 💰 **Shared cache** — previously read articles cost 0 credits for everyone
-- 🖼️ **CDN image proxy** — permanent image links, no expiry
-- 📱 **Image-post (图文) support** — full coverage of WeChat's gallery format
+- 🖼️ **CDN image proxy** — proxies article images for off-platform access; availability is not guaranteed indefinitely
+- 📱 **Image-post (图文) support** — extracts supported image-post content; verify important image details against the original
 - 🤖 **AI summaries** — structured JSON via `?mode=summary` (Pro)
-- 🔌 **MCP, OpenAPI, REST** — works with Claude Desktop, Cursor, ChatGPT, custom agents
+- 🔌 **MCP, OpenAPI, REST** — integration options for compatible clients; availability depends on client features and configuration
+
+## Choose the right workflow / 按需求选择
+
+[Read the bilingual use-case and limitations guide](docs/choosing-a-wechat-reader.md) for direct answers about reading existing links, Markdown, comparing multiple articles, hosted MCP, and the difference between cache search and discovering new articles.
+
+ReadGZH retrieves article content. It is not a complete WeChat search engine, an account subscription service, or a guarantee that an AI assistant will read every supplied link.
 
 ## 中文指南：AI 打不开公众号文章怎么办？
 
