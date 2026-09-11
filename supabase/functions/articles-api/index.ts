@@ -196,19 +196,35 @@ Deno.serve(async (req) => {
         p_query: safeQuery,
         p_limit: limit,
       });
-      const articles = (searchResult as { articles?: unknown[] } | null)?.articles ?? [];
+      let articles = (searchResult as { articles?: unknown[] } | null)?.articles ?? [];
 
       if (error) {
         console.error("[articles-api] search db_error:", error);
-        return new Response(
-          JSON.stringify({
-            success: false, code: "db_error", error: "db_error",
-            message: "数据库查询异常，请稍后重试。",
-            hint: "若持续出现请反馈。",
-            support_url: "https://readgzh.site/#feedback",
-          }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        // Content searches for very short or common terms can exceed the
+        // database statement timeout. Fall back to the much smaller title
+        // index so users still receive useful results instead of a 500.
+        const escapedQuery = safeQuery.replace(/[\\%_]/g, (char) => `\\${char}`);
+        const { data: fallbackArticles, error: fallbackError } = await supabase
+          .from("articles")
+          .select("title, author, publish_time, slug, source_url, view_count, created_at")
+          .ilike("title", `%${escapedQuery}%`)
+          .order("created_at", { ascending: false })
+          .limit(limit);
+
+        if (fallbackError) {
+          console.error("[articles-api] title fallback db_error:", fallbackError);
+          return new Response(
+            JSON.stringify({
+              success: false, code: "db_error", error: "db_error",
+              message: "数据库查询异常，请稍后重试。",
+              hint: "若持续出现请反馈。",
+              support_url: "https://readgzh.site/#feedback",
+            }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        articles = fallbackArticles ?? [];
       }
 
       return new Response(

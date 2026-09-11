@@ -1,6 +1,6 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-import { supabaseAnon } from "../supabase";
+import { supabaseService } from "../supabase";
 import { articleMarkdown, errorText, text, type ArticleRow } from "../format";
 
 const CHUNK = 40_000;
@@ -20,8 +20,7 @@ export default defineTool({
     if (!raw) return errorText("Missing slug.");
     const bare = raw.replace(/^s\//, "");
 
-    const anon = supabaseAnon();
-    const { data, error } = await anon
+    const { data, error } = await supabaseService()
       .from("articles")
       .select("title, author, content, publish_time, source_url, slug")
       .or(`slug.eq.${bare},slug.eq.s/${bare}`)
