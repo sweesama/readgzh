@@ -1437,7 +1437,7 @@ Deno.serve(async (req) => {
                   const customers = await stripe.customers.list({ email: profile.email, limit: 1 });
                   if (customers.data.length > 0) {
                     const sessions = await stripe.checkout.sessions.list({ customer: customers.data[0].id, limit: 20 });
-                    const hasPro = sessions.data.some(s => s.payment_status === "paid" && s.status === "complete" && (!s.metadata?.type || s.metadata?.type === "pro"));
+                    const hasPro = sessions.data.some((s: Stripe.Checkout.Session) => s.payment_status === "paid" && s.status === "complete" && (!s.metadata?.type || s.metadata?.type === "pro"));
                     if (hasPro) {
                       // Upgrade all user's keys
                       await supabaseService.from("api_keys").update({ tier: "pro", daily_limit: 2000 }).eq("user_id", keyData.user_id).eq("is_active", true).eq("tier", "free");
@@ -2191,6 +2191,7 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
               metadata: meta,
               contentHtml: markdownToHtml(cleanedMd),
               textContent: cleanedMd,
+              isPictureWithImages: false,
             };
           }
 
