@@ -2328,7 +2328,19 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
       });
     }
 
+    if (!saved) {
+      const refunded = await refundCredits(keyHash, 3);
+      return apiError({
+        code: "db_save_failed",
+        status: 503,
+        message: "文章内容已抓到，但保存缓存时临时失败。",
+        hint: "请稍后重试同一链接。",
+        extras: { source_url: url, credits_refunded: refunded ? 3 : 0 },
+      });
+    }
+
     console.log("Saved:", saved.id, saved.slug, metadata.title, "Text:", textContent.length, "HTML:", contentHtml.length);
+
 
     // Calculate credit cost and deduct extra if complex article
     const isPicture = isPictureTemplate(html!);
