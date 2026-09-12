@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
 import {
   ArrowLeft,
   ArrowRight,
@@ -280,14 +280,14 @@ const AiReadWechatPage = () => (
       {/* FAQ */}
       <section className="mb-12">
         <h2 className="text-2xl font-bold mb-4">常见问题</h2>
-        <Accordion type="single" collapsible className="w-full">
+        <div className="w-full">
           {faqs.map((f, i) => (
-            <AccordionItem key={i} value={`g-${i}`}>
-              <AccordionTrigger className="text-left">{f.q}</AccordionTrigger>
-              <AccordionContent className="text-muted-foreground leading-relaxed">{f.a}</AccordionContent>
-            </AccordionItem>
+            <details key={i} className="border-b">
+              <summary className="cursor-pointer py-4 font-medium">{f.q}</summary>
+              <p className="pb-4 text-sm text-muted-foreground leading-relaxed">{f.a}</p>
+            </details>
           ))}
-        </Accordion>
+        </div>
       </section>
 
       {/* Final CTA */}
