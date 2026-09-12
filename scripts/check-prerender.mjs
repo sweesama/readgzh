@@ -5,6 +5,8 @@ import { JSDOM } from "jsdom";
 const titles = new Set();
 for (const [route, marker] of [
   ["guides/ai-read-wechat", "方案 A"],
+  ["guides/wechat-to-markdown", "实测输出"],
+  ["guides/compare-wechat-articles", "来源卡片"],
   ["docs", "API"],
   ["faq", "匿名用户每天 10 积分"],
 ]) {
@@ -31,4 +33,4 @@ for (const [route, marker] of [
   dom.window.close();
   console.log(`PASS /${route}: unique metadata, full body, assets, FAQ answers`);
 }
-assert.equal(titles.size, 3);
+assert.equal(titles.size, 5);

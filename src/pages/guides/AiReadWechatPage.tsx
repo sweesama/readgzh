@@ -103,6 +103,10 @@ const AiReadWechatPage = () => (
         </p>
       </header>
 
+      <nav aria-label="按任务选择指南" className="mb-8 flex flex-wrap gap-4 text-sm text-primary underline">
+        <Link to="/guides/wechat-to-markdown">公众号转 Markdown 与保存正文</Link>
+        <Link to="/guides/compare-wechat-articles">多篇公众号文章对比</Link>
+      </nav>
       {/* Quick CTA */}
       <Card className="mb-10 border-primary/30 bg-primary/5">
         <CardContent className="pt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
