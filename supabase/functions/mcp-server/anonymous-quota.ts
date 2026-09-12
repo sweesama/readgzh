@@ -1,7 +1,7 @@
 // Protocol discovery is bounded separately from tools that read or change data.
-// Ten complete (initialize + initialized + tools/list + ping) checks per hour
-// fit in this daily budget. It is not an exemption from abuse protection.
-const DISCOVERY_DAILY_LIMIT = 960;
+// Sixty complete (initialize + initialized + tools/list + ping) checks per day
+// fit in this initial daily budget. It is not an exemption from abuse protection.
+const DISCOVERY_DAILY_LIMIT = 240;
 const TOOL_DAILY_LIMIT = 10;
 const DISCOVERY_METHODS = new Set(["initialize", "notifications/initialized", "tools/list", "ping"]);
 
