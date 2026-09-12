@@ -1,6 +1,7 @@
 import { Hono } from "npm:hono@4";
 import { McpServer, StreamableHttpTransport } from "npm:mcp-lite@^0.10.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { anonymousQuota, type AnonymousQuota } from "./anonymous-quota.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -402,20 +403,19 @@ const httpHandler = transport.bind(mcp);
 // Anonymous MCP shares the same IP pool as Web anon (10/IP/day) to prevent abuse.
 // Authenticated MCP (via API Key in Authorization header) bypasses IP rate limiting
 // and uses the user's credit balance instead — handled by wechat-reader downstream.
-const MCP_ANON_DAILY_LIMIT = 10;
-
-async function checkMcpRateLimit(ip: string): Promise<{ allowed: boolean; current: number }> {
+async function checkMcpRateLimit(quota: AnonymousQuota): Promise<{ allowed: boolean; current: number; unavailable?: boolean }> {
   try {
-    // Use the SAME key as Web anon (no prefix) so MCP and Web share the IP quota.
+    // Tool calls still use the same Web anonymous pool. Discovery has its own
+    // finite pool so a health check cannot spend the user's article allowance.
     const { data, error } = await supabase.rpc("check_rate_limit", {
-      p_ip: ip,
-      p_daily_limit: MCP_ANON_DAILY_LIMIT,
+      p_ip: quota.key,
+      p_daily_limit: quota.limit,
     });
-    if (error) return { allowed: true, current: 0 };
+    if (error) return { allowed: !quota.discovery, current: 0, unavailable: quota.discovery };
     const result = data as { allowed: boolean; current: number };
     return result;
   } catch {
-    return { allowed: true, current: 0 };
+    return { allowed: !quota.discovery, current: 0, unavailable: quota.discovery };
   }
 }
 
@@ -463,14 +463,20 @@ app.all("/*", async (c) => {
     if (c.req.method === "POST" && !hasUserApiKey(c.req.raw)) {
       const ip = getClientIp(c.req.raw);
       if (ip !== "unknown") {
-        const rateCheck = await checkMcpRateLimit(ip);
+        const quota = await anonymousQuota(c.req.raw, ip);
+        const rateCheck = await checkMcpRateLimit(quota);
+        if (rateCheck.unavailable) {
+          return c.json({ jsonrpc: "2.0", id: null, error: { code: -32000, message: "MCP discovery rate limiter temporarily unavailable. Retry later." } }, 503, { "Retry-After": "60" });
+        }
         if (!rateCheck.allowed) {
           console.log(`[MCP] Anon rate limit exceeded for IP: ${ip}, current: ${rateCheck.current}`);
           return c.json({
             jsonrpc: "2.0",
             error: {
               code: -32000,
-              message: `Anonymous MCP limit reached (${MCP_ANON_DAILY_LIMIT}/IP/day). If you are calling from shared infrastructure (Replit, Vercel, Cloudflare Workers, etc.), the IP quota may already be exhausted by other users — use an API Key in the Authorization header (Bearer sk_live_...) to bypass IP limits. Get a free key at https://readgzh.site/dashboard.`,
+              message: quota.discovery
+                ? `Anonymous MCP discovery limit reached (${quota.limit}/IP/day). Retry later; article quotas are tracked separately.`
+                : `Anonymous MCP limit reached (${quota.limit}/IP/day). If you are calling from shared infrastructure (Replit, Vercel, Cloudflare Workers, etc.), the IP quota may already be exhausted by other users — use an API Key in the Authorization header (Bearer sk_live_...) to bypass IP limits. Get a free key at https://readgzh.site/dashboard.`,
               data: {
                 dashboard_url: "https://readgzh.site/dashboard",
                 retry_after_seconds: 86400,
