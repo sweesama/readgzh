@@ -26,6 +26,8 @@ Deleted, protected, inaccessible, or unsupported content may fail to extract. A 
 
 ## 公众号转 Markdown，和把 Markdown 排版成公众号文章一样吗？
 
+需要具体操作、可复核输出和导入前检查时，查看 [公众号转 Markdown 实操教程](wechat-to-markdown.md)。
+
 不是。本指南讨论的方向是“已有公众号文章 → 可供 AI 使用的正文或 Markdown”。它不是编辑器排版、公众号发文或自动发布服务。REST API 的 `format=text` 参数用于 Markdown 输出；参数、认证和错误处理见 [API 文档](https://readgzh.site/docs) 与 [OpenAPI](https://readgzh.site/.well-known/openapi.yaml)。
 
 ## How do I compare three articles without mixing up their claims?
