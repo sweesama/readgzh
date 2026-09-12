@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import SEO from "@/components/SEO";
 
 const faqs = [
@@ -27,7 +26,7 @@ const faqs = [
   },
   {
     q: "有使用次数限制吗？",
-    a: "匿名用户每天 10 次（按 IP 限制），注册用户每天 30 积分（需手动领取），订阅用户每月最高 2,000 积分（自动发放）。每篇文章消耗 3 积分，缓存文章免费读取。",
+    a: "匿名用户每天 10 积分（按 IP 限制），注册用户每天 30 积分（需手动领取），订阅用户每月最高 2,000 积分（自动发放）。每篇文章消耗 3 积分，缓存文章免费读取。",
   },
   {
     q: "支持哪些类型的微信文章？",
@@ -67,14 +66,14 @@ const FAQPage = () => (
         </Button>
       </Link>
       <h1 className="text-3xl font-bold mb-6">常见问题 (FAQ)</h1>
-      <Accordion type="single" collapsible className="w-full">
+      <div className="w-full">
         {faqs.map((faq, i) => (
-          <AccordionItem key={i} value={`item-${i}`}>
-            <AccordionTrigger className="text-left">{faq.q}</AccordionTrigger>
-            <AccordionContent className="text-muted-foreground">{faq.a}</AccordionContent>
-          </AccordionItem>
+          <details key={i} className="border-b">
+            <summary className="cursor-pointer py-4 font-medium">{faq.q}</summary>
+            <p className="pb-4 text-sm text-muted-foreground">{faq.a}</p>
+          </details>
         ))}
-      </Accordion>
+      </div>
     </div>
   </div>
 );
