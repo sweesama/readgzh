@@ -23,6 +23,7 @@ import CommentsPage from "./pages/CommentsPage";
 import ChangelogPage from "./pages/ChangelogPage";
 import InvitePage from "./pages/InvitePage";
 import EnterprisePage from "./pages/EnterprisePage";
+import { WechatMarkdownPage, CompareWechatPage } from "./pages/guides/PracticalGuides";
 import AiReadWechatPage from "./pages/guides/AiReadWechatPage";
 import ReferralCatcher from "./components/ReferralCatcher";
 import OAuthConsent from "./pages/OAuthConsent";
@@ -67,6 +68,8 @@ const App = () => (
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/cookies" element={<CookiesPage />} />
           <Route path="/faq" element={<FAQPage />} />
+          <Route path="/guides/wechat-to-markdown" element={<WechatMarkdownPage />} />
+          <Route path="/guides/compare-wechat-articles" element={<CompareWechatPage />} />
           <Route path="/guides/ai-read-wechat" element={<AiReadWechatPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/pricing" element={<PricingPage />} />
