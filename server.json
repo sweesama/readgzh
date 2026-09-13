@@ -1,0 +1,26 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.sweesama/readgzh",
+  "title": "ReadGZH",
+  "description": "Read public WeChat article URLs via hosted MCP, with Markdown content and shared-cache reading.",
+  "version": "1.0.1",
+  "websiteUrl": "https://readgzh.site",
+  "repository": {
+    "url": "https://github.com/sweesama/readgzh",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://api.readgzh.site/mcp-server",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Optional user API key: Bearer sk_live_... . Anonymous tool use is IP-limited. Registered users must claim their daily credits. See https://readgzh.site/docs for authentication and quotas.",
+          "isRequired": false,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}
