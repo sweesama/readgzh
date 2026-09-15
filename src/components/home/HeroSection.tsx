@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, Loader2, BookOpenCheck } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -76,16 +76,7 @@ const HeroSection = ({ initialUrl = "" }: HeroSectionProps) => {
           </div>
 
           <p className="text-sm sm:text-lg md:text-xl text-muted-foreground mb-2 whitespace-nowrap">粘贴微信文章链接，一键生成 AI 可访问的页面</p>
-          <p className="text-xs sm:text-base text-muted-foreground mb-2 whitespace-nowrap">ChatGPT、Claude、Perplexity 等 AI 工具可直接阅读</p>
-
-          <div className="mb-8">
-            <Button asChild variant="outline" size="sm" className="rounded-full gap-1.5">
-              <Link to="/guides/ai-read-wechat">
-                <BookOpenCheck className="h-4 w-4" />
-                新手怎么用？查看 30 秒使用指南
-              </Link>
-            </Button>
-          </div>
+          <p className="text-xs sm:text-base text-muted-foreground mb-8 whitespace-nowrap">ChatGPT、Claude、Perplexity 等 AI 工具可直接阅读</p>
 
           <Card className="max-w-2xl mx-auto shadow-lg border-2">
             <CardContent className="pt-6 pb-6">

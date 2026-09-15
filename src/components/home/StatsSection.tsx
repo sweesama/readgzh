@@ -47,15 +47,13 @@ const StatsWidget = () => {
   };
 
   return (
-    <div className="flex items-center justify-center gap-2 -mt-2 pb-1">
-      <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-full px-4 py-1.5 shadow-sm">
-        <Sparkles className="h-3 w-3 text-primary animate-pulse" />
-        <span className="text-xs text-muted-foreground">已帮 AI 阅读</span>
-        <span className="text-sm font-bold text-primary tabular-nums tracking-tight">
-          {totalTokens !== null ? formatTokens(displayCount) : "–"}
-        </span>
-        <span className="text-xs text-muted-foreground">tokens 的微信公众号内容</span>
-      </div>
+    <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-full px-4 py-1.5 shadow-sm">
+      <Sparkles className="h-3 w-3 text-primary animate-pulse" />
+      <span className="text-xs text-muted-foreground">已帮 AI 阅读</span>
+      <span className="text-sm font-bold text-primary tabular-nums tracking-tight">
+        {totalTokens !== null ? formatTokens(displayCount) : "–"}
+      </span>
+      <span className="text-xs text-muted-foreground">tokens 的微信公众号内容</span>
     </div>
   );
 };

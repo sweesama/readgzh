@@ -10,7 +10,7 @@ import AIGuideSection from "@/components/home/AIGuideSection";
 import StatsWidget from "@/components/home/StatsSection";
 import Footer from "@/components/home/Footer";
 import SEO from "@/components/SEO";
-import { Bot, Eye, BookOpen, Code, Zap, Key, Crown, MessageSquare, Sparkles } from "lucide-react";
+import { Bot, Eye, BookOpen, BookOpenCheck, Code, Zap, Key, Crown, MessageSquare, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { hasUnseenWhatsnew } from "@/lib/whatsnew";
@@ -122,7 +122,17 @@ const Index = () => {
 
       <main>
         <HeroSection />
-        <StatsWidget />
+        <div className="flex flex-wrap items-center justify-center gap-2 -mt-2 pb-1">
+          <StatsWidget />
+          <Link
+            to="/guides/ai-read-wechat"
+            className="group inline-flex items-center gap-1.5 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-full px-4 py-1.5 shadow-sm text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <BookOpenCheck className="h-3.5 w-3.5 text-primary" />
+            <span className="whitespace-nowrap group-hover:hidden">新手怎么用</span>
+            <span className="hidden whitespace-nowrap group-hover:inline">查看 30 秒使用指南</span>
+          </Link>
+        </div>
         <AIGuideSection />
         <DemoVideoSection />
         <HowItWorksSection />
