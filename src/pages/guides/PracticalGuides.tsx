@@ -13,7 +13,7 @@ function Guide({ title, description, path, children }: { title: string; descript
         {children}
       </article>
       <nav aria-label="相关使用指南" className="mt-10 border-t pt-6 flex flex-wrap gap-4 text-sm text-primary underline">
-        <Link to="/">转换一篇文章</Link><Link to="/guides/wechat-to-markdown">公众号转 Markdown</Link><Link to="/guides/compare-wechat-articles">多篇文章对比</Link><Link to="/docs">API / MCP 文档</Link>
+        <Link to="/">转换一篇文章</Link><Link to="/guides/wechat-to-markdown">公众号转 Markdown</Link><Link to="/guides/wechat-article-notes">整理成笔记与素材</Link><Link to="/guides/compare-wechat-articles">多篇文章对比</Link><Link to="/docs">API / MCP 文档</Link>
       </nav>
     </main><Footer />
   </div>;
