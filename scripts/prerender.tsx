@@ -2,7 +2,7 @@ import React from "react";
 import { renderToString } from "react-dom/server";
 import { StaticRouter } from "react-router-dom/server";
 import { HelmetProvider, type HelmetServerState } from "react-helmet-async";
-import { WechatMarkdownPage, CompareWechatPage } from "../src/pages/guides/PracticalGuides";
+import { WechatMarkdownPage, CompareWechatPage, WechatNotesPage } from "../src/pages/guides/PracticalGuides";
 import Guide from "../src/pages/guides/AiReadWechatPage";
 import Docs from "../src/pages/DocsPage";
 import FAQ from "../src/pages/FAQPage";
@@ -12,6 +12,7 @@ export function renderPages() {
     ["/guides/ai-read-wechat", Guide],
     ["/guides/wechat-to-markdown", WechatMarkdownPage],
     ["/guides/compare-wechat-articles", CompareWechatPage],
+    ["/guides/wechat-article-notes", WechatNotesPage],
     ["/docs", Docs],
     ["/faq", FAQ],
   ];

@@ -27,6 +27,7 @@ const Footer = () => {
               <li><Link to="/comments" className="text-muted-foreground hover:text-primary transition-colors">留言板</Link></li>
               <li><Link to="/guides/wechat-to-markdown" className="text-muted-foreground hover:text-primary transition-colors">公众号转 Markdown</Link></li>
               <li><Link to="/guides/compare-wechat-articles" className="text-muted-foreground hover:text-primary transition-colors">多篇文章对比指南</Link></li>
+              <li><Link to="/guides/wechat-article-notes" className="text-muted-foreground hover:text-primary transition-colors">整理成笔记与素材</Link></li>
               <li><Link to="/docs" className="text-muted-foreground hover:text-primary transition-colors">开发者文档</Link></li>
               <li><Link to="/faq" className="text-muted-foreground hover:text-primary transition-colors">常见问题 (FAQ)</Link></li>
             </ul>

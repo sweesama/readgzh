@@ -13,7 +13,7 @@ function Guide({ title, description, path, children }: { title: string; descript
         {children}
       </article>
       <nav aria-label="相关使用指南" className="mt-10 border-t pt-6 flex flex-wrap gap-4 text-sm text-primary underline">
-        <Link to="/">转换一篇文章</Link><Link to="/guides/wechat-to-markdown">公众号转 Markdown</Link><Link to="/guides/compare-wechat-articles">多篇文章对比</Link><Link to="/docs">API / MCP 文档</Link>
+        <Link to="/">转换一篇文章</Link><Link to="/guides/wechat-to-markdown">公众号转 Markdown</Link><Link to="/guides/wechat-article-notes">整理成笔记与素材</Link><Link to="/guides/compare-wechat-articles">多篇文章对比</Link><Link to="/docs">API / MCP 文档</Link>
       </nav>
     </main><Footer />
   </div>;
@@ -38,5 +38,16 @@ export function CompareWechatPage() {
     <section><h2>第三步：检查“分歧”是不是真分歧</h2><p>下面是自拟教学示例，不是实测文章中的结论：</p><ul><li>A 说“订单增加”，B 说“利润下降”：指标不同，两者可能同时成立。</li><li>A 讨论一季度，B 讨论全年：时间范围不同，不能直接断言互相推翻。</li><li>C 没讨论价格：应写“未提及”，不能写成“反对降价”。</li><li>A、B、C 都引用同一份报告：仍然只有一个底层来源，不能称“三方独立验证”。</li></ul><p>请 AI 按“比较维度 → A/B/C 证据 → 能否比较 → 待核对问题”组织结果。原文短句只能帮助定位；不能替代检查上下文，也不能证明作者的数据正确。</p></section>
     <section><h2>如果 AI 只给三段摘要怎么办？</h2><p>缩小任务：先只比较一个问题，例如“各篇用什么证据支持成本下降”。要求逐项对齐，标明每个判断来自哪篇。材料太长时分轮比较，避免为了塞进上下文而丢掉来源和关键限定条件。</p><p>图表中独有的数据、提取缺失的部分、付费或受限内容，不能靠提示词补齐。先补充有权使用的材料，再继续比较。</p></section>
     <section><h2>什么时候不该使用这个流程？</h2><p>ReadGZH 处理的是已有公开文章链接，不负责全微信主题检索、连续订阅或完整历史归档。其生成页面公开可访问，也使用共享缓存，不要提交不适合公开处理的资料。请保留原始出处，并在引用时核对作者与上下文。</p></section>
+  </Guide>;
+}
+
+export function WechatNotesPage() {
+  return <Guide title="把已收藏的公众号文章，整理成可复用的笔记和素材" description="手上已有公众号链接时，如何取得正文、建立带出处的读书笔记与写作素材卡，并在引用前完成事实核对。含可复制提示词。" path="/guides/wechat-article-notes">
+    <section><h2>适用场景</h2><p>这份指南面向“我已经收藏了一篇公众号文章，想把它变成自己能复用的笔记或素材”的情况：读完想留下结构化要点、给选题库补一条参考、或在写作前先把观点和数据分开。</p><p>前提是链接你本来就有权访问，并且文章是公开可读的。ReadGZH 只负责把这类链接变成 AI 和笔记工具能读取的正文，不提供公众号订阅监测，也不做批量抓取。</p></section>
+    <section><h2>第一步：取得正文</h2><ol><li>在 <Link to="/">ReadGZH 首页</Link> 粘贴公开文章链接，生成阅读页。</li><li>要纯文本时，在结果链接后追加 <code>&amp;format=text</code>，得到 Markdown 正文。</li><li>把正文粘贴进 AI 对话，或按 <Link to="/guides/wechat-to-markdown">Markdown 指南</Link> 存成 <code>.md</code> 文件导入笔记工具。</li></ol><p>正文里若出现分块提示、缺段或只有图片链接，先补齐再整理笔记；图片中的文字不会被自动识别。</p></section>
+    <section><h2>第二步：生成带出处的笔记卡</h2><p>不要直接让 AI “总结一下”。把输出结构固定下来，笔记才可复用、可回溯：</p><blockquote>只依据我提供的这篇正文整理笔记，不要补充外部信息。按以下结构输出：1) 标题、公众号 / 作者、发布日期、原始链接；2) 一句话主旨；3) 3–6 条核心论点，每条附一句可在原文检索到的短句；4) 文中出现的数据与其口径、时间范围；5) 作者的立场与预设；6) 我需要回原文核对的疑问。区分作者观点、文中引用的数据和你的推断；正文没有提到的写“未提及”。</blockquote><p>把结果存进笔记时，务必保留原始微信链接和发布日期——过一段时间后，没有出处的要点等于不能用。</p></section>
+    <section><h2>第三步：抽取写作素材</h2><p>写作或做选题时，通常需要的不是摘要，而是可引用的片段。可以接着要求：</p><blockquote>从上面的正文中挑出可引用的片段：观点句、数据句、案例描述各不超过 5 条。逐条给出原文短句、所在段落大意，以及引用时必须保留的限定条件（时间、地区、样本、适用对象）。不要改写数字，不要删掉限定词。</blockquote><p>引用他人文章时保留作者与出处，涉及数据的结论回原文核对。是否可以转载、摘引及使用范围，由原作者的授权决定，AI 输出不构成授权。</p></section>
+    <section><h2>引用前的四项核对</h2><ul><li>标题、作者、日期是否与原文一致，链接是否仍可打开。</li><li>关键数据是否带口径和时间范围，有没有在整理中被简化。</li><li>“文章说的”和“AI 推断的”是否被混在一起。</li><li>关键结论是否来自图表——图片中的文字需要你自己回原文确认。</li></ul></section>
+    <section><h2>额度与边界</h2><p>未缓存文章按积分计费，缓存读取不扣积分；具体额度见 <Link to="/pricing">定价页</Link>。生成的阅读页公开可访问并使用共享缓存，不适合内部或不宜公开的材料。</p><p>已删除、受限或需要登录的内容无法提取。需要把多篇文章放在一起分析时，见 <Link to="/guides/compare-wechat-articles">多篇文章对比指南</Link>；需要程序化接入时，见 <Link to="/docs">API / MCP 文档</Link>。</p></section>
   </Guide>;
 }
