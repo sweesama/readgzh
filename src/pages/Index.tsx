@@ -10,7 +10,7 @@ import AIGuideSection from "@/components/home/AIGuideSection";
 import StatsWidget from "@/components/home/StatsSection";
 import Footer from "@/components/home/Footer";
 import SEO from "@/components/SEO";
-import { Bot, Eye, BookOpen, BookOpenCheck, Code, Zap, Key, Crown, MessageSquare, Sparkles } from "lucide-react";
+import { Bot, Eye, BookOpen, Code, Zap, Key, Crown, MessageSquare, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { hasUnseenWhatsnew } from "@/lib/whatsnew";
@@ -89,12 +89,6 @@ const Index = () => {
               <span className="hidden sm:inline">留言板</span>
             </Button>
           </Link>
-          <Link to="/guides/ai-read-wechat">
-            <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs px-2 sm:px-3">
-              <BookOpenCheck className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">使用指南</span>
-            </Button>
-          </Link>
           <Link to="/articles">
             <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs px-2 sm:px-3">
               <BookOpen className="h-3.5 w-3.5" />
@@ -104,7 +98,7 @@ const Index = () => {
           <Link to="/docs">
             <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs px-2 sm:px-3">
               <Code className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">文档</span>
+              <span className="hidden sm:inline">开发者文档</span>
             </Button>
           </Link>
           <Link to="/pricing">
