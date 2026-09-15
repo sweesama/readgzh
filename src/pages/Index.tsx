@@ -98,7 +98,7 @@ const Index = () => {
           <Link to="/docs">
             <Button size="sm" variant="ghost" className="gap-1.5 rounded-full bg-card/80 backdrop-blur-md shadow-sm text-xs px-2 sm:px-3">
               <Code className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">文档</span>
+              <span className="hidden sm:inline">开发者文档</span>
             </Button>
           </Link>
           <Link to="/pricing">
