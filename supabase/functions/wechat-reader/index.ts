@@ -2057,21 +2057,10 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     }
 
 
-    // Check if WeChat returned an error page (deleted/invalid article)
-    const wechatError = isWeChatErrorPage(html);
-    if (wechatError) {
-      console.log("WeChat error page detected:", wechatError);
-      const refunded = await refundCredits(keyHash, 3);
-      return apiError({
-        code: "wechat_article_unavailable",
-        status: 404,
-        message: wechatError,
-        hint: "该文章已被微信侧删除或屏蔽，无法再抓取。可在我们站内搜索是否已有早先版本的缓存。",
-        extras: { source_url: url, credits_refunded: refunded ? 3 : 0 },
-      });
-    }
-
-    // Check for verification page
+    // Check for verification page FIRST: WeChat anti-scraping interstitials
+    // (环境异常 / 完成验证) are rendered with the same weui-msg template as
+    // real error pages, so they must be handled (with Firecrawl fallback)
+    // before the generic "deleted/invalid" heuristic can short-circuit.
     if (isVerificationPage(html)) {
       // Try Firecrawl as fallback for verification pages
       const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
@@ -2090,6 +2079,20 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
         return wechatVerificationError(url);
       }
 
+    }
+
+    // Check if WeChat returned an error page (deleted/invalid article)
+    const wechatError = isWeChatErrorPage(html);
+    if (wechatError) {
+      console.log("WeChat error page detected:", wechatError);
+      const refunded = await refundCredits(keyHash, 3);
+      return apiError({
+        code: "wechat_article_unavailable",
+        status: 404,
+        message: wechatError,
+        hint: "该文章已被微信侧删除或屏蔽，无法再抓取。可在我们站内搜索是否已有早先版本的缓存。",
+        extras: { source_url: url, credits_refunded: refunded ? 3 : 0 },
+      });
     }
 
     // Helper: attempt content extraction from a given HTML string
