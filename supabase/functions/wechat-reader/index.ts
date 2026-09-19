@@ -1002,6 +1002,13 @@ async function handleReadMode(slug: string | null, articleId: string | null, par
 
 // ===== Rate Limiting =====
 function getClientIp(req: Request): string {
+  // Cloudflare rewrites CF-Connecting-IP on Worker subrequests, and internal
+  // service-to-service calls (MCP -> reader) forward the real eyeball IP in a
+  // custom header. Trust that first so MCP traffic is not seen as "unknown".
+  const realClientIp = req.headers.get("x-real-client-ip");
+  if (realClientIp) return realClientIp.trim();
+  const cfConnectingIp = req.headers.get("cf-connecting-ip");
+  if (cfConnectingIp) return cfConnectingIp.trim();
   // Check common proxy headers
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) return forwarded.split(",")[0].trim();
