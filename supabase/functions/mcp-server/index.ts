@@ -18,6 +18,10 @@ function getWechatReaderAuth(req?: Request): string {
 
 async function readWechatArticle(url: string, req?: Request) {
   console.log(`[MCP] read_wechat_article called with url: ${url}`);
+  // Forward the real caller IP so anonymous MCP scrapes are counted against the
+  // same 10/IP/day anonymous bucket as the website. Without it the downstream
+  // reader sees "unknown" and cannot apply any quota.
+  const clientIp = req ? getClientIp(req) : "unknown";
 
   try {
     // Bound the upstream call so a slow wechat-reader can't push us past the
