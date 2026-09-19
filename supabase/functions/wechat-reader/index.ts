@@ -1002,6 +1002,13 @@ async function handleReadMode(slug: string | null, articleId: string | null, par
 
 // ===== Rate Limiting =====
 function getClientIp(req: Request): string {
+  // Cloudflare rewrites CF-Connecting-IP on Worker subrequests, and internal
+  // service-to-service calls (MCP -> reader) forward the real eyeball IP in a
+  // custom header. Trust that first so MCP traffic is not seen as "unknown".
+  const realClientIp = req.headers.get("x-real-client-ip");
+  if (realClientIp) return realClientIp.trim();
+  const cfConnectingIp = req.headers.get("cf-connecting-ip");
+  if (cfConnectingIp) return cfConnectingIp.trim();
   // Check common proxy headers
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) return forwarded.split(",")[0].trim();
@@ -1144,7 +1151,13 @@ async function checkRateLimit(req: Request): Promise<{ allowed: boolean; current
   console.log("No API Key detected, falling back to IP rate limiting");
 
   const ip = getClientIp(req);
-  if (ip === "unknown") return { allowed: true, current: 0, remaining: DAILY_LIMIT, limit: DAILY_LIMIT };
+  // An anonymous scrape whose origin cannot be identified can never be limited,
+  // so refuse it instead of leaving an unlimited free door open. Cached reads
+  // are unaffected; the caller is pointed at a free API Key.
+  if (ip === "unknown") {
+    console.warn("Anonymous scrape with unidentifiable client IP rejected");
+    return { allowed: false, current: DAILY_LIMIT, remaining: 0, limit: DAILY_LIMIT };
+  }
 
   try {
     const supabase = createClient(
