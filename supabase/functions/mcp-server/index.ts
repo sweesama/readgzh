@@ -494,10 +494,10 @@ app.all("/*", async (c) => {
     }
 
     // mcp-lite handlers do not expose the original Request to tool callbacks, so
-    // authenticated read calls would otherwise lose the user's sk_live_... header
-    // before reaching wechat-reader. Intercept that single write path and forward
-    // the real Authorization header; leave list/search/get on the normal handler.
-    if (c.req.method === "POST" && hasUserApiKey(c.req.raw)) {
+    // read calls would otherwise lose both the user's sk_live_... header and the
+    // caller IP before reaching wechat-reader. Intercept that single write path
+    // for every caller; leave list/search/get on the normal handler.
+    if (c.req.method === "POST") {
       try {
         const rpcBody = await c.req.raw.clone().json();
         const toolName = rpcBody?.params?.name;
