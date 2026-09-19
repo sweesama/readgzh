@@ -37,6 +37,7 @@ async function readWechatArticle(url: string, req?: Request) {
           headers: {
             "Content-Type": "application/json",
             Authorization: getWechatReaderAuth(req),
+            ...(clientIp !== "unknown" ? { "x-real-client-ip": clientIp } : {}),
           },
           body: JSON.stringify({ url }),
           signal: controller.signal,
