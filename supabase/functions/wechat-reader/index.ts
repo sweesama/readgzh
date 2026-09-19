@@ -1151,7 +1151,13 @@ async function checkRateLimit(req: Request): Promise<{ allowed: boolean; current
   console.log("No API Key detected, falling back to IP rate limiting");
 
   const ip = getClientIp(req);
-  if (ip === "unknown") return { allowed: true, current: 0, remaining: DAILY_LIMIT, limit: DAILY_LIMIT };
+  // An anonymous scrape whose origin cannot be identified can never be limited,
+  // so refuse it instead of leaving an unlimited free door open. Cached reads
+  // are unaffected; the caller is pointed at a free API Key.
+  if (ip === "unknown") {
+    console.warn("Anonymous scrape with unidentifiable client IP rejected");
+    return { allowed: false, current: DAILY_LIMIT, remaining: 0, limit: DAILY_LIMIT };
+  }
 
   try {
     const supabase = createClient(
