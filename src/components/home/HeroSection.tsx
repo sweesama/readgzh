@@ -5,7 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { supabase } from "@/integrations/supabase/client";
+
+const ANON_COUNT_KEY = "readgzh_anon_extractions";
+const REGISTER_NUDGE_AT = 3;
+
+function isAnonRateLimitError(message: string): boolean {
+  return /rate_limit|429|每日上限|上限/.test(message);
+}
+
+function isCreditsExhaustedError(message: string): boolean {
+  return /insufficient_credits|积分已用完|402/.test(message);
+}
 
 interface HeroSectionProps {
   initialUrl?: string;
