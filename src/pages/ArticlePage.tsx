@@ -137,6 +137,13 @@ const ArticlePage = () => {
   const [copied, setCopied] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [aiView, setAiView] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAnonymous(!session);
+    });
+  }, []);
 
   useEffect(() => {
     if (!id && !slug) {
