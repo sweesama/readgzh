@@ -137,6 +137,13 @@ const ArticlePage = () => {
   const [copied, setCopied] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [aiView, setAiView] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAnonymous(!session);
+    });
+  }, []);
 
   useEffect(() => {
     if (!id && !slug) {
@@ -380,6 +387,13 @@ const ArticlePage = () => {
                 <Link to="/pricing" className="text-primary hover:underline mx-1">套餐</Link>
                 也不迟。未缓存文章 3 积分/篇，已缓存文章读取不扣积分。
               </p>
+              {isAnonymous && (
+                <div className="mt-3">
+                  <Link to="/dashboard">
+                    <Button size="sm" variant="outline">免费注册，每天领 30 积分</Button>
+                  </Link>
+                </div>
+              )}
             </div>
 
           </footer>

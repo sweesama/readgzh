@@ -5,7 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { supabase } from "@/integrations/supabase/client";
+
+const ANON_COUNT_KEY = "readgzh_anon_extractions";
+const REGISTER_NUDGE_AT = 3;
+
+function isAnonRateLimitError(message: string): boolean {
+  return /rate_limit|429|每日上限|上限/.test(message);
+}
+
+function isCreditsExhaustedError(message: string): boolean {
+  return /insufficient_credits|积分已用完|402/.test(message);
+}
 
 interface HeroSectionProps {
   initialUrl?: string;
@@ -38,6 +50,26 @@ const HeroSection = ({ initialUrl = "" }: HeroSectionProps) => {
         description: data.cached ? "该文章之前已经转换过，直接跳转" : "AI 可访问的链接已生成",
       });
 
+      // Anonymous users: after a few successful conversions, nudge toward a free
+      // account (30 credits/day vs 10/IP anonymous). One nudge per session at most.
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session && !data.cached) {
+        const count = Number(localStorage.getItem(ANON_COUNT_KEY) || "0") + 1;
+        localStorage.setItem(ANON_COUNT_KEY, String(count));
+        if (count === REGISTER_NUDGE_AT) {
+          toast({
+            title: "用得还顺手吗？",
+            description: "注册免费账号，每天可领 30 积分（匿名的 3 倍），还能创建自己的 API Key。",
+            duration: 8000,
+            action: (
+              <ToastAction altText="免费注册" onClick={() => navigate("/dashboard")}>
+                免费注册
+              </ToastAction>
+            ),
+          });
+        }
+      }
+
       if (data.slug) {
         navigate(`/${data.slug}`);
       } else {
@@ -45,7 +77,34 @@ const HeroSection = ({ initialUrl = "" }: HeroSectionProps) => {
       }
     } catch (err) {
       console.error("Error:", err);
-      toast({ title: "抓取失败", description: err instanceof Error ? err.message : "请稍后重试", variant: "destructive" });
+      const message = err instanceof Error ? err.message : "请稍后重试";
+      // Tiered wall-hit guidance: anonymous → register free key; logged-in → top up.
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session && isAnonRateLimitError(message)) {
+        toast({
+          title: "今天的免费次数用完了",
+          description: "注册免费账号，每天可领 30 积分，不受 IP 限制。",
+          duration: 10000,
+          action: (
+            <ToastAction altText="免费注册" onClick={() => navigate("/dashboard")}>
+              免费注册
+            </ToastAction>
+          ),
+        });
+      } else if (sessionData.session && (isCreditsExhaustedError(message) || isAnonRateLimitError(message))) {
+        toast({
+          title: "积分不够了",
+          description: "可以先买个加量包应急（¥15 起），用量稳定再考虑套餐。",
+          duration: 10000,
+          action: (
+            <ToastAction altText="去充值" onClick={() => navigate("/dashboard?action=buy_credits")}>
+              去充值
+            </ToastAction>
+          ),
+        });
+      } else {
+        toast({ title: "抓取失败", description: message, variant: "destructive" });
+      }
     } finally {
       setIsLoading(false);
     }
