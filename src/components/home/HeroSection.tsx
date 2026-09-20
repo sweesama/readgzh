@@ -77,7 +77,34 @@ const HeroSection = ({ initialUrl = "" }: HeroSectionProps) => {
       }
     } catch (err) {
       console.error("Error:", err);
-      toast({ title: "抓取失败", description: err instanceof Error ? err.message : "请稍后重试", variant: "destructive" });
+      const message = err instanceof Error ? err.message : "请稍后重试";
+      // Tiered wall-hit guidance: anonymous → register free key; logged-in → top up.
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session && isAnonRateLimitError(message)) {
+        toast({
+          title: "今天的免费次数用完了",
+          description: "注册免费账号，每天可领 30 积分，不受 IP 限制。",
+          duration: 10000,
+          action: (
+            <ToastAction altText="免费注册" onClick={() => navigate("/dashboard")}>
+              免费注册
+            </ToastAction>
+          ),
+        });
+      } else if (sessionData.session && (isCreditsExhaustedError(message) || isAnonRateLimitError(message))) {
+        toast({
+          title: "积分不够了",
+          description: "可以先买个加量包应急（¥15 起），用量稳定再考虑套餐。",
+          duration: 10000,
+          action: (
+            <ToastAction altText="去充值" onClick={() => navigate("/dashboard?action=buy_credits")}>
+              去充值
+            </ToastAction>
+          ),
+        });
+      } else {
+        toast({ title: "抓取失败", description: message, variant: "destructive" });
+      }
     } finally {
       setIsLoading(false);
     }
