@@ -50,6 +50,26 @@ const HeroSection = ({ initialUrl = "" }: HeroSectionProps) => {
         description: data.cached ? "该文章之前已经转换过，直接跳转" : "AI 可访问的链接已生成",
       });
 
+      // Anonymous users: after a few successful conversions, nudge toward a free
+      // account (30 credits/day vs 10/IP anonymous). One nudge per session at most.
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session && !data.cached) {
+        const count = Number(localStorage.getItem(ANON_COUNT_KEY) || "0") + 1;
+        localStorage.setItem(ANON_COUNT_KEY, String(count));
+        if (count === REGISTER_NUDGE_AT) {
+          toast({
+            title: "用得还顺手吗？",
+            description: "注册免费账号，每天可领 30 积分（匿名的 3 倍），还能创建自己的 API Key。",
+            duration: 8000,
+            action: (
+              <ToastAction altText="免费注册" onClick={() => navigate("/dashboard")}>
+                免费注册
+              </ToastAction>
+            ),
+          });
+        }
+      }
+
       if (data.slug) {
         navigate(`/${data.slug}`);
       } else {
