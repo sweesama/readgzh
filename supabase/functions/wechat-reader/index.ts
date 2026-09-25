@@ -2246,6 +2246,29 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     }
 
 
+    // Dedupe: WeChat temporary links (s?src=11&timestamp=...&signature=...) change on
+    // every open, so the URL-based cache misses. After fetching, match on the article's
+    // stable identity (title + author + publish_time) and serve the existing copy.
+    if (metadata.title && metadata.title !== "无标题" && metadata.publishTime) {
+      let dupQuery = supabase
+        .from("articles")
+        .select("id, slug")
+        .eq("title", metadata.title.substring(0, 500))
+        .eq("publish_time", metadata.publishTime);
+      dupQuery = metadata.author ? dupQuery.eq("author", metadata.author) : dupQuery.is("author", null);
+      const { data: dup, error: dupErr } = await dupQuery.order("created_at", { ascending: true }).limit(1).maybeSingle();
+      if (dupErr) console.error("Dedupe lookup failed:", dupErr);
+      if (dup) {
+        console.log("Duplicate article detected (same title/author/publish_time), serving cache:", dup.id);
+        const refunded = await refundCredits(keyHash, 3);
+        if (keyHash) await supabase.rpc("record_cache_hit", { p_key_hash: keyHash });
+        return new Response(
+          JSON.stringify({ success: true, cached: true, articleId: dup.id, slug: dup.slug, creditCost: 0, credits_refunded: refunded ? 3 : 0 }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json", "X-Cache": "HIT", "X-Credit-Cost": "0" } }
+        );
+      }
+    }
+
     const articlePayload = {
       title: metadata.title.substring(0, 500),
       author: metadata.author,
