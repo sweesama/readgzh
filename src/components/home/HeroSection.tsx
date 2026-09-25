@@ -42,7 +42,21 @@ const HeroSection = ({ initialUrl = "" }: HeroSectionProps) => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("wechat-reader", { body: { url: trimmedUrl } });
-      if (error) throw new Error(error.message || "请求失败");
+      if (error) {
+        // Non-2xx responses surface as FunctionsHttpError whose message is a
+        // generic status string; the real error code (rate_limit_exceeded /
+        // insufficient_credits) lives in the response body. Read it so the
+        // tiered wall-hit toasts below can match.
+        let detail = "";
+        const ctx = (error as { context?: Response }).context;
+        if (ctx) {
+          try {
+            const body = await ctx.json();
+            detail = [ctx.status, body?.error, body?.code, body?.message].filter(Boolean).join(" ");
+          } catch { /* non-JSON body, ignore */ }
+        }
+        throw new Error(detail || error.message || "请求失败");
+      }
       if (!data.success) throw new Error(data.error || "抓取失败");
 
       toast({
