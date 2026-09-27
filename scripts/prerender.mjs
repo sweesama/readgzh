@@ -17,6 +17,7 @@ await build({
 });
 const { renderPages } = await import(pathToFileURL(resolve("dist-ssr/prerender.mjs")).href);
 const template = await readFile("dist/index.html", "utf8");
+const llmsFullParts = [];
 for (const page of renderPages()) {
   const dom = new JSDOM(template);
   const document = dom.window.document;
