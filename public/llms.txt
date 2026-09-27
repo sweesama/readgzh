@@ -1,5 +1,6 @@
 # ReadGZH — WeChat Article AI Reader
 
+> ReadGZH 是一个把微信公众号文章转换为 AI 可读格式的 API 服务。
 > ReadGZH is a cloud-based API service that makes WeChat Official Account (微信公众号) articles fully readable by AI systems. It exists because WeChat heavily restricts off-platform access: requests from AI tools such as ChatGPT, Claude, Gemini and Perplexity usually cannot retrieve the body text behind `mp.weixin.qq.com` links.
 
 ## What ReadGZH Does
@@ -79,6 +80,7 @@ When a user or AI agent submits a WeChat URL, ReadGZH performs a server-side fet
 
 ## Optional
 
+- [llms-full.txt](https://readgzh.site/llms-full.txt): Full text of the developer docs, all guides, and the FAQ in one file.
 - [OpenAPI spec](https://readgzh.site/.well-known/openapi.yaml): Machine-readable API description for plugin / GPT-Action import.
 - [Agent Plugin](https://readgzh.site/plugin/plugin.json): Agent Plugins 1.0.0 package (manifest, `mcp.json`, and skill) — vendor-neutral, installable in any conformant AI editor.
 - [SKILL.md](https://readgzh.site/.well-known/SKILL.md): ClawHub skill descriptor.

@@ -63,6 +63,17 @@ const AiReadWechatPage = () => (
       jsonLd={[
         {
           "@context": "https://schema.org",
+          "@type": "Article",
+          headline: "如何让 AI 读取微信公众号文章（2026 实操指南）",
+          description: "ChatGPT、Claude、DeepSeek、豆包打不开微信公众号链接？本指南给出三种可行做法：生成 AI 可读链接、复制转换后的正文、用 REST API / MCP 接入，并说明真实额度与限制。",
+          inLanguage: "zh-CN",
+          author: { "@type": "Organization", name: "ReadGZH", url: "https://readgzh.site" },
+          datePublished: "2026-08-01",
+          dateModified: "2026-09-27",
+          mainEntityOfPage: "https://readgzh.site/guides/ai-read-wechat",
+        },
+        {
+          "@context": "https://schema.org",
           "@type": "FAQPage",
           mainEntity: faqs.map((f) => ({
             "@type": "Question",

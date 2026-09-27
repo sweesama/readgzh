@@ -38,6 +38,18 @@ const faqs = [
     a: "个人订阅（Lite / Pro）通过 Stripe 收款，仅能提供 Stripe 电子收据，无法开具中国增值税发票。如果需要正规发票或用公司账户付款，请走「企业采购」通道：支持银行对公转账、支付宝、微信，可开具增值税电子普通发票（类目：信息技术服务*技术服务费），到账后 3 个工作日内发送到邮箱。可在定价页点击「联系采购」或访问 /enterprise 提交需求。",
   },
   {
+    q: "ReadGZH 支持 MCP 协议吗？",
+    a: "支持。ReadGZH 内置 MCP 服务端（POST https://api.readgzh.site/mcp-server），提供 readgzh.read、readgzh.get、readgzh.search、readgzh.list、readgzh.list_by_account 五个工具，支持匿名试用和 API Key 认证。另有支持 OAuth 登录的 MCP 端点，可直接接入 ChatGPT、Claude、Cursor 等支持 MCP 的客户端。",
+  },
+  {
+    q: "支持豆包、DeepSeek 等国产 AI 吗？",
+    a: "支持。ReadGZH 生成的是普通公开网页链接，任何能访问网页的 AI 都能读取，包括豆包、DeepSeek、Kimi、通义千问等。对于支持插件或 MCP 的平台（如 Coze、Dify、FastGPT），还可以导入我们的 OpenAPI 规范或 MCP 服务直接集成。",
+  },
+  {
+    q: "和微信自带的 AI 总结有什么区别？",
+    a: "微信自带的总结只能在微信内查看，无法把内容交给其他 AI 工具继续处理。ReadGZH 把文章转换成公开可访问的精简页面和 Markdown，你可以把它交给任何 AI（ChatGPT、Claude、DeepSeek、豆包等）做总结、翻译、对比、入库等任意后续处理，也可以通过 API / MCP 接入自己的自动化流程。",
+  },
+  {
     q: "企业版怎么收费？按人头吗？",
     a: "不按人头收费，按团队共享积分池计费。团队版 ¥1,380/年（每月 3,000 积分）、企业版 ¥3,980/年（每月 12,000 积分）、旗舰版 ¥9,800/年（每月 40,000 积分），也提供价格更高的月付方案。价格为含税价，已包含开票成本。",
   },

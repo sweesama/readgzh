@@ -5,7 +5,17 @@ import Footer from "@/components/home/Footer";
 
 function Guide({ title, description, path, children }: { title: string; description: string; path: string; children: ReactNode }) {
   return <div className="min-h-screen bg-background">
-    <SEO title={`${title} | ReadGZH`} description={description} path={path} ogType="article" />
+    <SEO title={`${title} | ReadGZH`} description={description} path={path} ogType="article" jsonLd={{
+      "@context": "https://schema.org",
+      "@type": "Article",
+      headline: title,
+      description,
+      inLanguage: "zh-CN",
+      author: { "@type": "Organization", name: "ReadGZH", url: "https://readgzh.site" },
+      datePublished: "2026-09-12",
+      dateModified: "2026-09-27",
+      mainEntityOfPage: `https://readgzh.site${path}`,
+    }} />
     <main className="container mx-auto max-w-3xl px-4 py-10">
       <Link to="/guides/ai-read-wechat" className="text-primary underline">返回 AI 阅读使用指南</Link>
       <header className="my-8"><h1 className="text-3xl font-bold tracking-tight mb-4">{title}</h1><p className="text-muted-foreground leading-relaxed">{description}</p><p className="mt-3 text-sm text-muted-foreground">ReadGZH 项目维护 · 更新于 2026-09-12</p></header>
