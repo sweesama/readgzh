@@ -34,5 +34,15 @@ for (const page of renderPages()) {
   // Static hosts also resolve extensionless /docs to /docs.html.
   await writeFile(`${directory}.html`, dom.serialize());
   console.log(`Prerendered ${page.path}`);
+  // Collect plain-text content for llms-full.txt (docs, guides, FAQ in one file).
+  const bodyDom = new JSDOM(`<body>${page.body}</body>`);
+  const text = (bodyDom.window.document.body.textContent || "").replace(/\n{3,}/g, "\n\n").trim();
+  llmsFullParts.push(`# ${page.path}\n\n${text}`);
+  bodyDom.window.close();
   dom.window.close();
 }
+await writeFile(
+  resolve("dist", "llms-full.txt"),
+  `# ReadGZH — Full documentation\n\n> ReadGZH 是一个把微信公众号文章转换为 AI 可读格式的 API 服务。本文件拼接了开发者文档、全部使用指南和常见问题的完整正文。\n\n${llmsFullParts.join("\n\n---\n\n")}\n`,
+);
+console.log("Wrote llms-full.txt");
