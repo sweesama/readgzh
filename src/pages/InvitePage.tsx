@@ -115,7 +115,7 @@ const InvitePage = () => {
             <h1 className="text-2xl font-bold">邀请好友，最高得 1620 积分</h1>
           </div>
           <p className="text-muted-foreground text-sm">
-            每位好友需完成邮箱验证并阅读一篇文章后，奖励才会发放。积分自发放日起 90 天内有效。
+            每位好友需完成邮箱验证并阅读一篇文章后，奖励才会发放。积分自发放日起 60 天内有效。
           </p>
         </header>
 
