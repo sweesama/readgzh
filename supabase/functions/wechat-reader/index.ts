@@ -1073,6 +1073,40 @@ async function hashApiKey(key: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+// Logged-in web user → charge their active API key. Returns null (fall back to the
+// anonymous IP pool) when the token isn't a user session, the user has no key, or
+// the account has no credits left (the tentative charge is refunded first).
+async function checkSessionUserAuth(token: string, creditCost: number) {
+  try {
+    const svc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: userData, error: userErr } = await svc.auth.getUser(token);
+    const userId = userData?.user?.id;
+    if (userErr || !userId) return null;
+    const { data: keys } = await svc
+      .from("api_keys")
+      .select("key_hash")
+      .eq("user_id", userId)
+      .eq("is_active", true)
+      .order("created_at", { ascending: true })
+      .limit(1);
+    const keyHash = keys?.[0]?.key_hash as string | undefined;
+    if (!keyHash) return null;
+    const { data, error } = await svc.rpc("validate_api_key", { p_key_hash: keyHash, p_credit_cost: creditCost });
+    if (error) return null;
+    const r = data as { valid: boolean; allowed: boolean; current: number; limit: number; remaining: number; tier?: string };
+    if (!r?.valid) return null;
+    if (!r.allowed) {
+      await svc.rpc("refund_credits", { p_key_hash: keyHash, p_amount: creditCost });
+      return null;
+    }
+    console.log(`Session user ${userId.substring(0, 8)} charged ${creditCost} via own key`);
+    return { isApiKey: true, allowed: true, current: r.current, remaining: r.remaining, limit: r.limit, tier: r.tier, keyHash, creditCost };
+  } catch (err) {
+    console.error("Session auth error:", err);
+    return null;
+  }
+}
+
 async function checkApiKeyAuth(req: Request, creditCost: number = 1): Promise<{
   isApiKey: boolean;
   allowed: boolean;
@@ -1091,7 +1125,14 @@ async function checkApiKeyAuth(req: Request, creditCost: number = 1): Promise<{
   if (authHeader.startsWith("Bearer sk_live_")) {
     apiKey = authHeader.replace("Bearer ", "");
   }
-  if (!apiKey) return null;
+  if (!apiKey) {
+    // Signed-in web users: their session JWT arrives here. Charge their own
+    // oldest active API key so the homepage box shares the account balance.
+    if (authHeader.startsWith("Bearer eyJ") && creditCost > 0 && !isTrustedInternalCall(req)) {
+      return await checkSessionUserAuth(authHeader.slice(7).trim(), creditCost);
+    }
+    return null;
+  }
   const keyHash = await hashApiKey(apiKey);
 
   try {
