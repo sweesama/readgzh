@@ -33,14 +33,44 @@
     <!-- JSON-LD Structured Data -->
     <script type="application/ld+json">
     {
-      "@context": "https://schema.org",
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://readgzh.site/#website",
+      "name": "ReadGZH",
+      "url": "https://readgzh.site",
+      "inLanguage": "zh-CN",
+      "publisher": {
+        "@id": "https://readgzh.site/#org"
+      },
+      "about": {
+        "@id": "https://readgzh.site/#app"
+      }
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://readgzh.site/#org",
+      "name": "ReadGZH",
+      "url": "https://readgzh.site",
+      "logo": "https://readgzh.site/logo.png",
+      "email": "sweeyeah@hotmail.com",
+      "sameAs": [
+        "https://github.com/sweesama",
+        "https://clawhub.io/skills/readgzh"
+      ]
+    },
+    {
       "@type": "WebApplication",
       "name": "ReadGZH",
       "url": "https://readgzh.site",
       "description": "ReadGZH 是一款微信公众号文章 AI 阅读工具。通过服务端代理抓取并清理文章内容，生成 AI 可直接访问的公开链接，输出比原始微信 HTML 更精简。支持 ChatGPT、Claude、DeepSeek、豆包等能访问网页的 AI 工具。",
       "applicationCategory": "UtilityApplication",
       "operatingSystem": "Web",
-      "inLanguage": ["zh-CN", "en"],
+      "inLanguage": [
+        "zh-CN",
+        "en"
+      ],
       "featureList": [
         "Server-side extraction pipeline for WeChat articles",
         "Strips inline styles, class and data attributes to reduce tokens",
@@ -59,13 +89,14 @@
         "priceCurrency": "CNY",
         "description": "免费套餐：注册后每日可领取 30 积分，每篇未缓存文章 3 积分，缓存文章读取不扣积分"
       },
-
       "potentialAction": {
         "@type": "UseAction",
         "target": {
           "@type": "EntryPoint",
           "urlTemplate": "https://api.readgzh.site/rd?url={wechat_url}",
-          "actionPlatform": ["http://schema.org/DesktopWebPlatform"],
+          "actionPlatform": [
+            "http://schema.org/DesktopWebPlatform"
+          ],
           "description": "粘贴微信公众号文章链接，获取 AI 可读的纯净内容"
         }
       },
@@ -73,8 +104,14 @@
         "https://github.com/sweesama",
         "https://clawhub.io/skills/readgzh"
       ],
-      "keywords": "微信公众号,AI阅读,WeChat,ChatGPT,Claude,Perplexity,API,MCP"
+      "keywords": "微信公众号,AI阅读,WeChat,ChatGPT,Claude,Perplexity,API,MCP",
+      "@id": "https://readgzh.site/#app",
+      "publisher": {
+        "@id": "https://readgzh.site/#org"
+      }
     }
+  ]
+}
     </script>
     <meta property="og:title" content="ReadGZH - 微信文章 AI 阅读器 | 让 AI 读懂微信公众号">
   <meta name="twitter:title" content="ReadGZH - 微信文章 AI 阅读器 | 让 AI 读懂微信公众号">

@@ -6,6 +6,8 @@ import { WechatMarkdownPage, CompareWechatPage, WechatNotesPage } from "../src/p
 import Guide from "../src/pages/guides/AiReadWechatPage";
 import Docs from "../src/pages/DocsPage";
 import FAQ from "../src/pages/FAQPage";
+import Home from "../src/pages/Index";
+import Pricing from "../src/pages/PricingPage";
 
 export function renderPages() {
   const routes: [string, React.ComponentType][] = [
@@ -15,6 +17,8 @@ export function renderPages() {
     ["/guides/wechat-article-notes", WechatNotesPage],
     ["/docs", Docs],
     ["/faq", FAQ],
+    ["/", Home],
+    ["/pricing", Pricing],
   ];
   return routes.map(([path, Page]) => {
     const context = {} as { helmet: HelmetServerState };

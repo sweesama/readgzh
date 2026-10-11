@@ -9,6 +9,7 @@ for (const [route, marker] of [
   ["guides/compare-wechat-articles", "来源卡片"],
   ["docs", "API"],
   ["faq", "匿名用户每天 10 积分"],
+  ["pricing", "每日 30 积分"],
 ]) {
   const dom = new JSDOM(await readFile(`dist/${route}/index.html`, "utf8"));
   assert.equal(await readFile(`dist/${route}.html`, "utf8"), await readFile(`dist/${route}/index.html`, "utf8"));
@@ -33,4 +34,13 @@ for (const [route, marker] of [
   dom.window.close();
   console.log(`PASS /${route}: unique metadata, full body, assets, FAQ answers`);
 }
-assert.equal(titles.size, 5);
+assert.equal(titles.size, 6);
+{
+  const doc = new JSDOM(await readFile("dist/index.html", "utf8")).window.document;
+  assert.equal(doc.querySelectorAll('link[rel="canonical"]').length, 1);
+  assert.equal(doc.querySelector('link[rel="canonical"]').href, "https://readgzh.site/");
+  assert.ok(doc.querySelector("#root").textContent.includes("ReadGZH"), "home body missing");
+  const types = [...doc.querySelectorAll('script[type="application/ld+json"]')].flatMap((s) => JSON.parse(s.textContent)["@graph"] || []).map((n) => n["@type"]);
+  assert.ok(types.includes("WebSite") && types.includes("WebApplication"), "home schema missing");
+  console.log("PASS /: canonical, body, WebSite schema");
+}

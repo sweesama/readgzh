@@ -28,16 +28,21 @@ for (const page of renderPages()) {
     .forEach((node) => node.remove());
   document.head.insertAdjacentHTML("beforeend", page.head);
   document.getElementById("root").innerHTML = page.body;
-  const directory = resolve("dist", page.path.slice(1));
-  await mkdir(directory, { recursive: true });
-  await writeFile(resolve(directory, "index.html"), dom.serialize());
-  // Static hosts also resolve extensionless /docs to /docs.html.
-  await writeFile(`${directory}.html`, dom.serialize());
+  if (page.path === "/") {
+    // Homepage overwrites the SPA shell; other routes fall back to it, so keep a clean copy for them.
+    await writeFile(resolve("dist", "index.html"), dom.serialize());
+  } else {
+    const directory = resolve("dist", page.path.slice(1));
+    await mkdir(directory, { recursive: true });
+    await writeFile(resolve(directory, "index.html"), dom.serialize());
+    // Static hosts also resolve extensionless /docs to /docs.html.
+    await writeFile(`${directory}.html`, dom.serialize());
+  }
   console.log(`Prerendered ${page.path}`);
   // Collect plain-text content for llms-full.txt (docs, guides, FAQ in one file).
   const bodyDom = new JSDOM(`<body>${page.body}</body>`);
   const text = (bodyDom.window.document.body.textContent || "").replace(/\n{3,}/g, "\n\n").trim();
-  llmsFullParts.push(`# ${page.path}\n\n${text}`);
+  if (page.path !== "/" && page.path !== "/pricing") llmsFullParts.push(`# ${page.path}\n\n${text}`);
   bodyDom.window.close();
   dom.window.close();
 }

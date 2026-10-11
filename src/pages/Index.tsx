@@ -10,6 +10,7 @@ import AIGuideSection from "@/components/home/AIGuideSection";
 import StatsWidget from "@/components/home/StatsSection";
 import Footer from "@/components/home/Footer";
 import SEO from "@/components/SEO";
+import { SITE_SCHEMA } from "@/lib/siteSchema";
 import { Bot, Eye, BookOpen, BookOpenCheck, Code, Zap, Key, Crown, MessageSquare, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,6 +58,7 @@ const Index = () => {
         description="ReadGZH：粘贴微信公众号文章链接，一键生成 AI 可直接读取的精简页面。支持 REST API 与 MCP 协议，可配合 ChatGPT、Claude、DeepSeek、豆包等工具使用；缓存文章读取不扣积分。"
         path="/"
         ogType="website"
+        jsonLd={SITE_SCHEMA}
       />
       {/* Top bar with AI view toggle and nav links */}
       <div className="fixed top-0 left-0 right-0 z-50 px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
