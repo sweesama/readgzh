@@ -458,6 +458,14 @@ function hasUserApiKey(req: Request): boolean {
   return true;
 }
 
+const exhaustedKeys = new Map<string, number>();
+function markExhausted(key: string) {
+  const now = new Date();
+  const midnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+  if (exhaustedKeys.size > 5000) exhaustedKeys.clear();
+  exhaustedKeys.set(key, midnight);
+}
+
 const app = new Hono();
 
 app.all("/*", async (c) => {
@@ -469,11 +477,19 @@ app.all("/*", async (c) => {
       const ip = getClientIp(c.req.raw);
       if (ip !== "unknown") {
         const quota = await anonymousQuota(c.req.raw, ip);
+        // Short-circuit: once a key is over its daily limit, reject from memory
+        // until UTC midnight without touching the database again.
+        const blockedUntil = exhaustedKeys.get(quota.key);
+        if (blockedUntil && blockedUntil > Date.now()) {
+          const retry = Math.ceil((blockedUntil - Date.now()) / 1000);
+          return c.json({ jsonrpc: "2.0", id: null, error: { code: -32000, message: `Anonymous MCP limit reached (${quota.limit}/IP/day). Use an API Key (Bearer sk_live_...) from https://readgzh.site/dashboard.`, data: { dashboard_url: "https://readgzh.site/dashboard", retry_after_seconds: retry } } }, 429, { "Retry-After": String(retry) });
+        }
         const rateCheck = await checkMcpRateLimit(quota);
         if (rateCheck.unavailable) {
           return c.json({ jsonrpc: "2.0", id: null, error: { code: -32000, message: "MCP discovery rate limiter temporarily unavailable. Retry later." } }, 503, { "Retry-After": "60" });
         }
         if (!rateCheck.allowed) {
+          markExhausted(quota.key);
           console.log(`[MCP] Anon rate limit exceeded for IP: ${ip}, current: ${rateCheck.current}`);
           return c.json({
             jsonrpc: "2.0",
