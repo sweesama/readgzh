@@ -138,7 +138,7 @@ async function syncSubscriptionTier(customerId: string) {
       limit: 50,
     });
     const proSessions = sessions.data.filter(
-      (s) => s.payment_status === "paid" && s.status === "complete" && s.mode === "payment" &&
+      (s: Stripe.Checkout.Session) => s.payment_status === "paid" && s.status === "complete" && s.mode === "payment" &&
         (!s.metadata?.type || s.metadata?.type === "pro")
     );
 
