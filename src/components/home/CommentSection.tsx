@@ -26,6 +26,8 @@ type Comment = {
 
 function getVoterId(userId: string | null): string {
   if (userId) return userId;
+  // Prerender runs this during render. There is no browser storage there.
+  if (typeof localStorage === "undefined") return "ssr";
   let anon = localStorage.getItem("readgzh_voter_id");
   if (!anon) {
     anon = "anon_" + crypto.randomUUID();

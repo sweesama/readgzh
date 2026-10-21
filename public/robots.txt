@@ -1,3 +1,8 @@
+# /s/ , /a/ , /articles and https://api.readgzh.site/rd stay crawlable on purpose.
+# They are noindex (meta robots on the site, X-Robots-Tag on /rd), not Disallow.
+# A Disallow here would hide the noindex tag. Do not add one.
+# 文章缓存页允许抓取，用 noindex 禁止收录，不要在这里 Disallow。
+
 User-agent: Googlebot
 Allow: /
 

@@ -330,3 +330,7 @@ const AiReadWechatPage = () => (
 );
 
 export default AiReadWechatPage;
+
+// Route metadata for scripts/prerender.tsx and App.tsx, not a second component.
+// eslint-disable-next-line react-refresh/only-export-components
+export const prerenderPages = [{ path: "/guides/ai-read-wechat", Component: AiReadWechatPage }];
