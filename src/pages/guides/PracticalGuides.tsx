@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { PrerenderPage } from "@/prerender/pages";
 import { Link } from "react-router-dom";
 import SEO from "@/components/SEO";
 import Footer from "@/components/home/Footer";
@@ -61,3 +62,11 @@ export function WechatNotesPage() {
     <section><h2>额度与边界</h2><p>未缓存文章按积分计费，缓存读取不扣积分；具体额度见 <Link to="/pricing">定价页</Link>。生成的阅读页公开可访问并使用共享缓存，不适合内部或不宜公开的材料。</p><p>已删除、受限或需要登录的内容无法提取。需要把多篇文章放在一起分析时，见 <Link to="/guides/compare-wechat-articles">多篇文章对比指南</Link>；需要程序化接入时，见 <Link to="/docs">API / MCP 文档</Link>。</p></section>
   </Guide>;
 }
+
+// Route metadata for scripts/prerender.tsx and App.tsx, not a second component.
+// eslint-disable-next-line react-refresh/only-export-components
+export const prerenderPages: PrerenderPage[] = [
+  { path: "/guides/wechat-to-markdown", Component: WechatMarkdownPage },
+  { path: "/guides/compare-wechat-articles", Component: CompareWechatPage },
+  { path: "/guides/wechat-article-notes", Component: WechatNotesPage },
+];

@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Copy, ExternalLink, CheckCircle, Share2, Eye, Bot } from "lucide-react";
@@ -130,6 +130,7 @@ function stripToAIView(html: string): string {
 
 const ArticlePage = () => {
   const { id, slug } = useParams<{ id?: string; slug?: string }>();
+  const location = useLocation();
 
   const [article, setArticle] = useState<Article | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -221,6 +222,12 @@ const ArticlePage = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
+        <SEO
+          title="文章读取中 | ReadGZH"
+          description="正在打开一篇已缓存的微信公众号文章。此页供访问者和 AI 工具阅读，不供搜索引擎收录。"
+          path={location.pathname}
+          noindex
+        />
         <div className="container mx-auto px-4 py-8 max-w-3xl">
           <Skeleton className="h-8 w-32 mb-8" />
           <div className="bg-card rounded-2xl border p-6 md:p-10 space-y-4">
@@ -238,6 +245,12 @@ const ArticlePage = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
+        <SEO
+          title="文章无法读取 | ReadGZH"
+          description="这篇缓存文章暂时无法读取。页面仍可打开，但不供搜索引擎收录。"
+          path={location.pathname}
+          noindex
+        />
         <div className="container mx-auto px-4 max-w-lg text-center">
           <div className="bg-card rounded-2xl border border-destructive p-8">
             <div className="text-destructive text-lg font-medium mb-2">获取失败</div>
@@ -251,7 +264,16 @@ const ArticlePage = () => {
     );
   }
 
-  if (!article) return null;
+  if (!article) {
+    return (
+      <SEO
+        title="文章不存在 | ReadGZH"
+        description="没有找到这篇缓存文章。"
+        path={location.pathname}
+        noindex
+      />
+    );
+  }
 
   const articlePath = article.slug ? `/s/${article.slug.replace(/^s\//, "")}` : `/a/${article.id}`;
   const articleDesc = (article.content || "").replace(/\s+/g, " ").trim().slice(0, 155);
@@ -263,6 +285,7 @@ const ArticlePage = () => {
         description={articleDesc || `${article.title} - 由 ReadGZH 转换的 AI 可读微信公众号文章`}
         path={articlePath}
         ogType="article"
+        noindex
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "Article",

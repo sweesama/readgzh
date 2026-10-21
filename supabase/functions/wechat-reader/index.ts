@@ -908,6 +908,7 @@ async function handleReadMode(slug: string | null, articleId: string | null, par
         ...corsHeaders,
         "Content-Type": "text/plain; charset=utf-8",
         "Cache-Control": "public, max-age=3600",
+        "X-Robots-Tag": "noindex",
         ...(totalParts > 1 ? { "X-Total-Parts": String(totalParts), "X-Current-Part": String(currentPart) } : {}),
       },
     });
@@ -949,6 +950,7 @@ async function handleReadMode(slug: string | null, articleId: string | null, par
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, follow">
   <title>${escapeHtml(article.title)}</title>
   <meta name="description" content="${escapeHtml(article.content.substring(0, 160))}">
   <meta name="author" content="${escapeHtml(article.author || '公众号文章')}">
@@ -992,6 +994,7 @@ async function handleReadMode(slug: string | null, articleId: string | null, par
       ...corsHeaders,
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "public, max-age=3600",
+      "X-Robots-Tag": "noindex",
       ...(totalParts > 1 ? {
         "X-Total-Parts": String(totalParts),
         "X-Current-Part": String(requestedPart || 1),

@@ -23,9 +23,8 @@ import CommentsPage from "./pages/CommentsPage";
 import ChangelogPage from "./pages/ChangelogPage";
 import InvitePage from "./pages/InvitePage";
 import EnterprisePage from "./pages/EnterprisePage";
-import { WechatMarkdownPage, CompareWechatPage, WechatNotesPage } from "./pages/guides/PracticalGuides";
-import AiReadWechatPage from "./pages/guides/AiReadWechatPage";
 import ReferralCatcher from "./components/ReferralCatcher";
+import { collectPrerenderPages, type PrerenderPage } from "./prerender/pages";
 import OAuthConsent from "./pages/OAuthConsent";
 
 // Error boundary to prevent WebMCP from crashing the app
@@ -45,6 +44,14 @@ const WebMCPProvider = lazy(() =>
 );
 
 const queryClient = new QueryClient();
+
+// New files in src/pages/guides/ are routes as soon as they export prerenderPages.
+// scripts/prerender.tsx reads the same export. Do not also add a manual <Route>.
+const guideModules = import.meta.glob("./pages/guides/*.tsx", { eager: true }) as Record<
+  string,
+  { prerenderPages?: PrerenderPage[] }
+>;
+const guidePages = collectPrerenderPages(guideModules);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -68,10 +75,9 @@ const App = () => (
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/cookies" element={<CookiesPage />} />
           <Route path="/faq" element={<FAQPage />} />
-          <Route path="/guides/wechat-to-markdown" element={<WechatMarkdownPage />} />
-          <Route path="/guides/compare-wechat-articles" element={<CompareWechatPage />} />
-          <Route path="/guides/wechat-article-notes" element={<WechatNotesPage />} />
-          <Route path="/guides/ai-read-wechat" element={<AiReadWechatPage />} />
+          {guidePages.map(({ path, Component }) => (
+            <Route key={path} path={path} element={<Component />} />
+          ))}
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/enterprise" element={<EnterprisePage />} />

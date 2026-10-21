@@ -70,6 +70,7 @@ const ArticlesPage = () => {
         description="浏览 ReadGZH 已缓存的微信公众号文章库，所有文章可直接被 ChatGPT、Claude、Perplexity 等 AI 工具读取，缓存文章免费阅读。"
         path="/articles"
         ogType="website"
+        noindex
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "CollectionPage",

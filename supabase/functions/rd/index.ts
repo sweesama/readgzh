@@ -9,6 +9,14 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// Cached WeChat copies must stay fetchable and must not be indexed.
+// noindex (not robots.txt Disallow) so crawlers can see the tag.
+function noindexHeaders(init?: HeadersInit): Headers {
+  const headers = new Headers(init);
+  headers.set("X-Robots-Tag", "noindex");
+  return headers;
+}
+
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -50,17 +58,17 @@ function queryKeyNotSupportedResponse(): Response {
     }),
     {
       status: 400,
-      headers: {
+      headers: noindexHeaders({
         ...corsHeaders,
         "Content-Type": "application/json",
-      },
+      }),
     }
   );
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: noindexHeaders(corsHeaders) });
   }
 
   const url = new URL(req.url);
@@ -119,13 +127,13 @@ Deno.serve(async (req) => {
               }),
               {
                 status: 429,
-                headers: {
+                headers: noindexHeaders({
                   ...corsHeaders,
                   "Content-Type": "application/json",
                   "Retry-After": "86400",
                   "X-RateLimit-Limit": String(ANON_DAILY_LIMIT),
                   "X-RateLimit-Remaining": "0",
-                },
+                }),
               }
             );
           }
@@ -159,6 +167,7 @@ Deno.serve(async (req) => {
 
     const responseHeaders = new Headers(response.headers);
     responseHeaders.set("Access-Control-Allow-Origin", "*");
+    responseHeaders.set("X-Robots-Tag", "noindex");
 
     return new Response(response.body, {
       status: response.status,
@@ -181,11 +190,11 @@ Deno.serve(async (req) => {
       }),
       {
         status: 503,
-        headers: {
+        headers: noindexHeaders({
           ...corsHeaders,
           "Content-Type": "application/json",
           "Retry-After": "5",
-        },
+        }),
       }
     );
   }
