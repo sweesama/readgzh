@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { clearAuthAttempt, markAuthAttempt } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -90,8 +91,12 @@ export default function OAuthConsent() {
   };
 
   const signInWithGoogle = async () => {
+    markAuthAttempt("google");
     const { error: loginError } = await lovable.auth.signInWithOAuth("google", { redirect_uri: consentUrl });
-    if (loginError) toast({ title: "登录失败", description: String(loginError), variant: "destructive" });
+    if (loginError) {
+      clearAuthAttempt();
+      toast({ title: "登录失败", description: String(loginError), variant: "destructive" });
+    }
   };
 
   const sendOtp = async () => {
@@ -106,9 +111,13 @@ export default function OAuthConsent() {
 
   const verifyOtp = async () => {
     setBusy(true);
+    markAuthAttempt("email");
     const { error: verifyError } = await supabase.auth.verifyOtp({ email, token: otp.trim(), type: "email" });
     setBusy(false);
-    if (verifyError) return toast({ title: "验证失败", description: verifyError.message, variant: "destructive" });
+    if (verifyError) {
+      clearAuthAttempt();
+      return toast({ title: "验证失败", description: verifyError.message, variant: "destructive" });
+    }
     setSignedIn(true);
   };
 
