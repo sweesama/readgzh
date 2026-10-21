@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { clearAuthAttempt, markAuthAttempt } from "@/lib/analytics";
 import { Shield, Users, FileText, Key, Activity, TrendingUp, Crown, Zap, LogIn, Globe, Eye, PlusCircle, UserPlus, Gift, Sparkles, ShieldOff, CheckCircle2, Ban } from "lucide-react";
 
 interface AdminStats {
@@ -117,15 +118,18 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
 
   const handleGoogleLogin = async () => {
     setSigningIn(true);
+    markAuthAttempt("google");
     try {
       const { error } = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
       });
       if (error) {
-        setError("登录失败: " + (error as any)?.message || "未知错误");
+        clearAuthAttempt();
+        setError("登录失败: " + (error as { message?: string } | null)?.message || "未知错误");
         setSigningIn(false);
       }
     } catch (e) {
+      clearAuthAttempt();
       setError("登录失败");
       setSigningIn(false);
     }

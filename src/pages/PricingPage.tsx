@@ -9,6 +9,7 @@ import { Check, ArrowLeft, Zap, Gift, Loader2, Sparkles, Package, Clock, Buildin
 import { toast } from "@/hooks/use-toast";
 import Footer from "@/components/home/Footer";
 import SEO from "@/components/SEO";
+import { trackCheckoutHandoff } from "@/lib/analytics";
 
 const PricingPage = () => {
   const navigate = useNavigate();
@@ -28,6 +29,7 @@ const PricingPage = () => {
       });
       if (error) throw error;
       if (data?.url) {
+        trackCheckoutHandoff({ type, data });
         window.open(data.url, "_blank");
       } else {
         throw new Error("No checkout URL returned");

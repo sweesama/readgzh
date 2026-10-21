@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import Footer from "@/components/home/Footer";
 import SEO from "@/components/SEO";
 import BillingHistory from "@/components/dashboard/BillingHistory";
+import { clearAuthAttempt, markAuthAttempt, trackCheckoutHandoff, trackReturnedPurchase } from "@/lib/analytics";
 
 interface ApiKey {
   id: string;
@@ -94,6 +95,7 @@ const DashboardPage = () => {
       });
       if (error) throw error;
       if (data?.url) {
+        trackCheckoutHandoff({ type, data });
         window.open(data.url, "_blank");
       }
     } catch (err) {
@@ -116,6 +118,7 @@ const DashboardPage = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.message || data.error);
       if (data?.url) {
+        trackCheckoutHandoff({ type: creditType, quantity: buyQuantity, data });
         setBuyDialogOpen(false);
         window.open(data.url, "_blank");
       }
@@ -297,6 +300,7 @@ const DashboardPage = () => {
 
     const params = new URLSearchParams(window.location.search);
     if (params.get("credits_purchased")) {
+      trackReturnedPurchase("credits", params.get("session_id"));
       toast({ title: "🎉 积分购买成功", description: `${params.get("credits_purchased")} 积分已到账` });
       window.history.replaceState({}, "", "/dashboard");
       void checkProStatus();
@@ -316,19 +320,23 @@ const DashboardPage = () => {
   }, [user?.id, balance?.used_credits]);
 
   const handleGoogleLogin = async () => {
+    markAuthAttempt("google");
     const { error } = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin + "/dashboard",
     });
     if (error) {
+      clearAuthAttempt();
       toast({ title: "登录失败", description: String(error), variant: "destructive" });
     }
   };
 
   const handleAppleLogin = async () => {
+    markAuthAttempt("apple");
     const { error } = await lovable.auth.signInWithOAuth("apple", {
       redirect_uri: window.location.origin + "/dashboard",
     });
     if (error) {
+      clearAuthAttempt();
       toast({ title: "登录失败", description: String(error), variant: "destructive" });
     }
   };
@@ -358,12 +366,14 @@ const DashboardPage = () => {
       return;
     }
     setOtpLoading(true);
+    markAuthAttempt("email");
     const { error } = await supabase.auth.verifyOtp({
       email: loginEmail,
       token: otpCode,
       type: "email",
     });
     if (error) {
+      clearAuthAttempt();
       toast({ title: "验证失败", description: error.message, variant: "destructive" });
     }
     setOtpLoading(false);

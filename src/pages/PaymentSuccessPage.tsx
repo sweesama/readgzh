@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle, ArrowRight, Sparkles, Loader2 } from "lucide-react";
 import SEO from "@/components/SEO";
 import { supabase } from "@/integrations/supabase/client";
+import { trackReturnedPurchase } from "@/lib/analytics";
 
 const PaymentSuccessPage = () => {
   const navigate = useNavigate();
@@ -12,6 +13,11 @@ const PaymentSuccessPage = () => {
   const upgraded = params.get("upgraded") === "1";
   const [syncing, setSyncing] = useState(true);
   const [synced, setSynced] = useState(false);
+
+  useEffect(() => {
+    const sessionId = new URLSearchParams(window.location.search).get("session_id");
+    trackReturnedPurchase(upgraded ? "upgrade" : "subscription", sessionId);
+  }, [upgraded]);
 
   useEffect(() => {
     let cancelled = false;

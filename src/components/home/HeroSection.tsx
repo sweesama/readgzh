@@ -7,6 +7,7 @@ import { ArrowRight, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { supabase } from "@/integrations/supabase/client";
+import { trackConvertArticle } from "@/lib/analytics";
 
 const ANON_COUNT_KEY = "readgzh_anon_extractions";
 const REGISTER_NUDGE_AT = 3;
@@ -58,6 +59,7 @@ const HeroSection = ({ initialUrl = "" }: HeroSectionProps) => {
         throw new Error(detail || error.message || "请求失败");
       }
       if (!data.success) throw new Error(data.error || "抓取失败");
+      trackConvertArticle(Boolean(data.cached));
 
       toast({
         title: data.cached ? "文章已存在" : "抓取成功！",
