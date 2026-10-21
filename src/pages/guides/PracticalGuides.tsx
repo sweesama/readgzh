@@ -4,22 +4,23 @@ import { Link } from "react-router-dom";
 import SEO from "@/components/SEO";
 import Footer from "@/components/home/Footer";
 
-function Guide({ title, description, path, children }: { title: string; description: string; path: string; children: ReactNode }) {
+function Guide({ title, description, path, children, updated = "2026-09-12", dateModified = "2026-09-27", extraJsonLd }: { title: string; description: string; path: string; children: ReactNode; updated?: string; dateModified?: string; extraJsonLd?: Record<string, unknown>[] }) {
+  const articleLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: title,
+    description,
+    inLanguage: "zh-CN",
+    author: { "@type": "Organization", name: "ReadGZH", url: "https://readgzh.site" },
+    datePublished: "2026-09-12",
+    dateModified,
+    mainEntityOfPage: `https://readgzh.site${path}`,
+  };
   return <div className="min-h-screen bg-background">
-    <SEO title={`${title} | ReadGZH`} description={description} path={path} ogType="article" jsonLd={{
-      "@context": "https://schema.org",
-      "@type": "Article",
-      headline: title,
-      description,
-      inLanguage: "zh-CN",
-      author: { "@type": "Organization", name: "ReadGZH", url: "https://readgzh.site" },
-      datePublished: "2026-09-12",
-      dateModified: "2026-09-27",
-      mainEntityOfPage: `https://readgzh.site${path}`,
-    }} />
+    <SEO title={`${title} | ReadGZH`} description={description} path={path} ogType="article" jsonLd={extraJsonLd ? [articleLd, ...extraJsonLd] : articleLd} />
     <main className="container mx-auto max-w-3xl px-4 py-10">
       <Link to="/guides/ai-read-wechat" className="text-primary underline">返回 AI 阅读使用指南</Link>
-      <header className="my-8"><h1 className="text-3xl font-bold tracking-tight mb-4">{title}</h1><p className="text-muted-foreground leading-relaxed">{description}</p><p className="mt-3 text-sm text-muted-foreground">ReadGZH 项目维护 · 更新于 2026-09-12</p></header>
+      <header className="my-8"><h1 className="text-3xl font-bold tracking-tight mb-4">{title}</h1><p className="text-muted-foreground leading-relaxed">{description}</p><p className="mt-3 text-sm text-muted-foreground">{`ReadGZH 项目维护 · 更新于 ${updated}`}</p></header>
       <article className="space-y-8 leading-relaxed [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mb-3 [&_p]:my-3 [&_a]:text-primary [&_a]:underline [&_li]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted [&_pre]:p-4 [&_pre]:text-sm [&_blockquote]:border-l-4 [&_blockquote]:pl-4">
         {children}
       </article>
@@ -30,8 +31,99 @@ function Guide({ title, description, path, children }: { title: string; descript
   </div>;
 }
 
+const markdownAnswer = "公众号转 Markdown，可把公开链接粘贴到 ReadGZH 取得正文，交给 AI 或存成文件；少量摘录可手动复制，存笔记可用剪藏插件，批量导出再看开源工具。";
+
+const markdownFaqs = [
+  {
+    q: "公众号文章转 Markdown 用什么工具？",
+    a: markdownAnswer,
+  },
+  {
+    q: "只摘几段，要装插件吗？",
+    a: "不用。微信开放社区说明，PC 微信可以用右键菜单复制公众号正文。这只是复制文字，不会变成 Markdown，也不能批量。",
+  },
+  {
+    q: "剪藏插件和 ReadGZH 怎么选？",
+    a: "文章已经在浏览器里打开、要存进自己的笔记库时，用简悦或 Obsidian Web Clipper。只有链接、要交给 AI 或接 API / MCP 时，把链接粘贴到 ReadGZH。",
+  },
+  {
+    q: "批量导出要登录公众号吗？",
+    a: "wechat-article-exporter 需要扫码登录自己的公众号。仓库写明 2026-07-30 起停止维护，微信接口已关闭，在线域名 2026-10-30 到期。wechat-article-to-markdown 处理单篇链接，说明里没有要求登录公众号后台。",
+  },
+  {
+    q: "ReadGZH 转出的页面公开吗？",
+    a: "公开。它使用云端处理和共享缓存，生成的文章页公开可访问。未缓存文章按积分计费，缓存读取不扣积分。",
+  },
+];
+
 export function WechatMarkdownPage() {
-  return <Guide title="微信公众号文章转 Markdown：保存正文，再交给 AI" description="从已有公众号链接取得 Markdown 正文：阅读链接参数、实测输出、保存 .md 文件，以及导入笔记和 AI 前的完整性检查。" path="/guides/wechat-to-markdown">
+  return <Guide title="公众号转 Markdown：保存正文，再交给 AI" description="公众号转 Markdown 可以粘贴链接，也可以手动复制、用剪藏插件或开源导出。按场景对比后，说明 ReadGZH 如何取得正文、API / MCP，以及公开与积分限制。" path="/guides/wechat-to-markdown" updated="2026-10-21" dateModified="2026-10-21" extraJsonLd={[{
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: markdownFaqs.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a },
+    })),
+  }]}>
+    <p>{markdownAnswer}</p>
+    <section>
+      <h2>几种做法怎么选</h2>
+      <p>下表只列官方页面写明的做法。剪藏处理浏览器里已打开的页面，帮助里没有单独写公众号。</p>
+      <div className="overflow-x-auto rounded-lg border">
+        <table className="w-full min-w-[36rem] border-collapse text-sm">
+          <thead className="bg-muted/60">
+            <tr>
+              <th scope="col" className="p-3 text-left font-medium">做法</th>
+              <th scope="col" className="p-3 text-left font-medium">适合</th>
+              <th scope="col" className="p-3 text-left font-medium">局限</th>
+            </tr>
+          </thead>
+          <tbody className="[&>tr]:border-t [&>tr>td]:p-3 [&>tr>td]:align-top">
+            <tr>
+              <td>ReadGZH</td>
+              <td>粘贴公开链接，得到 Markdown，交给 AI 或存成文件；有 API 和 MCP</td>
+              <td>云端处理，生成的页面公开；未缓存文章按积分计费</td>
+            </tr>
+            <tr>
+              <td>手动复制</td>
+              <td>在 PC 微信里复制当前正文</td>
+              <td>复制的是文字，不是 Markdown，也不能批量</td>
+            </tr>
+            <tr>
+              <td>简悦 SimpRead</td>
+              <td>在浏览器中把当前页导出为 Markdown</td>
+              <td>要装扩展；公众号可开辅助插件，公式更适合导出 HTML</td>
+            </tr>
+            <tr>
+              <td>Obsidian Web Clipper</td>
+              <td>存进本机 Obsidian 的 Markdown 文件</td>
+              <td>要装扩展和仓库；部分网站会漏正文</td>
+            </tr>
+            <tr>
+              <td>wechat-article-exporter</td>
+              <td>按公众号批量下载，格式含 Markdown</td>
+              <td>要登录自己的公众号；仓库已停止维护</td>
+            </tr>
+            <tr>
+              <td>wechat-article-to-markdown</td>
+              <td>本机把单篇链接转成 Markdown，图片存本地</td>
+              <td>要装命令行工具；一次一条链接，说明未写登录公众号</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>说明来自：<a href="https://developers.weixin.qq.com/community/minihome/doc/000a2a4c2208183d3553c83366fc00">微信开放社区</a>、<a href="https://simpread.pro/">简悦官网</a>、<a href="https://github.com/Kenshin/simpread/discussions/5851">公众号辅助增强</a>、<a href="https://obsidian.md/help/web-clipper">Obsidian Web Clipper</a>、<a href="https://obsidian.md/clipper">本地 Markdown</a>、<a href="https://obsidian.md/help/web-clipper/troubleshoot">漏内容说明</a>、<a href="https://github.com/wechat-article/wechat-article-exporter">wechat-article-exporter</a>、<a href="https://github.com/jackwener/wechat-article-to-markdown">wechat-article-to-markdown</a>。</p>
+    </section>
+    <section>
+      <h2>常见问题</h2>
+      {markdownFaqs.map((item) => (
+        <div key={item.q}>
+          <h3 className="text-base font-semibold">{item.q}</h3>
+          <p>{item.a}</p>
+        </div>
+      ))}
+    </section>
     <section><h2>什么时候需要转换？</h2><p>已经拿到公众号文章链接，希望把正文交给 AI、存成 Markdown 文件或整理进笔记时，可以使用 ReadGZH 的文本输出。这里是“公众号文章 → Markdown”，不是把 Markdown 排版后发布到公众号。</p><p>少量文字能直接复制时，粘贴即可；持续接入 Agent 才需要考虑 MCP。ReadGZH 负责云端提取，后续摘要和判断由 AI 与使用者完成。</p></section>
     <section><h2>三步取得 Markdown</h2><ol><li>在 <Link to="/">ReadGZH 首页</Link> 粘贴公开公众号链接，生成阅读页。</li><li>复制结果链接，在已有的查询参数后添加 <code>&amp;format=text</code>。</li><li>打开文本结果，复制保存为 UTF-8 编码的 <code>.md</code> 文件，再按目标工具支持的方式粘贴或导入。</li></ol><pre><code>{'https://api.readgzh.site/rd?s=文章标识&format=text'}</code></pre><p>链接已有 <code>?s=...</code>，新增参数用 <code>&amp;</code>，不要再加一个问号。保存失败或出现错误提示时，先排查错误，不要把错误正文当作文章。</p></section>
     <section><h2>实测输出是什么样？</h2><p>2026-09-12 对一篇已有缓存文章的请求返回 HTTP 200，正文开头如下：</p><pre><code>{'# GEO还没搞明白，同行已经在做AEO了\n\n**作者：** 阿然的奇思妙想\n**发布时间：** 2026-09-08 17:57'}</code></pre><p><a href="https://api.readgzh.site/rd?s=0oYf5WLZHdLpBoNUO1tePQ&format=text">查看本次格式示例</a>。这是输出格式核对，不是提取成功率测试，也不代表认同该文章的 AEO/GEO 结论。</p><p>响应类型实测为 <code>text/plain; charset=utf-8</code>，正文使用 Markdown 语法；程序不要仅因类型不是 <code>text/markdown</code> 就判定失败。样例中仍有来源标记，输出不保证完全无杂质。</p></section>
