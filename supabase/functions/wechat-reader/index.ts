@@ -1804,7 +1804,7 @@ function markdownLineToHtml(line: string): string {
   const h = out.match(/^(#{1,6})\s+(.*)$/);
   if (h) return `<h${h[1].length}>${h[2]}</h${h[1].length}>`;
   // Blockquote / list
-  if (/^>\s+/.test(out)) return `<blockquote><p>${out.replace(/^>\s+/, "")}</p></blockquote>`;
+  if (/^&gt;\s+/.test(out)) return `<blockquote><p>${out.replace(/^&gt;\s+/, "")}</p></blockquote>`;
   if (/^[-*+]\s+/.test(out)) return `<li>${out.replace(/^[-*+]\s+/, "")}</li>`;
   if (/^-{3,}$/.test(out.trim())) return "<hr />";
 
