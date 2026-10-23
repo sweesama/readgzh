@@ -39,8 +39,9 @@ async function ensureCreditPackGrant(userId: string, sessionId: string, credits 
       expires_at: expiresAt,
       note: `Stripe 加量包 ${credits} 积分`,
     });
-    if (error) throw error;
-    log("Added credit pack grant", { sessionId, credits, expiresAt });
+    // 23505 = a concurrent path (check-payment) already granted it — fine.
+    if (error && (error as { code?: string }).code !== "23505") throw error;
+    if (!error) log("Added credit pack grant", { sessionId, credits, expiresAt });
   }
 
   const { data: existingClaim } = await supabase
@@ -267,8 +268,11 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
     }
   }
 
-  // Downgrade + clear bonus (only on full refund OR if no active subscriptions remain)
+  // Revoke unused credits from a refunded credit pack (one-time payment)
   const isFullyRefunded = charge.amount_refunded >= charge.amount;
+  await revokeCreditPackForCharge(charge, userId);
+
+  // Downgrade + clear bonus (only on full refund OR if no active subscriptions remain)
   if (isFullyRefunded || activeSubs.data.length > 0) {
     log("Downgrading user via refund backstop", { userId, isFullyRefunded });
     await supabase
@@ -283,6 +287,41 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
       .eq("is_active", true)
       .in("tier", ["pro", "lite"]);
   }
+}
+
+// Refunded credit packs: remove the refunded share of the pack's credits
+// (already-consumed credits cannot be taken back). Idempotent: recomputes
+// from the charge's cumulative refunded amount each time.
+async function revokeCreditPackForCharge(charge: Stripe.Charge, userId: string) {
+  const paymentIntent = charge.payment_intent as string | null;
+  if (!paymentIntent || !charge.amount) return;
+  const sessions = await stripe.checkout.sessions.list({ payment_intent: paymentIntent, limit: 1 });
+  const session = sessions.data[0];
+  const type = session?.metadata?.type;
+  if (!session || !(type === "credits" || type === "credits_free" || type === "credits_crypto")) return;
+
+  const { data: grant } = await supabase
+    .from("bonus_grants")
+    .select("id, amount, consumed_amount, note")
+    .eq("source", "credit_pack")
+    .eq("source_ref", session.id)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!grant) return;
+
+  const refundRatio = Math.min(1, charge.amount_refunded / charge.amount);
+  const allowedTotal = Math.floor(grant.amount * (1 - refundRatio));
+  const newConsumed = Math.max(grant.consumed_amount ?? 0, grant.amount - allowedTotal);
+  if (newConsumed === (grant.consumed_amount ?? 0)) return;
+
+  const update: Record<string, unknown> = {
+    consumed_amount: Math.min(grant.amount, newConsumed),
+    note: `${grant.note ?? ""}（已退款 ${Math.round(refundRatio * 100)}%）`.slice(0, 200),
+  };
+  if (refundRatio >= 1) update.expires_at = new Date().toISOString();
+  const { error } = await supabase.from("bonus_grants").update(update).eq("id", grant.id);
+  if (error) throw error;
+  log("Revoked refunded credit pack", { sessionId: session.id, refundRatio, consumed: update.consumed_amount });
 }
 
 Deno.serve(async (req) => {

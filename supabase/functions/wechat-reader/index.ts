@@ -507,8 +507,8 @@ function extractFormattedContent(html: string): { contentHtml: string; textConte
   contentHtml = contentHtml.replace(/<style[\s\S]*?<\/style>/gi, "");
   contentHtml = contentHtml.replace(/<noscript[\s\S]*?<\/noscript>/gi, "");
 
-  // Remove onclick and other event handlers
-  contentHtml = contentHtml.replace(/\s+on\w+="[^"]*"/g, "");
+  // Remove event handlers, dangerous tags and URL schemes (any quoting form)
+  contentHtml = sanitizeHtmlForSsr(contentHtml);
 
   // Remove WeChat-specific noise
   contentHtml = contentHtml.replace(/visibility:\s*hidden[^;]*;?/g, "");
@@ -718,6 +718,32 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#039;");
 }
 
+// Server-side HTML sanitizer for SSR output (raw_html is stored third-party
+// HTML; the browser reader uses DOMPurify but SSR/API pages did not).
+const DANGEROUS_PAIRED_TAGS = "script|style|noscript|iframe|object|embed|svg|math|form|textarea|select|button|template|frameset|frame|applet|xml";
+export function sanitizeHtmlForSsr(html: string): string {
+  let out = html;
+  out = out.replace(/<!--[\s\S]*?-->/g, "");
+  out = out.replace(new RegExp(`<(${DANGEROUS_PAIRED_TAGS})\\b[\\s\\S]*?<\\/\\1\\s*>`, "gi"), "");
+  out = out.replace(new RegExp(`<\\/?(?:${DANGEROUS_PAIRED_TAGS}|input|link|meta|base|foreignobject|isindex)\\b[^>]*>`, "gi"), "");
+  // Event handlers in any quoting form, and srcdoc/formaction
+  out = out.replace(/(?<=<[a-z][^>]*[\s\/"'])(?:on[a-z0-9_-]+|srcdoc|formaction)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, " ");
+  out = out.replace(/(?<=<[a-z][^>]*[\s\/"'])on[a-z0-9_-]+(?=[\s\/>])/gi, " ");
+  // Dangerous URL schemes in URL-bearing attributes
+  out = out.replace(
+    /\b(href|src|action|xlink:href|poster|background|cite|data)\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/gi,
+    (m, attr, _q, dq, sq, uq) => {
+      const val = String(dq ?? sq ?? uq ?? "");
+      const norm = val.replace(/&#x?[0-9a-f]+;?|&[a-z]+;|[\s\u0000-\u001f]/gi, "").toLowerCase();
+      if (/^(javascript|vbscript|livescript):/.test(norm)) return `${attr}="#"`;
+      if (norm.startsWith("data:") && !/^data:image\/(png|jpe?g|gif|webp);/.test(norm)) return `${attr}="#"`;
+      return m;
+    },
+  );
+  out = out.replace(/expression\s*\(/gi, "");
+  return out;
+}
+
 function formatContentToHtml(text: string): string {
   return text
     .split("\n")
@@ -886,7 +912,7 @@ async function handleReadMode(slug: string | null, articleId: string | null, par
   // preserved as URLs for AI text/markdown). Falls back to cleaned-text content.
   const htmlWithImages: string | null = article.raw_html || null;
   let contentBody: string = htmlWithImages
-    ? proxyImagesForSsr(replaceVideoIframesForSsr(htmlWithImages, article.source_url))
+    ? proxyImagesForSsr(sanitizeHtmlForSsr(replaceVideoIframesForSsr(htmlWithImages, article.source_url)))
     : formatContentToHtml(article.content);
 
 
@@ -1744,27 +1770,28 @@ function normalizeInputUrl(raw: string | null | undefined): string {
 // This converts the markdown constructs WeChat pages actually produce.
 function markdownLineToHtml(line: string): string {
   const proxyBase = `https://api.readgzh.site/image-proxy?url=`;
-  let out = line;
+  // Escape first: markdown text must never carry raw HTML into stored raw_html.
+  let out = escapeHtml(line);
+  const unesc = (s: string) => s.replace(/&amp;/g, "&").replace(/&#039;/g, "'").replace(/&quot;/g, '"');
+  const imgSrc = (url: string): string | null => {
+    const src = unesc(String(url)).replace(/#imgIndex=\d+$/, "");
+    if (!/^https?:\/\//i.test(src)) return null;
+    return /(?:qpic|qlogo)\.cn/i.test(src) ? `${proxyBase}${encodeURIComponent(src)}` : escapeHtml(src);
+  };
 
   // Standalone image line -> <figure><img>
-  const imgOnly = out.match(/^!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)$/);
+  const imgOnly = out.match(/^!\[[^\]]*\]\(([^)\s]+)(?:\s+&quot;.*?&quot;)?\)$/);
   if (imgOnly) {
-    const src = imgOnly[1].replace(/#imgIndex=\d+$/, "").replace(/&amp;/g, "&");
-    const proxied = /(?:qpic|qlogo)\.cn/i.test(src)
-      ? `${proxyBase}${encodeURIComponent(src)}`
-      : src;
-    return `<figure><img src="${proxied}" alt="图片" style="max-width:100%;height:auto;" /></figure>`;
+    const proxied = imgSrc(imgOnly[1]);
+    if (proxied) return `<figure><img src="${proxied}" alt="图片" style="max-width:100%;height:auto;" /></figure>`;
   }
 
-  // Inline images
-  out = out.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (_m, alt, url) => {
-    const src = String(url).replace(/#imgIndex=\d+$/, "").replace(/&amp;/g, "&");
-    const proxied = /(?:qpic|qlogo)\.cn/i.test(src)
-      ? `${proxyBase}${encodeURIComponent(src)}`
-      : src;
-    return `<img src="${proxied}" alt="${alt || "图片"}" style="max-width:100%;height:auto;" />`;
+  // Inline images (alt is already escaped)
+  out = out.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+&quot;.*?&quot;)?\)/g, (m, alt, url) => {
+    const proxied = imgSrc(url);
+    return proxied ? `<img src="${proxied}" alt="${alt || "图片"}" style="max-width:100%;height:auto;" />` : m;
   });
-  // Links
+  // Links (https only; text and url already escaped)
   out = out.replace(
     /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
     (_m, text, url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`
@@ -1777,7 +1804,7 @@ function markdownLineToHtml(line: string): string {
   const h = out.match(/^(#{1,6})\s+(.*)$/);
   if (h) return `<h${h[1].length}>${h[2]}</h${h[1].length}>`;
   // Blockquote / list
-  if (/^>\s+/.test(out)) return `<blockquote><p>${out.replace(/^>\s+/, "")}</p></blockquote>`;
+  if (/^&gt;\s+/.test(out)) return `<blockquote><p>${out.replace(/^&gt;\s+/, "")}</p></blockquote>`;
   if (/^[-*+]\s+/.test(out)) return `<li>${out.replace(/^[-*+]\s+/, "")}</li>`;
   if (/^-{3,}$/.test(out.trim())) return "<hr />";
 
