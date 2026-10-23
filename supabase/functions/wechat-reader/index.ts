@@ -507,8 +507,8 @@ function extractFormattedContent(html: string): { contentHtml: string; textConte
   contentHtml = contentHtml.replace(/<style[\s\S]*?<\/style>/gi, "");
   contentHtml = contentHtml.replace(/<noscript[\s\S]*?<\/noscript>/gi, "");
 
-  // Remove onclick and other event handlers
-  contentHtml = contentHtml.replace(/\s+on\w+="[^"]*"/g, "");
+  // Remove event handlers, dangerous tags and URL schemes (any quoting form)
+  contentHtml = sanitizeHtmlForSsr(contentHtml);
 
   // Remove WeChat-specific noise
   contentHtml = contentHtml.replace(/visibility:\s*hidden[^;]*;?/g, "");
@@ -718,6 +718,32 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#039;");
 }
 
+// Server-side HTML sanitizer for SSR output (raw_html is stored third-party
+// HTML; the browser reader uses DOMPurify but SSR/API pages did not).
+const DANGEROUS_PAIRED_TAGS = "script|style|noscript|iframe|object|embed|svg|math|form|textarea|select|button|template|frameset|frame|applet|xml";
+export function sanitizeHtmlForSsr(html: string): string {
+  let out = html;
+  out = out.replace(/<!--[\s\S]*?-->/g, "");
+  out = out.replace(new RegExp(`<(${DANGEROUS_PAIRED_TAGS})\\b[\\s\\S]*?<\\/\\1\\s*>`, "gi"), "");
+  out = out.replace(new RegExp(`<\\/?(?:${DANGEROUS_PAIRED_TAGS}|input|link|meta|base|foreignobject|isindex)\\b[^>]*>`, "gi"), "");
+  // Event handlers in any quoting form, and srcdoc/formaction
+  out = out.replace(/[\s\/"']+(?:on[a-z0-9_-]+|srcdoc|formaction)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, " ");
+  out = out.replace(/[\s\/"']+on[a-z0-9_-]+(?=[\s\/>])/gi, " ");
+  // Dangerous URL schemes in URL-bearing attributes
+  out = out.replace(
+    /\b(href|src|action|xlink:href|poster|background|cite|data)\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/gi,
+    (m, attr, _q, dq, sq, uq) => {
+      const val = String(dq ?? sq ?? uq ?? "");
+      const norm = val.replace(/&#x?[0-9a-f]+;?|&[a-z]+;|[\s\u0000-\u001f]/gi, "").toLowerCase();
+      if (/^(javascript|vbscript|livescript):/.test(norm)) return `${attr}="#"`;
+      if (norm.startsWith("data:") && !/^data:image\/(png|jpe?g|gif|webp);/.test(norm)) return `${attr}="#"`;
+      return m;
+    },
+  );
+  out = out.replace(/expression\s*\(/gi, "");
+  return out;
+}
+
 function formatContentToHtml(text: string): string {
   return text
     .split("\n")
@@ -886,7 +912,7 @@ async function handleReadMode(slug: string | null, articleId: string | null, par
   // preserved as URLs for AI text/markdown). Falls back to cleaned-text content.
   const htmlWithImages: string | null = article.raw_html || null;
   let contentBody: string = htmlWithImages
-    ? proxyImagesForSsr(replaceVideoIframesForSsr(htmlWithImages, article.source_url))
+    ? proxyImagesForSsr(sanitizeHtmlForSsr(replaceVideoIframesForSsr(htmlWithImages, article.source_url)))
     : formatContentToHtml(article.content);
 
 
