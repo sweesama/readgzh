@@ -1770,27 +1770,28 @@ function normalizeInputUrl(raw: string | null | undefined): string {
 // This converts the markdown constructs WeChat pages actually produce.
 function markdownLineToHtml(line: string): string {
   const proxyBase = `https://api.readgzh.site/image-proxy?url=`;
-  let out = line;
+  // Escape first: markdown text must never carry raw HTML into stored raw_html.
+  let out = escapeHtml(line);
+  const unesc = (s: string) => s.replace(/&amp;/g, "&").replace(/&#039;/g, "'").replace(/&quot;/g, '"');
+  const imgSrc = (url: string): string | null => {
+    const src = unesc(String(url)).replace(/#imgIndex=\d+$/, "");
+    if (!/^https?:\/\//i.test(src)) return null;
+    return /(?:qpic|qlogo)\.cn/i.test(src) ? `${proxyBase}${encodeURIComponent(src)}` : escapeHtml(src);
+  };
 
   // Standalone image line -> <figure><img>
-  const imgOnly = out.match(/^!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)$/);
+  const imgOnly = out.match(/^!\[[^\]]*\]\(([^)\s]+)(?:\s+&quot;.*?&quot;)?\)$/);
   if (imgOnly) {
-    const src = imgOnly[1].replace(/#imgIndex=\d+$/, "").replace(/&amp;/g, "&");
-    const proxied = /(?:qpic|qlogo)\.cn/i.test(src)
-      ? `${proxyBase}${encodeURIComponent(src)}`
-      : src;
-    return `<figure><img src="${proxied}" alt="图片" style="max-width:100%;height:auto;" /></figure>`;
+    const proxied = imgSrc(imgOnly[1]);
+    if (proxied) return `<figure><img src="${proxied}" alt="图片" style="max-width:100%;height:auto;" /></figure>`;
   }
 
-  // Inline images
-  out = out.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (_m, alt, url) => {
-    const src = String(url).replace(/#imgIndex=\d+$/, "").replace(/&amp;/g, "&");
-    const proxied = /(?:qpic|qlogo)\.cn/i.test(src)
-      ? `${proxyBase}${encodeURIComponent(src)}`
-      : src;
-    return `<img src="${proxied}" alt="${alt || "图片"}" style="max-width:100%;height:auto;" />`;
+  // Inline images (alt is already escaped)
+  out = out.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+&quot;.*?&quot;)?\)/g, (m, alt, url) => {
+    const proxied = imgSrc(url);
+    return proxied ? `<img src="${proxied}" alt="${alt || "图片"}" style="max-width:100%;height:auto;" />` : m;
   });
-  // Links
+  // Links (https only; text and url already escaped)
   out = out.replace(
     /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
     (_m, text, url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`
