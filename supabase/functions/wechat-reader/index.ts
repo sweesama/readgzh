@@ -727,8 +727,8 @@ export function sanitizeHtmlForSsr(html: string): string {
   out = out.replace(new RegExp(`<(${DANGEROUS_PAIRED_TAGS})\\b[\\s\\S]*?<\\/\\1\\s*>`, "gi"), "");
   out = out.replace(new RegExp(`<\\/?(?:${DANGEROUS_PAIRED_TAGS}|input|link|meta|base|foreignobject|isindex)\\b[^>]*>`, "gi"), "");
   // Event handlers in any quoting form, and srcdoc/formaction
-  out = out.replace(/[\s\/"']+(?:on[a-z0-9_-]+|srcdoc|formaction)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, " ");
-  out = out.replace(/[\s\/"']+on[a-z0-9_-]+(?=[\s\/>])/gi, " ");
+  out = out.replace(/(?<=[\s\/"'])(?:on[a-z0-9_-]+|srcdoc|formaction)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, " ");
+  out = out.replace(/(?<=<[a-z][^>]*[\s\/"'])on[a-z0-9_-]+(?=[\s\/>])/gi, " ");
   // Dangerous URL schemes in URL-bearing attributes
   out = out.replace(
     /\b(href|src|action|xlink:href|poster|background|cite|data)\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/gi,
