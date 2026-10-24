@@ -1072,7 +1072,7 @@ const READ_MODE_API_KEY_LIMIT = 500; // Daily limit for API Key read mode reques
 
 // Rate limit specifically for read mode (cached article reads)
 // This protects Cloud Network Egress from being exhausted by unlimited reads
-async function checkReadModeRateLimit(req: Request): Promise<{ allowed: boolean; current: number; remaining: number; limit: number }> {
+async function checkReadModeRateLimit(req: Request): Promise<{ allowed: boolean; current: number; remaining: number; limit: number; unavailable?: boolean }> {
   // Check if request has an API Key — higher limit but still capped
   const apiKeyResult = await checkApiKeyAuth(req, 0); // 0 cost, don't deduct credits for reads
   const limit = apiKeyResult?.isApiKey ? READ_MODE_API_KEY_LIMIT : READ_MODE_DAILY_LIMIT;
@@ -1093,13 +1093,14 @@ async function checkReadModeRateLimit(req: Request): Promise<{ allowed: boolean;
     });
     if (error) {
       console.error("Read mode rate limit error:", error);
-      return { allowed: true, current: 0, remaining: limit, limit };
+      // Fail closed: a limiter outage must not become an unlimited free door.
+      return { allowed: false, current: 0, remaining: 0, limit, unavailable: true };
     }
     const result = data as { allowed: boolean; current: number; remaining: number };
     return { ...result, limit };
   } catch (err) {
     console.error("Read mode rate limit error:", err);
-    return { allowed: true, current: 0, remaining: limit, limit };
+    return { allowed: false, current: 0, remaining: 0, limit, unavailable: true };
   }
 }
 
@@ -1213,7 +1214,7 @@ async function deductExtraCredit(_keyHash: string): Promise<void> {
   // No-op: unified 3-credit cost is fully deducted during initial validation
 }
 
-async function checkRateLimit(req: Request): Promise<{ allowed: boolean; current: number; remaining: number; limit: number; isApiKey?: boolean; tier?: string; keyHash?: string } | null> {
+async function checkRateLimit(req: Request): Promise<{ allowed: boolean; current: number; remaining: number; limit: number; isApiKey?: boolean; tier?: string; keyHash?: string; unavailable?: boolean } | null> {
   const apiKeyResult = await checkApiKeyAuth(req, 3); // unified 3-credit cost
   if (apiKeyResult) {
     console.log("API Key auth result:", JSON.stringify({ allowed: apiKeyResult.allowed, current: apiKeyResult.current, remaining: apiKeyResult.remaining, tier: apiKeyResult.tier, hasKeyHash: !!apiKeyResult.keyHash }));
@@ -1249,13 +1250,14 @@ async function checkRateLimit(req: Request): Promise<{ allowed: boolean; current
     });
     if (error) {
       console.error("Rate limit check error:", error);
-      return { allowed: true, current: 0, remaining: DAILY_LIMIT, limit: DAILY_LIMIT };
+      // Fail closed: a limiter outage must not become an unlimited free door.
+      return { allowed: false, current: 0, remaining: 0, limit: DAILY_LIMIT, unavailable: true };
     }
     const result = data as { allowed: boolean; current: number; remaining: number };
     return { ...result, limit: DAILY_LIMIT };
   } catch (err) {
     console.error("Rate limit error:", err);
-    return { allowed: true, current: 0, remaining: DAILY_LIMIT, limit: DAILY_LIMIT };
+    return { allowed: false, current: 0, remaining: 0, limit: DAILY_LIMIT, unavailable: true };
   }
 }
 
@@ -1471,6 +1473,14 @@ Deno.serve(async (req) => {
       if (slug || articleId) {
         // Check read mode rate limit FIRST
         const readRateInfo = await checkReadModeRateLimit(req);
+        if (readRateInfo.unavailable) {
+          return apiError({
+            code: "rate_limiter_unavailable",
+            status: 503,
+            message: "限流服务暂时不可用，请稍后重试。",
+            hint: "这是临时故障，稍后重试即可；如持续出现请联系 support@readgzh.site。",
+          });
+        }
         if (!readRateInfo.allowed) {
           console.log("Read mode rate limit exceeded:", JSON.stringify(readRateInfo));
           return new Response(
@@ -1638,6 +1648,14 @@ Deno.serve(async (req) => {
 
       // Not cached – check rate limit (deducts 3 credits for API key users)
       const rateInfo = await checkRateLimit(req);
+      if (rateInfo?.unavailable) {
+        return apiError({
+          code: "rate_limiter_unavailable",
+          status: 503,
+          message: "限流服务暂时不可用，请稍后重试。",
+          hint: "这是临时故障，稍后重试即可；如持续出现请联系 support@readgzh.site。",
+        });
+      }
       if (rateInfo && !rateInfo.allowed) {
         return rateLimitResponse(rateInfo);
       }
@@ -1652,6 +1670,14 @@ Deno.serve(async (req) => {
       // Handle direct article submission (from bookmarklet) - rate limit applies
       if (body.action === "submit") {
         const rateInfo = await checkRateLimit(req);
+        if (rateInfo?.unavailable) {
+          return apiError({
+            code: "rate_limiter_unavailable",
+            status: 503,
+            message: "限流服务暂时不可用，请稍后重试。",
+            hint: "这是临时故障，稍后重试即可；如持续出现请联系 support@readgzh.site。",
+          });
+        }
         if (rateInfo && !rateInfo.allowed) {
           return rateLimitResponse(rateInfo);
         }
@@ -1721,6 +1747,14 @@ Deno.serve(async (req) => {
 
       // Not cached – check rate limit (deducts 3 credits for API key users)
       const rateInfo = await checkRateLimit(req);
+      if (rateInfo?.unavailable) {
+        return apiError({
+          code: "rate_limiter_unavailable",
+          status: 503,
+          message: "限流服务暂时不可用，请稍后重试。",
+          hint: "这是临时故障，稍后重试即可；如持续出现请联系 support@readgzh.site。",
+        });
+      }
       if (rateInfo && !rateInfo.allowed) {
         return rateLimitResponse(rateInfo);
       }
