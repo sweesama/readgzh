@@ -416,11 +416,13 @@ async function checkMcpRateLimit(quota: AnonymousQuota): Promise<{ allowed: bool
       p_ip: quota.key,
       p_daily_limit: quota.limit,
     });
-    if (error) return { allowed: !quota.discovery, current: 0, unavailable: quota.discovery };
+    // Fail closed for both discovery and tool calls: a limiter outage must
+    // not become an unlimited free door.
+    if (error) return { allowed: false, current: 0, unavailable: true };
     const result = data as { allowed: boolean; current: number };
     return result;
   } catch {
-    return { allowed: !quota.discovery, current: 0, unavailable: quota.discovery };
+    return { allowed: false, current: 0, unavailable: true };
   }
 }
 
@@ -486,7 +488,7 @@ app.all("/*", async (c) => {
         }
         const rateCheck = await checkMcpRateLimit(quota);
         if (rateCheck.unavailable) {
-          return c.json({ jsonrpc: "2.0", id: null, error: { code: -32000, message: "MCP discovery rate limiter temporarily unavailable. Retry later." } }, 503, { "Retry-After": "60" });
+          return c.json({ jsonrpc: "2.0", id: null, error: { code: -32000, message: "MCP rate limiter temporarily unavailable. Retry later." } }, 503, { "Retry-After": "60" });
         }
         if (!rateCheck.allowed) {
           markExhausted(quota.key);
