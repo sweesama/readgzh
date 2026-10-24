@@ -486,15 +486,20 @@ function deepExtractText(el: Element): string {
 }
 
 // Clean and extract formatted HTML from WeChat content
-function extractFormattedContent(html: string): { contentHtml: string; textContent: string } {
+function extractFormattedContent(html: string, sourceUrl?: string): { contentHtml: string; textContent: string; isVideoOnly: boolean } {
   const doc = new DOMParser().parseFromString(html, "text/html");
-  if (!doc) return { contentHtml: "", textContent: "" };
+  if (!doc) return { contentHtml: "", textContent: "", isVideoOnly: false };
 
   const contentEl = doc.querySelector("#js_content");
-  if (!contentEl) return { contentHtml: "", textContent: "" };
+  if (!contentEl) return { contentHtml: "", textContent: "", isVideoOnly: false };
 
   // Get inner HTML
   let contentHtml = (contentEl as Element).innerHTML || "";
+  const originalContentHtml = contentHtml;
+
+  // Convert videos before stripping data-cover/data-mpvid and sanitizing iframes.
+  // Store only inert links/cards, never a live player.
+  contentHtml = replaceVideoIframesForSsr(contentHtml, sourceUrl);
 
   // Convert data-src to src for images (WeChat lazy loading)
   contentHtml = contentHtml.replace(/data-src="([^"]+)"/g, 'src="$1"');
@@ -527,7 +532,11 @@ function extractFormattedContent(html: string): { contentHtml: string; textConte
   const basicText = (contentEl as Element).textContent?.trim() || "";
   const finalText = textContent.length >= basicText.length ? textContent : basicText;
 
-  return { contentHtml: contentHtml.trim(), textContent: finalText };
+  return {
+    contentHtml: contentHtml.trim(),
+    textContent: finalText,
+    isVideoOnly: isVideoOnlyArticle(originalContentHtml, finalText, originalContentHtml),
+  };
 }
 
 // Extract metadata from WeChat HTML
@@ -756,13 +765,13 @@ function formatContentToHtml(text: string): string {
 function replaceVideoIframesForSsr(html: string, sourceUrl?: string | null): string {
   const proxyBase = `https://api.readgzh.site/image-proxy?url=`;
   let result = html.replace(
-    /<iframe[^>]*class="video_iframe[^"]*"[^>]*>/gi,
+    /<iframe\b(?=[^>]*(?:class="[^"]*\bvideo_iframe\b[^"]*"|data-mpvid=))[^>]*>(?:[\s\S]*?<\/iframe\s*>)?/gi,
     (match) => {
       // Extract cover image
       const coverMatch = match.match(/data-cover="([^"]*)"/);
       const coverUrl = coverMatch ? coverMatch[1].replace(/&amp;/g, "&") : null;
       const proxiedCover = coverUrl ? `${proxyBase}${encodeURIComponent(coverUrl)}` : null;
-      const linkUrl = sourceUrl || "#";
+      const linkUrl = sourceUrl && /^https?:\/\//i.test(sourceUrl) ? escapeHtml(sourceUrl) : "#";
 
       if (proxiedCover) {
         return `<div style="border:1px solid #ddd;border-radius:8px;overflow:hidden;margin:16px 0;">` +
@@ -2180,7 +2189,7 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     }
 
     // Helper: attempt content extraction from a given HTML string
-    function tryExtractContent(srcHtml: string): { metadata: ReturnType<typeof extractMetadata>; contentHtml: string; textContent: string; isPictureWithImages: boolean } {
+    function tryExtractContent(srcHtml: string): { metadata: ReturnType<typeof extractMetadata>; contentHtml: string; textContent: string; isPictureWithImages: boolean; isVideoOnly?: boolean } {
       const meta = extractMetadata(srcHtml);
       // Try picture template first (小绿书 format)
       const pictureData = extractPictureTemplate(srcHtml);
@@ -2207,7 +2216,7 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
         return { metadata: meta, contentHtml: shortText.contentHtml, textContent: shortText.textContent, isPictureWithImages: shortText.images.length > 0 };
       }
       // Standard article extraction
-      const extracted = extractFormattedContent(srcHtml);
+      const extracted = extractFormattedContent(srcHtml, url);
       // Image-only posters: #js_content holds real <img> tags but almost no text.
       // Treat them as valid picture articles so we don't fall through to the
       // video-only check or the Firecrawl markdown path (which loses the images).
@@ -2216,6 +2225,7 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
       return {
         metadata: meta,
         contentHtml: extracted.contentHtml,
+        isVideoOnly: extracted.isVideoOnly,
         textContent: extracted.textContent || (hasImages ? meta.title : ""),
         isPictureWithImages: hasImages,
       };
@@ -2227,7 +2237,7 @@ async function handleScrape(url: string, keyHash?: string): Promise<Response> {
     // Video-only articles: don't waste a Firecrawl call — it would only fetch
     // page-chrome noise. Return a clear error, refund credits, and let the
     // reader know to visit the original for playback.
-    if (!result.isPictureWithImages && isVideoOnlyArticle(html, result.textContent || "", result.contentHtml || "")) {
+    if (result.isVideoOnly || (!result.isPictureWithImages && isVideoOnlyArticle(html, result.textContent || "", result.contentHtml || ""))) {
       console.log("Video-only article detected, skipping Firecrawl fallback");
       const refunded = await refundCredits(keyHash, 3);
       return apiError({
