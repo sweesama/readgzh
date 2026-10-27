@@ -23,6 +23,17 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 const ANON_DAILY_LIMIT = 10;
 
+const AI_UA = /(gptbot|chatgpt|openai|oai-searchbot|claude|anthropic|perplexity|bot|spider|crawl|python|curl|wget|httpx|axios|node-fetch|undici|go-http|java|okhttp|deno|bun|libwww|scrapy|headless|lighthouse|mcp|cursor|cline|kimi|doubao|deepseek|yuanbao|qwen|gemini|bard)/i;
+
+// Decide output for requests without an explicit ?format=:
+// - AI agents / scripts get plain Markdown (format=text) so they parse reliably.
+// - Real browsers (humans) get the styled reading page.
+export function classifyClient(ua: string, accept: string): "ai" | "human" {
+  if (!ua || AI_UA.test(ua)) return "ai";
+  if (/mozilla\//i.test(ua) && accept.includes("text/html")) return "human";
+  return "ai";
+}
+
 function getClientIp(req: Request): string {
   // Cloudflare rewrites CF-Connecting-IP on Worker subrequests; the Worker
   // forwards the real eyeball IP in this custom header.
@@ -142,6 +153,19 @@ Deno.serve(async (req) => {
         console.error("[rd] rate limit check failed:", e);
       }
     }
+  }
+
+  // Smart default format (only when caller did not choose one and no mode=summary etc.)
+  if (!url.searchParams.has("format") && !url.searchParams.has("mode") && req.method === "GET") {
+    const client = classifyClient(req.headers.get("user-agent") || "", req.headers.get("accept") || "");
+    if (client === "human" && slugParam && /^[a-zA-Z0-9/_-]{1,120}$/.test(slugParam)) {
+      const bare = slugParam.replace(/^s\//, "");
+      return new Response(null, {
+        status: 302,
+        headers: noindexHeaders({ ...corsHeaders, Location: `https://readgzh.site/s/${bare}` }),
+      });
+    }
+    if (client === "ai") url.searchParams.set("format", "text");
   }
 
   const targetUrl = `${SUPABASE_URL}/functions/v1/wechat-reader${url.search}`;
