@@ -23,6 +23,12 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 const ANON_DAILY_LIMIT = 10;
 
+// Default output is UTF-8 Markdown for everyone (AI and humans).
+// Why: the hosting gateway serves function HTML as charset-less text/plain, so
+// browsers mis-decode it into mojibake and AIs choke on raw HTML; the proxy
+// Worker also follows redirects, so we cannot bounce humans to /s/:slug here.
+// Explicit ?format=html still returns HTML for callers that ask for it.
+
 function getClientIp(req: Request): string {
   // Cloudflare rewrites CF-Connecting-IP on Worker subrequests; the Worker
   // forwards the real eyeball IP in this custom header.
@@ -142,6 +148,10 @@ Deno.serve(async (req) => {
         console.error("[rd] rate limit check failed:", e);
       }
     }
+  }
+
+  if (!url.searchParams.has("format") && !url.searchParams.has("mode")) {
+    url.searchParams.set("format", "text");
   }
 
   const targetUrl = `${SUPABASE_URL}/functions/v1/wechat-reader${url.search}`;
