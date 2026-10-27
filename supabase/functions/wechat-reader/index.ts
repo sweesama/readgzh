@@ -1637,7 +1637,7 @@ Deno.serve(async (req) => {
             await supabase2.rpc("record_cache_hit", { p_key_hash: apiAuth.keyHash });
           }
           const slugId = existing.slug?.replace(/^s\//, "") || "";
-          const response = await handleReadMode(slugId || null, slugId ? null : existing.id);
+          const response = await handleReadMode(slugId || null, slugId ? null : existing.id, undefined, params.get("format") === "text");
           // Add cache headers
           const headers = new Headers(response.headers);
           headers.set("X-Cache", "HIT");
@@ -1660,7 +1660,7 @@ Deno.serve(async (req) => {
         return rateLimitResponse(rateInfo);
       }
 
-      return await handleScrapeAndRedirect(url, rateInfo?.keyHash);
+      return await handleScrapeAndRedirect(url, rateInfo?.keyHash, params.get("format") === "text");
     }
 
     // POST request: scrape or submit article
@@ -2047,7 +2047,7 @@ async function handleDirectSubmit(body: Record<string, unknown>): Promise<Respon
 }
 
 // GET ?url= handler: scrape, store, then return SSR HTML directly (no redirect)
-async function handleScrapeAndRedirect(url: string, keyHash?: string): Promise<Response> {
+async function handleScrapeAndRedirect(url: string, keyHash?: string, formatText?: boolean): Promise<Response> {
   if (!isWeixinUrl(url)) {
     console.log("[wechat-reader] invalid_url rejected:", JSON.stringify({ url, len: url?.length ?? 0 }));
     return apiError({
@@ -2082,7 +2082,7 @@ async function handleScrapeAndRedirect(url: string, keyHash?: string): Promise<R
   if (existing) {
     // Already cached – return SSR HTML directly
     const slugId = existing.slug?.replace(/^s\//, "") || "";
-    return await handleReadMode(slugId || null, slugId ? null : existing.id);
+    return await handleReadMode(slugId || null, slugId ? null : existing.id, undefined, formatText);
   }
 
   // Not cached – scrape via handleScrape (which stores it), then return HTML
@@ -2098,7 +2098,7 @@ async function handleScrapeAndRedirect(url: string, keyHash?: string): Promise<R
 
   // Return SSR HTML directly (no redirect)
   const savedSlug = resultData.slug?.replace(/^s\//, "") || "";
-  return await handleReadMode(savedSlug || null, savedSlug ? null : resultData.articleId);
+  return await handleReadMode(savedSlug || null, savedSlug ? null : resultData.articleId, undefined, formatText);
 }
 
 async function handleScrape(url: string, keyHash?: string): Promise<Response> {
