@@ -29,6 +29,49 @@ const ANON_DAILY_LIMIT = 10;
 // Worker also follows redirects, so we cannot bounce humans to /s/:slug here.
 // Explicit ?format=html still returns HTML for callers that ask for it.
 
+function getClientIp(req: Request): string {
+  // Cloudflare rewrites CF-Connecting-IP on Worker subrequests; the Worker
+  // forwards the real eyeball IP in this custom header.
+  const realClientIp = req.headers.get("x-real-client-ip");
+  if (realClientIp) return realClientIp.trim();
+  const fwd = req.headers.get("x-forwarded-for");
+  if (fwd) return fwd.split(",")[0].trim();
+  const real = req.headers.get("x-real-ip");
+  if (real) return real.trim();
+  return "unknown";
+}
+
+function hasUserApiKey(req: Request): boolean {
+  const auth = req.headers.get("authorization") || "";
+  if (!auth.toLowerCase().startsWith("bearer ")) return false;
+  const token = auth.slice(7).trim();
+  if (!token) return false;
+  // JWT (anon/service) starts with "eyJ" — treat as anonymous.
+  if (token.startsWith("eyJ")) return false;
+  return true;
+}
+
+function queryKeyNotSupportedResponse(): Response {
+  return new Response(
+    JSON.stringify({
+      success: false,
+      code: "query_key_not_supported",
+      error: "query_key_not_supported",
+      message: "为避免 API Key 出现在浏览器历史、服务器日志或分享链接中，ReadGZH 已不再接受 URL 参数 ?key=...。",
+      hint: "请把 Key 放到请求头：Authorization: Bearer sk_live_...。注意：Stripe 等第三方密钥不能作为 ReadGZH API Key 使用；请在 ReadGZH 控制台创建 sk_live_ 开头的 Key。",
+      dashboard_url: "https://readgzh.site/dashboard",
+      docs_url: "https://readgzh.site/docs",
+    }),
+    {
+      status: 400,
+      headers: noindexHeaders({
+        ...corsHeaders,
+        "Content-Type": "application/json",
+      }),
+    }
+  );
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: noindexHeaders(corsHeaders) });
