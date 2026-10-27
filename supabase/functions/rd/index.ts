@@ -23,59 +23,11 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 const ANON_DAILY_LIMIT = 10;
 
-const AI_UA = /(gptbot|chatgpt|openai|oai-searchbot|claude|anthropic|perplexity|bot|spider|crawl|python|curl|wget|httpx|axios|node-fetch|undici|go-http|java|okhttp|deno|bun|libwww|scrapy|headless|lighthouse|mcp|cursor|cline|kimi|doubao|deepseek|yuanbao|qwen|gemini|bard)/i;
-
-// Decide output for requests without an explicit ?format=:
-// - AI agents / scripts get plain Markdown (format=text) so they parse reliably.
-// - Real browsers (humans) get the styled reading page.
-export function classifyClient(ua: string, accept: string): "ai" | "human" {
-  if (!ua || AI_UA.test(ua)) return "ai";
-  if (/mozilla\//i.test(ua) && accept.includes("text/html")) return "human";
-  return "ai";
-}
-
-function getClientIp(req: Request): string {
-  // Cloudflare rewrites CF-Connecting-IP on Worker subrequests; the Worker
-  // forwards the real eyeball IP in this custom header.
-  const realClientIp = req.headers.get("x-real-client-ip");
-  if (realClientIp) return realClientIp.trim();
-  const fwd = req.headers.get("x-forwarded-for");
-  if (fwd) return fwd.split(",")[0].trim();
-  const real = req.headers.get("x-real-ip");
-  if (real) return real.trim();
-  return "unknown";
-}
-
-function hasUserApiKey(req: Request): boolean {
-  const auth = req.headers.get("authorization") || "";
-  if (!auth.toLowerCase().startsWith("bearer ")) return false;
-  const token = auth.slice(7).trim();
-  if (!token) return false;
-  // JWT (anon/service) starts with "eyJ" — treat as anonymous.
-  if (token.startsWith("eyJ")) return false;
-  return true;
-}
-
-function queryKeyNotSupportedResponse(): Response {
-  return new Response(
-    JSON.stringify({
-      success: false,
-      code: "query_key_not_supported",
-      error: "query_key_not_supported",
-      message: "为避免 API Key 出现在浏览器历史、服务器日志或分享链接中，ReadGZH 已不再接受 URL 参数 ?key=...。",
-      hint: "请把 Key 放到请求头：Authorization: Bearer sk_live_...。注意：Stripe 等第三方密钥不能作为 ReadGZH API Key 使用；请在 ReadGZH 控制台创建 sk_live_ 开头的 Key。",
-      dashboard_url: "https://readgzh.site/dashboard",
-      docs_url: "https://readgzh.site/docs",
-    }),
-    {
-      status: 400,
-      headers: noindexHeaders({
-        ...corsHeaders,
-        "Content-Type": "application/json",
-      }),
-    }
-  );
-}
+// Default output is UTF-8 Markdown for everyone (AI and humans).
+// Why: the hosting gateway serves function HTML as charset-less text/plain, so
+// browsers mis-decode it into mojibake and AIs choke on raw HTML; the proxy
+// Worker also follows redirects, so we cannot bounce humans to /s/:slug here.
+// Explicit ?format=html still returns HTML for callers that ask for it.
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -155,17 +107,8 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Smart default format (only when caller did not choose one and no mode=summary etc.)
-  if (!url.searchParams.has("format") && !url.searchParams.has("mode") && req.method === "GET") {
-    const client = classifyClient(req.headers.get("user-agent") || "", req.headers.get("accept") || "");
-    if (client === "human" && slugParam && /^[a-zA-Z0-9/_-]{1,120}$/.test(slugParam)) {
-      const bare = slugParam.replace(/^s\//, "");
-      return new Response(null, {
-        status: 302,
-        headers: noindexHeaders({ ...corsHeaders, Location: `https://readgzh.site/s/${bare}` }),
-      });
-    }
-    if (client === "ai") url.searchParams.set("format", "text");
+  if (!url.searchParams.has("format") && !url.searchParams.has("mode")) {
+    url.searchParams.set("format", "text");
   }
 
   const targetUrl = `${SUPABASE_URL}/functions/v1/wechat-reader${url.search}`;
