@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
 
     const { data: comment, error: commentError } = await supabase
       .from('comments')
-      .select('id, content, user_id, parent_id')
+      .select('id, content, user_id, parent_id, created_at')
       .eq('id', commentId)
       .maybeSingle()
 
@@ -66,18 +66,21 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
-    if (!isInternalCall && callerUserId !== comment.user_id) {
+    // Anonymous comments have user_id scrubbed to NULL, so ownership can't be
+    // checked. Allow any signed-in caller to notify for a fresh anonymous comment.
+    const isFreshAnon =
+      comment.user_id === null &&
+      Date.now() - new Date(comment.created_at).getTime() < 5 * 60 * 1000
+    if (!isInternalCall && !isFreshAnon && callerUserId !== comment.user_id) {
       return new Response(JSON.stringify({ error: 'Forbidden' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('display_name')
-      .eq('id', comment.user_id)
-      .maybeSingle()
+    const { data: profile } = comment.user_id
+      ? await supabase.from('profiles').select('display_name').eq('id', comment.user_id).maybeSingle()
+      : { data: null }
     const userName = profile?.display_name?.trim() || '匿名用户'
 
     const sendEmail = async (

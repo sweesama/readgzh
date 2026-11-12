@@ -7,6 +7,7 @@ import { lazy, Suspense, Component, type ReactNode, type ErrorInfo } from "react
 import ScrollToTop from "./components/ScrollToTop";
 import Index from "./pages/Index";
 import ArticlePage from "./pages/ArticlePage";
+import ClaimProPage from "./pages/ClaimProPage";
 import ArticlesPage from "./pages/ArticlesPage";
 import SubmitPage from "./pages/SubmitPage";
 import DocsPage from "./pages/DocsPage";
@@ -83,6 +84,7 @@ const App = () => (
           <Route path="/enterprise" element={<EnterprisePage />} />
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
           <Route path="/comments" element={<CommentsPage />} />
+          <Route path="/claim-pro" element={<ClaimProPage />} />
           
           <Route path="/changelog" element={<ChangelogPage />} />
           <Route path="/dashboard/invite" element={<InvitePage />} />

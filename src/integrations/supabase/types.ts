@@ -26,6 +26,7 @@ export type Database = {
           key_prefix: string
           last_used_at: string | null
           name: string
+          paid_since: string | null
           tier: string
           user_id: string
         }
@@ -40,6 +41,7 @@ export type Database = {
           key_prefix: string
           last_used_at?: string | null
           name?: string
+          paid_since?: string | null
           tier?: string
           user_id: string
         }
@@ -54,6 +56,7 @@ export type Database = {
           key_prefix?: string
           last_used_at?: string | null
           name?: string
+          paid_since?: string | null
           tier?: string
           user_id?: string
         }
@@ -247,6 +250,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      comp_grants: {
+        Row: {
+          claimed_at: string | null
+          claimed_by: string | null
+          created_at: string
+          days: number
+          email: string
+          note: string | null
+          token: string
+        }
+        Insert: {
+          claimed_at?: string | null
+          claimed_by?: string | null
+          created_at?: string
+          days?: number
+          email: string
+          note?: string | null
+          token: string
+        }
+        Update: {
+          claimed_at?: string | null
+          claimed_by?: string | null
+          created_at?: string
+          days?: number
+          email?: string
+          note?: string | null
+          token?: string
+        }
+        Relationships: []
       }
       credit_pack_claims: {
         Row: {
@@ -812,6 +845,7 @@ export type Database = {
           parent_id: string
         }[]
       }
+      paid_window_start: { Args: { p_user_id: string }; Returns: string }
       record_cache_hit: { Args: { p_key_hash: string }; Returns: undefined }
       refresh_token_stats_cache: { Args: never; Returns: undefined }
       refund_credits: {
