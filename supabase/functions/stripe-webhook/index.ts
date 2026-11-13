@@ -253,7 +253,15 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
     });
   }
 
-  // Cancel any still-active subscriptions for this customer
+  // Credit-pack refunds only revoke that pack's credits; the subscription stays.
+  const isFullyRefunded = charge.amount_refunded >= charge.amount;
+  const wasCreditPack = await revokeCreditPackForCharge(charge, userId);
+  if (wasCreditPack) {
+    log("Credit pack refund handled; subscription untouched", { chargeId: charge.id });
+    return;
+  }
+
+  // Subscription refund: cancel any still-active subscriptions for this customer
   const activeSubs = await stripe.subscriptions.list({
     customer: customerId,
     status: "active",
@@ -267,10 +275,6 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
       log("Cancel during refund failed", { id: sub.id, error: (e as Error).message });
     }
   }
-
-  // Revoke unused credits from a refunded credit pack (one-time payment)
-  const isFullyRefunded = charge.amount_refunded >= charge.amount;
-  await revokeCreditPackForCharge(charge, userId);
 
   // Downgrade + clear bonus (only on full refund OR if no active subscriptions remain)
   if (isFullyRefunded || activeSubs.data.length > 0) {
@@ -292,13 +296,13 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
 // Refunded credit packs: remove the refunded share of the pack's credits
 // (already-consumed credits cannot be taken back). Idempotent: recomputes
 // from the charge's cumulative refunded amount each time.
-async function revokeCreditPackForCharge(charge: Stripe.Charge, userId: string) {
+async function revokeCreditPackForCharge(charge: Stripe.Charge, userId: string): Promise<boolean> {
   const paymentIntent = charge.payment_intent as string | null;
-  if (!paymentIntent || !charge.amount) return;
+  if (!paymentIntent || !charge.amount) return false;
   const sessions = await stripe.checkout.sessions.list({ payment_intent: paymentIntent, limit: 1 });
   const session = sessions.data[0];
   const type = session?.metadata?.type;
-  if (!session || !(type === "credits" || type === "credits_free" || type === "credits_crypto")) return;
+  if (!session || !(type === "credits" || type === "credits_free" || type === "credits_crypto")) return false;
 
   const { data: grant } = await supabase
     .from("bonus_grants")
@@ -307,12 +311,12 @@ async function revokeCreditPackForCharge(charge: Stripe.Charge, userId: string) 
     .eq("source_ref", session.id)
     .eq("user_id", userId)
     .maybeSingle();
-  if (!grant) return;
+  if (!grant) return true;
 
   const refundRatio = Math.min(1, charge.amount_refunded / charge.amount);
   const allowedTotal = Math.floor(grant.amount * (1 - refundRatio));
   const newConsumed = Math.max(grant.consumed_amount ?? 0, grant.amount - allowedTotal);
-  if (newConsumed === (grant.consumed_amount ?? 0)) return;
+  if (newConsumed === (grant.consumed_amount ?? 0)) return true;
 
   const update: Record<string, unknown> = {
     consumed_amount: Math.min(grant.amount, newConsumed),
@@ -322,6 +326,7 @@ async function revokeCreditPackForCharge(charge: Stripe.Charge, userId: string) 
   const { error } = await supabase.from("bonus_grants").update(update).eq("id", grant.id);
   if (error) throw error;
   log("Revoked refunded credit pack", { sessionId: session.id, refundRatio, consumed: update.consumed_amount });
+  return true;
 }
 
 Deno.serve(async (req) => {
