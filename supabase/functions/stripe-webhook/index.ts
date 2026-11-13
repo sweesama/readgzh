@@ -228,7 +228,15 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
   }
 
   // Log each refund (idempotent on stripe_refund_id)
-  const refundList = charge.refunds?.data ?? [];
+  // Webhook payloads on newer Stripe API versions omit charge.refunds; fetch them.
+  let refundList = charge.refunds?.data ?? [];
+  if (refundList.length === 0) {
+    try {
+      refundList = (await stripe.refunds.list({ charge: charge.id, limit: 100 })).data;
+    } catch (e) {
+      log("Refund list fetch failed", { chargeId: charge.id, error: (e as Error).message });
+    }
+  }
   for (const r of refundList) {
     // skip already-recorded
     const { data: existing } = await supabase
@@ -238,7 +246,7 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
       .maybeSingle();
     if (existing) continue;
 
-    await supabase.from("refund_records").insert({
+    const { error: insErr } = await supabase.from("refund_records").insert({
       user_id: userId,
       stripe_charge_id: charge.id,
       stripe_payment_intent_id: (charge.payment_intent as string) || null,
@@ -251,6 +259,7 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
       reason: r.reason || null,
       formula_breakdown: null,
     });
+    if (insErr) log("refund_records insert failed", { refundId: r.id, error: insErr.message });
   }
 
   // Credit-pack refunds only revoke that pack's credits; the subscription stays.
