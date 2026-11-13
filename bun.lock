@@ -66,6 +66,8 @@
       },
       "devDependencies": {
         "@eslint/js": "^9.32.0",
+        "@lovable.dev/vite-plugin-dev-server-bridge": "^1.0.2",
+        "@lovable.dev/vite-plugin-hmr-gate": "^1.8.0",
         "@tailwindcss/typography": "^0.5.16",
         "@testing-library/jest-dom": "^6.6.0",
         "@testing-library/react": "^16.0.0",
@@ -212,6 +214,10 @@
     "@lovable.dev/cloud-auth-js": ["@lovable.dev/cloud-auth-js@1.1.1", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@lovable.dev/cloud-auth-js/-/cloud-auth-js-1.1.1.tgz", {}, "sha512-80elU8dSJG6bho0Xnfj2oy53wp883nYXrG1Wy948LC/ZUaUQ0i9EGXQFmwTLOBFrWqxb6aNaOlZUvQ8BVGhjMQ=="],
 
     "@lovable.dev/mcp-js": ["@lovable.dev/mcp-js@2.0.4", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@lovable.dev/mcp-js/-/mcp-js-2.0.4.tgz", { "dependencies": { "@modelcontextprotocol/sdk": "1.28.0", "@modelcontextprotocol/server": "2.0.0", "esbuild": "^0.27.0", "jose": "^6.2.2" }, "peerDependencies": { "vite": ">=5.0.0 <9.0.0", "zod": "^3.25 || ^4.0" }, "bin": { "lovable-mcp-extract-manifest": "./dist/cli/extract-manifest.cjs" } }, "sha512-CuDsdcw3kpl5C5tHPcwaXWjvP05HYKSSzbI2BLkPN3slEULyAsZevE3zRQiUiyZa1iPPLhOMIcvRh0bZQANRvQ=="],
+
+    "@lovable.dev/vite-plugin-dev-server-bridge": ["@lovable.dev/vite-plugin-dev-server-bridge@1.3.3", "", { "peerDependencies": { "vite": ">=5.0.0 <9.0.0" } }, "sha512-idfu4sQOGXRsyngvs9Ukqa0TwBSVQ7QDIkJ/fU7qXbP6xwZOXulIVYU2gias4CYF6cjoR41jDIQerPstWf+0ZQ=="],
+
+    "@lovable.dev/vite-plugin-hmr-gate": ["@lovable.dev/vite-plugin-hmr-gate@1.8.2", "", { "peerDependencies": { "vite": ">=5.0.0 <9.0.0" } }, "sha512-xbeEU1CUnyOe+GRYB5rZAcwgLM4toWa5j0d1n72+A95igKBbAnfJ+GndevvnwQ2SQb3Kn3H17pylL/oL+OYPcg=="],
 
     "@mcp-b/global": ["@mcp-b/global@1.6.0", "", { "dependencies": { "@mcp-b/transports": "1.4.0", "@mcp-b/webmcp-polyfill": "0.3.0", "@mcp-b/webmcp-ts-sdk": "1.6.0", "@mcp-b/webmcp-types": "0.3.0" } }, "sha512-+prHOY61VB7cfH0yqS+x9zjASmjPxU/f5E7MYt46S53fuJz97BlIS1zL6FxMh7oQauvObrjW3L2l1bg3S6nIbA=="],
 
