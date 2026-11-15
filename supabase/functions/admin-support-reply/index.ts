@@ -21,6 +21,18 @@ const REPLIES: Record<string, { to: string; title: string; greeting: string; con
 
 有任何问题，直接回这封邮件，或者发邮件到 sweeyeah@hotmail.com，我会亲自回复。再次说声对不起！`,
   },
+  "packrefund-20261115": {
+    to: "absoluteratking@gmail.com",
+    title: "关于您的 ¥9 加量包退款已原路退回通知",
+    greeting: "您好！",
+    content: `我是 ReadGZH 的开发者。非常抱歉，前一封邮件可能因为邮箱网络问题没能成功送达。
+
+您申请退订的 ¥9 加量包（500 积分），因为您还没有开始使用，已经为您办理全额原路退款。款项通常会在 1-3 个工作日内退回到您原来的支付渠道（支付宝），请注意查收。
+
+同时请您放心：您的 Lite 月度会员权益完全保留，本月剩余的 240 积分不受任何影响，您可以继续正常使用。
+
+如果您在使用中遇到任何问题或有其他建议，直接回复这封邮件即可。再次感谢您的理解与支持！`,
+  },
   "refund-20261109": {
     to: "t28mojun@qq.com",
     title: "给您的道歉，和一份补偿",
