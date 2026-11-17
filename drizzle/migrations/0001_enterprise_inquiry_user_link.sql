@@ -1,0 +1,2 @@
+ALTER TABLE public.enterprise_inquiries ADD COLUMN IF NOT EXISTS user_id uuid, ADD COLUMN IF NOT EXISTS client_ip text;
+CREATE INDEX IF NOT EXISTS enterprise_inquiries_user_created_idx ON public.enterprise_inquiries(user_id, created_at DESC);

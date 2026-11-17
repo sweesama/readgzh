@@ -419,6 +419,7 @@ export type Database = {
       enterprise_inquiries: {
         Row: {
           billing_cycle: string | null
+          client_ip: string | null
           company_name: string
           contact_name: string
           created_at: string
@@ -431,9 +432,11 @@ export type Database = {
           status: string
           tax_id: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           billing_cycle?: string | null
+          client_ip?: string | null
           company_name: string
           contact_name: string
           created_at?: string
@@ -446,9 +449,11 @@ export type Database = {
           status?: string
           tax_id?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           billing_cycle?: string | null
+          client_ip?: string | null
           company_name?: string
           contact_name?: string
           created_at?: string
@@ -461,6 +466,7 @@ export type Database = {
           status?: string
           tax_id?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }

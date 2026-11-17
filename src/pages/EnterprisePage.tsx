@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,8 @@ const EnterprisePage = () => {
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [duplicateAt, setDuplicateAt] = useState<string | null>(null);
+  const { user, loading: authLoading } = useAuth();
   const [form, setForm] = useState({
     company_name: "",
     contact_name: "",
@@ -53,6 +56,10 @@ const EnterprisePage = () => {
   const [plan, setPlan] = useState("enterprise");
   const [billing, setBilling] = useState("annual");
   const [invoice, setInvoice] = useState("plain");
+
+  useEffect(() => {
+    if (user?.email) setForm((f) => (f.email ? f : { ...f, email: user.email! }));
+  }, [user?.email]);
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -83,6 +90,11 @@ const EnterprisePage = () => {
       },
     });
     setSubmitting(false);
+    if (data?.duplicate) {
+      setDuplicateAt(new Date(data.first_at).toLocaleString("zh-CN", { hour12: false }));
+      setDone(true);
+      return;
+    }
     if (error || !data?.success) {
       toast({
         title: "提交失败",
@@ -141,7 +153,9 @@ const EnterprisePage = () => {
             </CardTitle>
             <CardDescription>
               {done
-                ? "我们会尽快通过邮件与你联系，确认方案、付款账户与开票信息。"
+                ? duplicateAt
+                  ? `我们已于 ${duplicateAt} 收到你的采购申请，正在准备对公账户与方案资料，请勿重复提交。`
+                  : "我们会尽快通过邮件与你联系，确认方案、付款账户与开票信息。"
                 : "带 * 为必填项，其余留空也可以，后续沟通时再补充。"}
             </CardDescription>
           </CardHeader>
@@ -154,6 +168,15 @@ const EnterprisePage = () => {
                   <a className="text-primary underline" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>。
                 </p>
                 <Button variant="outline" onClick={() => navigate("/pricing")}>返回定价页</Button>
+              </div>
+            ) : authLoading ? (
+              <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+            ) : !user ? (
+              <div className="flex flex-col items-center text-center py-8 gap-4">
+                <p className="text-sm text-muted-foreground max-w-md">
+                  企业采购需要关联一个主账号，付款后积分会开通到这个账号。请先登录（支持 Google 一键登录或邮箱验证码），登录后回到本页填写。
+                </p>
+                <Button asChild><Link to="/dashboard?redirect=/enterprise">去登录</Link></Button>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">

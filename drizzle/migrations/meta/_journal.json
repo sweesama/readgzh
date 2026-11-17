@@ -8,6 +8,13 @@
       "when": 1794492820118,
       "tag": "0000_paid_since_and_comp_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794896813697,
+      "tag": "0001_enterprise_inquiry_user_link",
+      "breakpoints": true
     }
   ]
 }
