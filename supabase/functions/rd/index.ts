@@ -51,6 +51,21 @@ function hasUserApiKey(req: Request): boolean {
   return true;
 }
 
+// Per-key output preference set in the dashboard. Explicit ?format= always wins.
+async function keyDefaultFormat(req: Request): Promise<"text" | "html"> {
+  const auth = req.headers.get("authorization") || "";
+  if (!auth.startsWith("Bearer sk_live_")) return "text";
+  try {
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(auth.slice(7).trim()));
+    const keyHash = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+    const { data } = await supabase.from("api_keys").select("default_format").eq("key_hash", keyHash).maybeSingle();
+    return data?.default_format === "html" ? "html" : "text";
+  } catch (e) {
+    console.error("[rd] format preference lookup failed:", e);
+    return "text";
+  }
+}
+
 function queryKeyNotSupportedResponse(): Response {
   return new Response(
     JSON.stringify({
@@ -151,7 +166,7 @@ Deno.serve(async (req) => {
   }
 
   if (!url.searchParams.has("format") && !url.searchParams.has("mode")) {
-    url.searchParams.set("format", "text");
+    url.searchParams.set("format", await keyDefaultFormat(req));
   }
 
   const targetUrl = `${SUPABASE_URL}/functions/v1/wechat-reader${url.search}`;

@@ -15,6 +15,13 @@
       "when": 1794896813697,
       "tag": "0001_enterprise_inquiry_user_link",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795177561502,
+      "tag": "0002_migration",
+      "breakpoints": true
     }
   ]
 }

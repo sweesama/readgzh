@@ -25,6 +25,7 @@ interface ApiKey {
   is_active: boolean;
   last_used_at: string | null;
   created_at: string;
+  default_format?: "markdown" | "html";
 }
 
 interface UsageRecord {
@@ -128,6 +129,23 @@ const DashboardPage = () => {
     setUpgradeLoading(false);
   };
 
+
+  const setKeyFormat = async (keyId: string, format: "markdown" | "html") => {
+    const prev = keys;
+    setKeys((ks) => ks.map((k) => (k.id === keyId ? { ...k, default_format: format } : k)));
+    const { data, error } = await supabase.functions.invoke("api-keys", {
+      body: { action: "set_format", key_id: keyId, format },
+    });
+    if (error || !data?.success) {
+      setKeys(prev);
+      toast({ title: "保存失败", description: "请稍后再试", variant: "destructive" });
+      return;
+    }
+    toast({
+      title: "已保存",
+      description: format === "html" ? "这个 Key 的接口请求将默认返回 HTML" : "这个 Key 的接口请求将默认返回 Markdown",
+    });
+  };
 
   const fetchKeys = useCallback(async () => {
     setKeysLoading(true);
@@ -975,6 +993,27 @@ const DashboardPage = () => {
                           {key.key_prefix}
                         </code>
                       </div>
+                      {key.is_active && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>默认返回格式</span>
+                          <div className="inline-flex rounded-md border overflow-hidden">
+                            {(["markdown", "html"] as const).map((f) => (
+                              <button
+                                key={f}
+                                type="button"
+                                onClick={() => setKeyFormat(key.id, f)}
+                                className={`px-2 py-0.5 ${
+                                  (key.default_format ?? "markdown") === f
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-background hover:bg-muted"
+                                }`}
+                              >
+                                {f === "markdown" ? "Markdown（适合 AI）" : "HTML（原网页排版）"}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       <p className="text-xs text-muted-foreground">
                         创建于 {new Date(key.created_at).toLocaleDateString("zh-CN")}
                         {key.last_used_at && ` · 最后使用 ${new Date(key.last_used_at).toLocaleDateString("zh-CN")}`}

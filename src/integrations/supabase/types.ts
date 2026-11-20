@@ -20,6 +20,7 @@ export type Database = {
           bonus_expires_at: string | null
           created_at: string
           daily_limit: number
+          default_format: string
           id: string
           is_active: boolean
           key_hash: string
@@ -35,6 +36,7 @@ export type Database = {
           bonus_expires_at?: string | null
           created_at?: string
           daily_limit?: number
+          default_format?: string
           id?: string
           is_active?: boolean
           key_hash: string
@@ -50,6 +52,7 @@ export type Database = {
           bonus_expires_at?: string | null
           created_at?: string
           daily_limit?: number
+          default_format?: string
           id?: string
           is_active?: boolean
           key_hash?: string

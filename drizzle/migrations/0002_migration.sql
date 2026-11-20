@@ -1,0 +1,2 @@
+ALTER TABLE public.api_keys ADD COLUMN IF NOT EXISTS default_format text NOT NULL DEFAULT 'markdown';
+ALTER TABLE public.api_keys ADD CONSTRAINT api_keys_default_format_check CHECK (default_format IN ('markdown','html'));

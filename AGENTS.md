@@ -6,3 +6,5 @@
 - Homepage prerender overwrites dist/index.html (the SPA fallback shell); its head tags carry data-rh so Helmet replaces them on other client routes — why: "/" must ship real HTML and canonical to non-JS crawlers.
 - Lovable static hosting cannot set a 404 status or `X-Robots-Tag` on HTML. Any path without its own prerendered file (`/s/:slug`, `/a/:id`, unknown URLs) is that homepage shell with HTTP 200. Do not put `noindex` on the shell — it would deindex `/`. New guides must `export const prerenderPages` from `src/pages/guides/` (see `scripts/prerender.tsx`). `/articles` is prerendered with `noindex`. Article-copy `X-Robots-Tag` lives on the `rd` edge function.
 - `/rd` defaults to `format=text` (UTF-8 Markdown) for every caller; `?format=html` stays opt-in — why: the gateway serves function HTML as charset-less text/plain (mojibake in browsers, hard for AIs) and the api Worker follows redirects, so UA-based redirects to /s/:slug cannot work.
+
+- `/rd` output format: explicit `?format=` wins, else the API key's `api_keys.default_format` (set in dashboard via api-keys `set_format`), else Markdown — why: users needing HTML shouldn't have to change their URLs.
