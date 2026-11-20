@@ -272,6 +272,14 @@ const DashboardPage = () => {
     setPortalLoading(false);
   };
 
+  // Capture ?redirect=/path on mount so it survives the OAuth round-trip
+  useEffect(() => {
+    const redirect = new URLSearchParams(window.location.search).get("redirect");
+    if (redirect && redirect.startsWith("/") && !redirect.startsWith("//")) {
+      sessionStorage.setItem("auth_redirect", redirect);
+    }
+  }, []);
+
   useEffect(() => {
     if (loading) return;
 
@@ -289,6 +297,14 @@ const DashboardPage = () => {
       setSubscriptionInfo(null);
       setKeysLoading(false);
       setProLoading(false);
+      return;
+    }
+
+    // Send users back to where they came from (e.g. /enterprise) after login
+    const pendingRedirect = sessionStorage.getItem("auth_redirect");
+    if (pendingRedirect) {
+      sessionStorage.removeItem("auth_redirect");
+      navigate(pendingRedirect, { replace: true });
       return;
     }
 
