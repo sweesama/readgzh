@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Bot, BookOpen, Code, Zap, Key, MessageSquare, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Footer from "@/components/home/Footer";
@@ -8,6 +8,7 @@ import SEO from "@/components/SEO";
 
 const CommentsPage = () => {
   const { user } = useAuth();
+  const location = useLocation();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -78,7 +79,7 @@ const CommentsPage = () => {
               <p className="text-sm text-muted-foreground mb-3">
                 登录后即可发表留言、回复评论
               </p>
-              <Link to={`/dashboard?redirect=${encodeURIComponent(window.location.pathname)}`}>
+              <Link to={`/dashboard?redirect=${encodeURIComponent(location.pathname)}`}>
                 <Button size="sm" className="gap-1.5">
                   <Key className="h-3.5 w-3.5" />
                   前往控制台登录

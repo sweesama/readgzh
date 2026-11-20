@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useLocation } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,6 +15,7 @@ const ERRORS: Record<string, string> = {
 
 const ClaimProPage = () => {
   const [params] = useSearchParams();
+  const location = useLocation();
   const token = params.get("token") || "";
   const { user, loading } = useAuth();
   const [status, setStatus] = useState<"idle" | "working" | "done" | "error">("idle");
@@ -66,7 +67,7 @@ const ClaimProPage = () => {
         ) : !user ? (
           <>
             <p className="text-sm text-muted-foreground">请先用收到邮件的邮箱登录。登录后会自动回到这里。</p>
-            <Button asChild><Link to={`/dashboard?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`}>去登录</Link></Button>
+            <Button asChild><Link to={`/dashboard?redirect=${encodeURIComponent(location.pathname + location.search)}`}>去登录</Link></Button>
           </>
         ) : status === "done" ? (
           <>
