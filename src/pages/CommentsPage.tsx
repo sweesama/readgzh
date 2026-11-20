@@ -78,7 +78,7 @@ const CommentsPage = () => {
               <p className="text-sm text-muted-foreground mb-3">
                 登录后即可发表留言、回复评论
               </p>
-              <Link to="/dashboard">
+              <Link to={`/dashboard?redirect=${encodeURIComponent(window.location.pathname)}`}>
                 <Button size="sm" className="gap-1.5">
                   <Key className="h-3.5 w-3.5" />
                   前往控制台登录

@@ -65,8 +65,8 @@ const ClaimProPage = () => {
           <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
         ) : !user ? (
           <>
-            <p className="text-sm text-muted-foreground">请先用收到邮件的邮箱登录。登录后，再点一次邮件里的领取链接就行。</p>
-            <Button asChild><Link to="/dashboard">去登录</Link></Button>
+            <p className="text-sm text-muted-foreground">请先用收到邮件的邮箱登录。登录后会自动回到这里。</p>
+            <Button asChild><Link to={`/dashboard?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`}>去登录</Link></Button>
           </>
         ) : status === "done" ? (
           <>

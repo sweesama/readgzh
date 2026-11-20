@@ -53,7 +53,7 @@ const InvitePage = () => {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) navigate("/dashboard");
+    if (!loading && !user) navigate("/dashboard?redirect=/dashboard/invite");
   }, [user, loading, navigate]);
 
   useEffect(() => {
